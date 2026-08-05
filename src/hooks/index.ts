@@ -1,0 +1,41 @@
+// React Query hooks - Data fetching
+export * from './use-addresses'
+export * from './use-categories'
+export * from './use-orders'
+export * from './use-prefetch'
+export * from './use-products'
+export * from './use-restaurants'
+export * from './use-specialities'
+
+// Business logic hooks
+export * from './use-cash-movement'
+export * from './use-cash-register'
+export * from './use-cart-actions'
+export * from './use-reports'
+export * from './use-category-management'
+export * from './use-checkout-form'
+export * from './use-checkout-process'
+export * from './use-company-profile-management'
+export * from './use-menu-management'
+export * from './use-order-history'
+export * from './use-order-management'
+export * from './use-order-status'
+export * from './use-payment'
+export * from './use-profile-management'
+export * from './use-restaurant-actions'
+export * from './use-restaurant-filters'
+export * from './use-restaurant-registration'
+export * from './use-unauthorized-page'
+
+// Legacy hooks
+// export * from './use-address' // Commented to avoid conflict with use-addresses (useViaCep)
+export * from './use-api'
+export * from './use-company-profile'
+export * from './use-debounce'
+export * from './use-favorites'
+export * from './use-form-validation'
+export * from './use-local-storage'
+export * from './use-navigation'
+export * from './use-toggle'
+
+

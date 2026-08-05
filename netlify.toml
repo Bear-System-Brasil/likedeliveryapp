@@ -1,0 +1,47 @@
+# Netlify Configuration for Like Delivery App
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+  functions = "netlify/functions"
+
+# Environment variables for build
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_PUBLIC_API_URL = "https://like-delivery-backend.onrender.com"
+
+# Headers for all responses
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Allow images from external domains via CORS
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, HEAD, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    # Cache static assets aggressively
+    Cache-Control = "public, immutable, max-age=31536000"
+
+# Cache policy for image assets
+[[headers]]
+  for = "/_next/image*"
+  [headers.values]
+    Cache-Control = "public, immutable, max-age=31536000"
+
+# Cache policy for static files
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, immutable, max-age=31536000"
+
+# Don't cache HTML files
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+# Redirect rules
+[[redirects]]
+  from = "/login"
+  to = "/"
+  status = 302
+  force = false

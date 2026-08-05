@@ -1,0 +1,140 @@
+/**
+ * =============================================================================
+ * PREFERENCES STORE - PREFERÊNCIAS DO USUÁRIO
+ * =============================================================================
+ * 
+ * Gerencia preferências do usuário como theme, language, notificações
+ * Persiste em localStorage
+ */
+
+import { STORAGE_KEYS } from '@/utils/storage-manager'
+import { create } from 'zustand'
+import { devtools, persist } from 'zustand/middleware'
+
+interface Preferences {
+  // Aparência
+  theme: 'light' | 'dark' | 'system'
+
+  // Notificações
+  notifications: {
+    push: boolean
+    email: boolean
+    sms: boolean
+    orderUpdates: boolean
+    promotions: boolean
+  }
+
+  // Localização e idioma
+  language: 'pt-BR' | 'en-US' | 'es-ES'
+  currency: 'BRL' | 'USD' | 'EUR'
+
+  // Preferências de entrega
+  defaultAddress?: string // ID do endereço padrão
+  saveOrderHistory: boolean
+
+  // UI Preferences
+  compactMode: boolean
+  showOnboarding: boolean
+  lastViewedRestaurant?: string
+}
+
+interface PreferencesState extends Preferences {
+  // Actions
+  setTheme: (theme: Preferences['theme']) => void
+  setLanguage: (language: Preferences['language']) => void
+  updateNotifications: (notifications: Partial<Preferences['notifications']>) => void
+  setDefaultAddress: (addressId: string) => void
+  setCompactMode: (compact: boolean) => void
+  dismissOnboarding: () => void
+  setLastViewedRestaurant: (restaurantId: string) => void
+  resetPreferences: () => void
+}
+
+const defaultPreferences: Preferences = {
+  theme: 'system',
+  notifications: {
+    push: true,
+    email: true,
+    sms: false,
+    orderUpdates: true,
+    promotions: true,
+  },
+  language: 'pt-BR',
+  currency: 'BRL',
+  saveOrderHistory: true,
+  compactMode: false,
+  showOnboarding: true,
+}
+
+export const usePreferencesStore = create<PreferencesState>()(
+  devtools(
+    persist(
+      (set) => ({
+        ...defaultPreferences,
+
+        setTheme: (theme) =>
+          set(
+            { theme },
+            false,
+            'preferences/setTheme'
+          ),
+
+        setLanguage: (language) =>
+          set(
+            { language },
+            false,
+            'preferences/setLanguage'
+          ),
+
+        updateNotifications: (notifications) =>
+          set(
+            (state) => ({
+              notifications: { ...state.notifications, ...notifications },
+            }),
+            false,
+            'preferences/updateNotifications'
+          ),
+
+        setDefaultAddress: (addressId) =>
+          set(
+            { defaultAddress: addressId },
+            false,
+            'preferences/setDefaultAddress'
+          ),
+
+        setCompactMode: (compact) =>
+          set(
+            { compactMode: compact },
+            false,
+            'preferences/setCompactMode'
+          ),
+
+        dismissOnboarding: () =>
+          set(
+            { showOnboarding: false },
+            false,
+            'preferences/dismissOnboarding'
+          ),
+
+        setLastViewedRestaurant: (restaurantId) =>
+          set(
+            { lastViewedRestaurant: restaurantId },
+            false,
+            'preferences/setLastViewedRestaurant'
+          ),
+
+        resetPreferences: () =>
+          set(
+            defaultPreferences,
+            false,
+            'preferences/reset'
+          ),
+      }),
+      {
+        name: STORAGE_KEYS.PREFERENCES,
+        version: 1,
+      }
+    ),
+    { name: 'preferences-store', enabled: process.env.NODE_ENV !== 'production' }
+  )
+)
