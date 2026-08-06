@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/auth-provider";
 
 import { RESTAURANT_CATEGORIES } from "@/constants";
 
-import { AnimatedBackground } from "@/components/ui/custom";
+import { AnimatedBackground, GradientButton } from "@/components/ui/custom";
 
 import { TrendingRestaurantsSection } from "@/components/home-page/trending-restaurants-section";
 
@@ -23,6 +23,7 @@ import { Coords, Restaurant } from "@/types/restaurant";
 import { BottomBar } from "@/components/ui/bottom-bar";
 import { CategoriesFilter } from "@/components/categories-filter";
 import { BannerCarousel } from "../banner-carousel";
+import { Button } from "@/components/ui/button";
 
 export function LikeDeliveryAppPage() {
   const router = useRouter();
@@ -198,12 +199,11 @@ export function LikeDeliveryAppPage() {
           categoriesScrollRef={categoriesScrollRef}
           scrollCategories={scrollCategories}
           rightContent={
-            <button
+            <GradientButton
               onClick={() => router.push("/restaurants")}
-              className="text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors"
             >
               Ver Todas →
-            </button>
+            </GradientButton>
           }
         />
 

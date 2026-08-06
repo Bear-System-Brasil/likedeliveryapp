@@ -6,7 +6,7 @@ import { UseFormReturn } from "react-hook-form";
 
 import { AddressFormData } from "@/hooks";
 
-import { MapPin, Plus, Star, X, Search, Save } from "lucide-react";
+import { MapPin, Plus, Star, X, Search, Save, Pencil } from "lucide-react";
 
 import { GradientButton } from "@/components/ui/gradient-button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,24 +78,28 @@ type Props = {
   handleDeleteAddress: (addressId: string) => Promise<void>;
   handleCloseAddressModal: () => void;
   handleAddAddress: HandleAddAddress;
+  handleEditAddress: (address: Address) => void;
   addressForm: AddressForm;
   addingAddressState: AddingAddressState;
   isLoadingAddresses: boolean;
   isSavingAddress: boolean;
   addresses: Address[];
   isLoadingCep: boolean;
+  editingAddressId?: string | null;
 };
 
 export function Addresses({
   handleDeleteAddress,
   handleCloseAddressModal,
   handleAddAddress,
+  handleEditAddress,
   addingAddressState,
   isLoadingAddresses,
   isSavingAddress,
   isLoadingCep,
   addressForm,
   addresses,
+  editingAddressId,
 }: Props) {
   return (
     <DataCard
@@ -153,14 +157,25 @@ export function Addresses({
                       </Badge>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteAddress(address.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditAddress(address)}
+                      className="text-gray-600 hover:text-orange-600 hover:bg-orange-50"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteAddress(address.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="text-sm text-gray-600">
@@ -182,11 +197,11 @@ export function Addresses({
       {addingAddressState.isOpen && (
         <DeliveryForm
           handleCloseAddressModal={handleCloseAddressModal}
-          handleDeleteAddress={handleDeleteAddress}
           handleAddAddress={handleAddAddress}
           isSavingAddress={isSavingAddress}
           addressForm={addressForm}
           isLoadingCep={isLoadingCep}
+          isEditing={!!editingAddressId}
         />
       )}
     </DataCard>

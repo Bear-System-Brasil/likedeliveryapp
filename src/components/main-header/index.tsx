@@ -100,7 +100,7 @@ export function MainHeader({
     <header
       className={clsx(
         "fixed top-1 left-1 right-1 z-50",
-        "bg-white/95 border border-pink-100/50",
+        "bg-white border border-orange-100/50",
         "rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden",
       )}
     >
@@ -133,7 +133,7 @@ export function MainHeader({
                     <Search className="h-4 w-4" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="top" className="border-b border-pink-100">
+                <SheetContent side="top" className="border-b border-orange-100">
                   <div className="mt-10">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />

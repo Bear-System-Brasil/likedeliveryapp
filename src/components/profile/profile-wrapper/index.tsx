@@ -12,7 +12,6 @@ import { GradientButton } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { DataCard } from "@/components/data-card";
-import { Footer } from "@/components/footer";
 import { PageHeader } from "@/components/page-header";
 import { Addresses } from "@/components/profile/addresses";
 import { OrderHistory } from "@/components/profile/order-history";
@@ -48,6 +47,8 @@ export function ProfileWrapper() {
     handleAddAddress,
     handleCloseAddressModal,
     handleDeleteAddress,
+    handleEditAddress, // ← desestruturar
+    editingAddressId,
 
     // CEP
     isLoadingCep,
@@ -158,6 +159,8 @@ export function ProfileWrapper() {
             handleCloseAddressModal={handleCloseAddressModal}
             handleDeleteAddress={handleDeleteAddress}
             handleAddAddress={handleAddAddress}
+            handleEditAddress={handleEditAddress} // ← passar
+            editingAddressId={editingAddressId} // ← passar
             addingAddressState={addingAddressState}
             isLoadingAddresses={isLoadingAddresses}
             isSavingAddress={isSavingAddress}
