@@ -12,9 +12,10 @@ import { useState } from "react";
 type Props = {
   data: OptionalsList;
   changePrice: (add: boolean, value: number) => void;
+  salePrice: number;
 };
 
-export function SelectOptions({ data, changePrice }: Props) {
+export function SelectOptions({ data, changePrice, salePrice }: Props) {
   const [selectedSizePrice, setSelectedSizePrice] = useState(0);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
 
@@ -58,7 +59,9 @@ export function SelectOptions({ data, changePrice }: Props) {
                     </div>
 
                     <span>
-                      {option.price > 0 && `+ R$${option.price.toFixed(2)}`}
+                      {option.isBase
+                        ? `R$${salePrice.toFixed(2)}`
+                        : option.price > 0 && `+ R$${option.price.toFixed(2)}`}
                     </span>
                   </Label>
                 </AccordionContent>

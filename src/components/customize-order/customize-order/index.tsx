@@ -44,6 +44,7 @@ type CustomOrderType = {
 type OptionsType = {
   label: string;
   price: number;
+  isBase?: boolean;
 };
 
 type ValueType = "size" | "extra-ingredients";
@@ -62,6 +63,7 @@ const optionalOptions: OptionalsList[] = [
       {
         label: "Pequeno",
         price: 0,
+        isBase: true,
       },
       {
         label: "Medio",
@@ -245,7 +247,11 @@ export function CustomizeOrder({
               collapsible
               defaultValue={optionalOptions[0].label}
             >
-              <SelectOptions data={item} changePrice={handleFinalPrice} />
+              <SelectOptions
+                data={item}
+                changePrice={handleFinalPrice}
+                salePrice={productData.salePrice}
+              />
             </Accordion>
           ))}
         </div>
