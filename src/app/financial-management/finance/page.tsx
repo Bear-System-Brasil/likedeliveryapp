@@ -397,7 +397,7 @@ export default function FinancePage() {
             <div className="flex gap-2 mt-4">
               <Button
                 onClick={handleSearch}
-                className="rounded-xl bg-linear-to-r from-orange-500 to-pink-500"
+                className="rounded-xl bg-linear-to-r from-orange-500 to-orange-500"
               >
                 <Search className="h-4 w-4 mr-2" />
                 Buscar

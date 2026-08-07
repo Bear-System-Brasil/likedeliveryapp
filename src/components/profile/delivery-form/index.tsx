@@ -1,22 +1,18 @@
 "use client";
-
 import { formatCep } from "@/utils";
-
 import { X, Search, Save } from "lucide-react";
-
 import { GradientButton } from "@/components/ui/gradient-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import { AddressForm, HandleAddAddress } from "@/components/profile/addresses";
 
 type Props = {
-  handleDeleteAddress: (addressId: string) => Promise<void>;
   handleCloseAddressModal: () => void;
   handleAddAddress: HandleAddAddress;
   addressForm: AddressForm;
   isSavingAddress: boolean;
   isLoadingCep: boolean;
+  isEditing?: boolean;
 };
 
 export function DeliveryForm({
@@ -25,13 +21,16 @@ export function DeliveryForm({
   addressForm,
   isSavingAddress,
   isLoadingCep,
+  isEditing = false,
 }: Props) {
   return (
     <div className="inset-0 bg-black/50 flex items-center justify-center z-50 p-4 mt-8 rounded-md">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold">Adicionar Novo Endereço</h3>
+            <h3 className="text-xl font-semibold">
+              {isEditing ? "Editar Endereço" : "Adicionar Novo Endereço"}
+            </h3>
             <Button
               variant="ghost"
               size="sm"
@@ -49,6 +48,7 @@ export function DeliveryForm({
             className="space-y-4"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* CEP */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   CEP *
@@ -84,6 +84,7 @@ export function DeliveryForm({
                 </p>
               </div>
 
+              {/* Rua */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Rua *
@@ -95,6 +96,7 @@ export function DeliveryForm({
                 />
               </div>
 
+              {/* Número */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Número *
@@ -106,6 +108,7 @@ export function DeliveryForm({
                 />
               </div>
 
+              {/* Complemento */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Complemento
@@ -117,6 +120,7 @@ export function DeliveryForm({
                 />
               </div>
 
+              {/* Bairro */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Bairro *
@@ -128,6 +132,7 @@ export function DeliveryForm({
                 />
               </div>
 
+              {/* Cidade */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cidade *
@@ -139,6 +144,7 @@ export function DeliveryForm({
                 />
               </div>
 
+              {/* Estado */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Estado *
@@ -151,6 +157,7 @@ export function DeliveryForm({
                 />
               </div>
 
+              {/* Checkbox Padrão */}
               <div className="md:col-span-2">
                 <div className="flex items-center space-x-2">
                   <input
@@ -183,11 +190,11 @@ export function DeliveryForm({
                 type="submit"
                 size="sm"
                 isLoading={isSavingAddress}
-                loadingText="Salvando..."
+                loadingText={isEditing ? "Atualizando..." : "Salvando..."}
                 disabled={isSavingAddress}
               >
                 <Save className="h-4 w-4 mr-2" />
-                Salvar Endereço
+                {isEditing ? "Atualizar Endereço" : "Salvar Endereço"}
               </GradientButton>
             </div>
           </form>
