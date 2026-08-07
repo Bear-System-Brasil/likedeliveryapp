@@ -12,7 +12,6 @@ import { GradientButton } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { DataCard } from "@/components/data-card";
-import { Footer } from "@/components/footer";
 import { PageHeader } from "@/components/page-header";
 import { Addresses } from "@/components/profile/addresses";
 import { OrderHistory } from "@/components/profile/order-history";

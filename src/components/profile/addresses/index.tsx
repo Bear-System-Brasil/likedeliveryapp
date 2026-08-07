@@ -224,11 +224,11 @@ export function Addresses({
       {addingAddressState.isOpen && (
         <DeliveryForm
           handleCloseAddressModal={handleCloseAddressModal}
-          handleDeleteAddress={handleDeleteAddress}
           handleAddAddress={handleAddAddress}
           isSavingAddress={isSavingAddress}
           addressForm={addressForm}
           isLoadingCep={isLoadingCep}
+          isEditing={!!editingAddressId}
         />
       )}
     </DataCard>

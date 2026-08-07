@@ -214,7 +214,7 @@ export default function CashRegisterPage() {
               ) : (
                 <GradientButton
                   onClick={() => setDialog("open-register")}
-                  className="rounded-xl bg-linear-to-r from-orange-500 to-pink-500 text-white"
+                  className="rounded-xl bg-linear-to-r from-orange-500 to-orange-500 text-white"
                 >
                   <Unlock className="h-4 w-4 mr-2" />
                   Abrir Caixa
@@ -367,7 +367,7 @@ export default function CashRegisterPage() {
             <GradientButton
               onClick={handleOpenRegister}
               disabled={openMutation.isPending || !openingBalance}
-              className="rounded-xl bg-linear-to-r from-orange-500 to-pink-500 text-white"
+              className="rounded-xl bg-linear-to-r from-orange-500 to-orange-500 text-white"
             >
               {openMutation.isPending ? "Abrindo..." : "Confirmar Abertura"}
             </GradientButton>
@@ -501,7 +501,7 @@ export default function CashRegisterPage() {
             <GradientButton
               onClick={handleMovement}
               disabled={isMovementPending || !amount || !description}
-              className="rounded-xl bg-linear-to-r from-orange-500 to-pink-500 text-white"
+              className="rounded-xl bg-linear-to-r from-orange-500 to-orange-500 text-white"
             >
               {isMovementPending ? "Registrando..." : "Confirmar"}
             </GradientButton>
