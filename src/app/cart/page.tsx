@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function CartPage() {
@@ -40,12 +40,25 @@ export default function CartPage() {
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
+  // Garante que a sincronização com o backend só acontece UMA VEZ,
+  // logo que a página monta. Antes, o useEffect tinha `syncCartFromBackend`
+  // como dependência - como essa função é recriada a cada render (o hook
+  // useCartActions não usa useCallback), o efeito disparava de novo a cada
+  // render, sobrescrevendo qualquer update otimista de quantidade/preço
+  // com dados desatualizados vindos do backend.
+  const hasSyncedRef = useRef(false);
+
   useEffect(() => {
     setIsMounted(true);
-    if (items.length > 0) {
+  }, []);
+
+  useEffect(() => {
+    if (!hasSyncedRef.current && items.length > 0) {
+      hasSyncedRef.current = true;
       syncCartFromBackend().catch(() => {});
     }
-  }, [items.length, syncCartFromBackend]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const applyPromoCode = () => {
     const code = promoCode.toLowerCase().trim();

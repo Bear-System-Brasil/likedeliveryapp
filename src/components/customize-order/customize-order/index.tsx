@@ -301,7 +301,7 @@ export function CustomizeOrder({
                 onClick={handleDecreaseQuantity}
                 disabled={quantity <= MIN_QUANTITY}
                 aria-label="Diminuir quantidade"
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border-2 border-orange-500 text-orange-500 flex items-center justify-center transition-colors hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border-2 border-orange-500 text-orange-500 flex items-center justify-center transition-colors hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
@@ -315,7 +315,7 @@ export function CustomizeOrder({
                 onClick={handleIncreaseQuantity}
                 disabled={quantity >= MAX_QUANTITY}
                 aria-label="Aumentar quantidade"
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border-2 border-orange-500 text-orange-500 flex items-center justify-center transition-colors hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border-2 border-orange-500 text-orange-500 flex items-center justify-center transition-colors hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
