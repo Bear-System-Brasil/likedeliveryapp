@@ -6,7 +6,7 @@ import { UseFormReturn } from "react-hook-form";
 
 import { AddressFormData } from "@/hooks";
 
-import { MapPin, Plus, Star, X, Search, Save } from "lucide-react";
+import { MapPin, Plus, Star, X, Search, Save, Loader2 } from "lucide-react";
 
 import { GradientButton } from "@/components/ui/gradient-button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -173,25 +173,30 @@ export function Addresses({
                             : "Marcar como padrão"
                         }
                         className={cn(
-                          "p-1.5 rounded-lg transition-colors",
+                          "p-1.5 rounded-lg transition-colors relative flex items-center justify-center",
                           address.isDefault
                             ? "text-orange-500 cursor-default"
                             : "text-gray-300 hover:text-orange-500 hover:bg-orange-50 cursor-pointer",
-                          isSettingThisDefault && "opacity-50 cursor-wait",
+                          isSettingThisDefault && "cursor-wait",
                         )}
                       >
                         <Star
                           className={cn(
                             "h-4 w-4",
                             address.isDefault && "fill-current",
+                            isSettingThisDefault && "invisible",
                           )}
                         />
+                        {isSettingThisDefault && (
+                          <Loader2 className="h-4 w-4 animate-spin absolute" />
+                        )}
                       </button>
 
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteAddress(address.id)}
+                        disabled={settingDefaultAddressId !== null}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <X className="h-4 w-4" />
