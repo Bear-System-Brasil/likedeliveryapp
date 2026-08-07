@@ -6,7 +6,7 @@ import { UseFormReturn } from "react-hook-form";
 
 import { AddressFormData } from "@/hooks";
 
-import { MapPin, Plus, Star, X, Search, Save, Pencil } from "lucide-react";
+import { MapPin, Plus, Star, X, Search, Save, Loader2 } from "lucide-react";
 
 import { GradientButton } from "@/components/ui/gradient-button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,28 +78,28 @@ type Props = {
   handleDeleteAddress: (addressId: string) => Promise<void>;
   handleCloseAddressModal: () => void;
   handleAddAddress: HandleAddAddress;
-  handleEditAddress: (address: Address) => void;
+  handleSetDefaultAddress: (addressId: string) => Promise<void>;
   addressForm: AddressForm;
   addingAddressState: AddingAddressState;
   isLoadingAddresses: boolean;
   isSavingAddress: boolean;
   addresses: Address[];
   isLoadingCep: boolean;
-  editingAddressId?: string | null;
+  settingDefaultAddressId: string | null;
 };
 
 export function Addresses({
   handleDeleteAddress,
   handleCloseAddressModal,
   handleAddAddress,
-  handleEditAddress,
+  handleSetDefaultAddress,
   addingAddressState,
   isLoadingAddresses,
   isSavingAddress,
   isLoadingCep,
   addressForm,
   addresses,
-  editingAddressId,
+  settingDefaultAddressId,
 }: Props) {
   return (
     <DataCard
@@ -139,57 +139,84 @@ export function Addresses({
       ) : (
         <div className="space-y-4">
           {Array.isArray(addresses) &&
-            addresses.map((address) => (
-              <div
-                key={address.id}
-                className="border border-gray-200 rounded-xl p-4"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="secondary" className="text-xs">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      {address.type}
-                    </Badge>
-                    {address.isDefault && (
-                      <Badge className="bg-linear-to-r from-orange-500 to-orange-500 text-white border-0 text-xs flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-current" />
-                        Padrão
+            addresses.map((address) => {
+              const isSettingThisDefault =
+                settingDefaultAddressId === address.id;
+
+              return (
+                <div
+                  key={address.id}
+                  className="border border-gray-200 rounded-xl p-4"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary" className="text-xs">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {address.type}
                       </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditAddress(address)}
-                      className="text-gray-600 hover:text-orange-600 hover:bg-orange-50"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                      {address.isDefault && (
+                        <Badge className="bg-linear-to-r from-orange-500 to-orange-500 text-white border-0 text-xs flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-current" />
+                          Padrão
+                        </Badge>
+                      )}
+                    </div>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteAddress(address.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSetDefaultAddress(address.id)}
+                        disabled={address.isDefault || isSettingThisDefault}
+                        title={
+                          address.isDefault
+                            ? "Este é o endereço padrão"
+                            : "Marcar como padrão"
+                        }
+                        className={cn(
+                          "p-1.5 rounded-lg transition-colors relative flex items-center justify-center",
+                          address.isDefault
+                            ? "text-orange-500 cursor-default"
+                            : "text-gray-300 hover:text-orange-500 hover:bg-orange-50 cursor-pointer",
+                          isSettingThisDefault && "cursor-wait",
+                        )}
+                      >
+                        <Star
+                          className={cn(
+                            "h-4 w-4",
+                            address.isDefault && "fill-current",
+                            isSettingThisDefault && "invisible",
+                          )}
+                        />
+                        {isSettingThisDefault && (
+                          <Loader2 className="h-4 w-4 animate-spin absolute" />
+                        )}
+                      </button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteAddress(address.id)}
+                        disabled={settingDefaultAddressId !== null}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-gray-600">
+                    <p className="font-medium text-gray-900">
+                      {address.street}, {address.number}
+                      {address.complement && ` - ${address.complement}`}
+                    </p>
+                    <p>
+                      {address.neighborhood} - {address.city}/{address.state}
+                    </p>
+                    <p>CEP: {address.zipCode}</p>
                   </div>
                 </div>
-
-                <div className="text-sm text-gray-600">
-                  <p className="font-medium text-gray-900">
-                    {address.street}, {address.number}
-                    {address.complement && ` - ${address.complement}`}
-                  </p>
-                  <p>
-                    {address.neighborhood} - {address.city}/{address.state}
-                  </p>
-                  <p>CEP: {address.zipCode}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
       )}
 

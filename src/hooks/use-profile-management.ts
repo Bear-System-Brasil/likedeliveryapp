@@ -37,8 +37,10 @@ export const useProfileManagement = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
-  //Edit address
-  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [settingDefaultAddressId, setSettingDefaultAddressId] = useState<
+    string | null
+  >(null);
+
   // CEP state
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [lastFetchedCep, setLastFetchedCep] = useState<string | null>(null);
@@ -117,7 +119,7 @@ export const useProfileManagement = () => {
   ]);
 
   /**
-   * Função para buscar endereços do backend (reutil izável)
+   * Função para buscar endereços do backend (reutilizável)
    */
   const fetchAddresses = useCallback(async () => {
     if (!isAuthenticated || !user) return;
@@ -384,6 +386,69 @@ export const useProfileManagement = () => {
   };
 
   /**
+   * Monta o payload completo de um endereço para envio ao backend.
+   * O DTO de update valida o objeto inteiro (zipCode, state, city, etc.)
+   * mesmo em PATCH, então não dá pra mandar só o campo que mudou.
+   */
+  const buildFullAddressPayload = (
+    addr: Address,
+    overrides: { isDefault?: boolean } = {},
+  ) => ({
+    street: addr.street,
+    number: addr.number,
+    complement: addr.complement || undefined,
+    neighborhood: addr.neighborhood,
+    city: addr.city,
+    state: addr.state,
+    zipCode: onlyNumbers(addr.zipCode),
+    latitude: addr.latitude,
+    longitude: addr.longitude,
+    isDefault: addr.isDefault,
+    ...overrides,
+  });
+
+  /**
+   * Marcar um endereço já existente como padrão
+   * (usado pelo clique na estrela no card do endereço)
+   */
+  const handleSetDefaultAddress = async (addressId: string) => {
+    const targetAddress = addresses.find((addr) => addr.id === addressId);
+
+    // Já é o padrão, ou não existe - nada a fazer
+    if (!targetAddress || targetAddress.isDefault) return;
+
+    setSettingDefaultAddressId(addressId);
+    try {
+      // Desmarcar o endereço padrão atual (se existir algum)
+      const currentDefault = addresses.find((addr) => addr.isDefault);
+      if (currentDefault) {
+        await apiService.address.updateUserAddress(
+          currentDefault.id,
+          buildFullAddressPayload(currentDefault, { isDefault: false }),
+        );
+      }
+
+      // Marcar o novo endereço selecionado como padrão
+      const response = await apiService.address.updateUserAddress(
+        addressId,
+        buildFullAddressPayload(targetAddress, { isDefault: true }),
+      );
+
+      if (response.success) {
+        await fetchAddresses();
+        toast.success("Endereço padrão atualizado!");
+      } else {
+        toast.error(response.message || "Erro ao atualizar endereço padrão");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar endereço padrão:", error);
+      toast.error("Erro ao atualizar endereço padrão");
+    } finally {
+      setSettingDefaultAddressId(null);
+    }
+  };
+
+  /**
    * Fechar modal de endereço
    */
   const handleCloseAddressModal = () => {
@@ -440,8 +505,9 @@ export const useProfileManagement = () => {
     handleAddAddress,
     handleCloseAddressModal,
     handleDeleteAddress,
-    handleEditAddress,
-    editingAddressId,
+    handleSetDefaultAddress,
+    settingDefaultAddressId,
+
     // CEP
     isLoadingCep,
     formatCep,

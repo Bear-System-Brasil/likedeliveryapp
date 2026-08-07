@@ -9,7 +9,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAllCategories, useCartActions, useRestaurant } from "@/hooks";
 import { formatCurrency } from "@/utils";
-import { Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 
 import { Accordion } from "@/components/ui/accordion";
 import Image from "next/image";
@@ -93,12 +93,16 @@ const optionalOptions: OptionalsList[] = [
   },
 ];
 
+const MIN_QUANTITY = 1;
+const MAX_QUANTITY = 20;
+
 export function CustomizeOrder({
   productData,
   isModalOpen,
   setIsModalOpen,
 }: Props) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [quantity, setQuantity] = useState(MIN_QUANTITY);
 
   const [customOrder, setCustomOrder] = useState<CustomOrderType>({
     specialInstructions: "",
@@ -130,6 +134,22 @@ export function CustomizeOrder({
       .filter(Boolean);
   };
 
+  // Preço da unidade já customizada (tamanho + extras escolhidos)
+  const unitPrice =
+    customOrder.currentPrice >= productData.salePrice
+      ? customOrder.currentPrice
+      : productData.salePrice + customOrder.currentPrice;
+
+  const totalPrice = unitPrice * quantity;
+
+  const handleIncreaseQuantity = () => {
+    setQuantity((prev) => Math.min(prev + 1, MAX_QUANTITY));
+  };
+
+  const handleDecreaseQuantity = () => {
+    setQuantity((prev) => Math.max(prev - 1, MIN_QUANTITY));
+  };
+
   const handleConfirmAddToCart = async () => {
     if (!productData || !restaurant) return;
 
@@ -139,16 +159,12 @@ export function CustomizeOrder({
       const success = await addToCart({
         id: productData.id.toString(),
         name: productData.name,
-        price:
-          customOrder.currentPrice >= productData.salePrice
-            ? customOrder.currentPrice
-            : productData.salePrice + customOrder.currentPrice,
-
+        price: unitPrice,
         image: productData.imageURL?.[0]?.url || "/placeholder.svg",
         restaurantId: restaurant.id,
         restaurantName: restaurant.tradeName,
         specialInstructions: customOrder.specialInstructions,
-        quantity: 1,
+        quantity,
       });
 
       if (success) {
@@ -160,6 +176,7 @@ export function CustomizeOrder({
           extraIngredients: [""],
           currentPrice: 0,
         });
+        setQuantity(MIN_QUANTITY);
       }
     } catch (error) {
       console.error("Erro ao adicionar ao carrinho:", error);
@@ -189,6 +206,7 @@ export function CustomizeOrder({
       extraIngredients: [],
       currentPrice: productData.salePrice,
     });
+    setQuantity(MIN_QUANTITY);
 
     setIsModalOpen(val);
   };
@@ -268,19 +286,52 @@ export function CustomizeOrder({
           />
         </div>
 
+        {/* Quantity Stepper */}
+        <div className="px-4 mt-6">
+          <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-gray-900">
+            Quantidade
+          </h3>
+          <div className="flex items-center justify-between border-2 border-gray-200 rounded-xl p-4">
+            <span className="text-sm sm:text-base text-gray-700">
+              Quantas unidades?
+            </span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleDecreaseQuantity}
+                disabled={quantity <= MIN_QUANTITY}
+                aria-label="Diminuir quantidade"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border-2 border-orange-500 text-orange-500 flex items-center justify-center transition-colors hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+
+              <span className="text-base font-bold text-gray-900 w-5 text-center">
+                {quantity}
+              </span>
+
+              <button
+                type="button"
+                onClick={handleIncreaseQuantity}
+                disabled={quantity >= MAX_QUANTITY}
+                aria-label="Aumentar quantidade"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border-2 border-orange-500 text-orange-500 flex items-center justify-center transition-colors hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Price Summary and Add Button */}
         {productData && (
-          <div className="border-t px-4 sm:px-6 py-4 sm:py-5 shrink-0">
+          <div className="border-t px-4 sm:px-6 py-4 sm:py-5 shrink-0 mt-4">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <span className="text-base sm:text-lg font-semibold text-gray-900">
                 Total:
               </span>
               <span className="text-xl sm:text-2xl font-bold text-orange-600">
-                {formatCurrency(
-                  customOrder.currentPrice >= productData.salePrice
-                    ? customOrder.currentPrice
-                    : productData.salePrice + customOrder.currentPrice,
-                )}
+                {formatCurrency(totalPrice)}
               </span>
             </div>
             <Button
@@ -297,7 +348,7 @@ export function CustomizeOrder({
               ) : (
                 <>
                   <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                  Adicionar ao Carrinho
+                  Adicionar {quantity} ao Carrinho
                 </>
               )}
             </Button>

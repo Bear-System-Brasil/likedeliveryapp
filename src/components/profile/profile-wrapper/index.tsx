@@ -47,8 +47,8 @@ export function ProfileWrapper() {
     handleAddAddress,
     handleCloseAddressModal,
     handleDeleteAddress,
-    handleEditAddress, // ← desestruturar
-    editingAddressId,
+    handleSetDefaultAddress,
+    settingDefaultAddressId,
 
     // CEP
     isLoadingCep,
@@ -159,14 +159,14 @@ export function ProfileWrapper() {
             handleCloseAddressModal={handleCloseAddressModal}
             handleDeleteAddress={handleDeleteAddress}
             handleAddAddress={handleAddAddress}
-            handleEditAddress={handleEditAddress} // ← passar
-            editingAddressId={editingAddressId} // ← passar
+            handleSetDefaultAddress={handleSetDefaultAddress}
             addingAddressState={addingAddressState}
             isLoadingAddresses={isLoadingAddresses}
             isSavingAddress={isSavingAddress}
             isLoadingCep={isLoadingCep}
             addressForm={addressForm}
             addresses={addresses}
+            settingDefaultAddressId={settingDefaultAddressId}
           />
 
           {/* Payment Methods - TODO: Integrar com backend */}
