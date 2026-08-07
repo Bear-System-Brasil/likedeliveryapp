@@ -288,7 +288,6 @@ export const useProfileManagement = () => {
       isDefault: address.isDefault ?? false,
     });
 
-    setEditingAddressId(address.id);
     setLastFetchedCep(onlyNumbers(address.zipCode)); // evita buscar CEP de novo
     addingAddressState.open();
   };
@@ -319,15 +318,10 @@ export const useProfileManagement = () => {
           const backendAddresses = Array.isArray(currentAddresses.data)
             ? currentAddresses.data
             : [];
-
           const backendDefaults = backendAddresses.filter(
             (addr) => (addr as any).isDefault,
           );
-
           for (const addr of backendDefaults) {
-            // Não desmarca o próprio endereço que está sendo editado
-            if (editingAddressId && addr.id === editingAddressId) continue;
-
             try {
               await apiService.address.updateUserAddress(addr.id, {
                 isDefault: false,
@@ -341,50 +335,23 @@ export const useProfileManagement = () => {
         }
       }
 
-      let response;
-
-      if (editingAddressId) {
-        // UPDATE
-        response = await apiService.address.updateUserAddress(
-          editingAddressId,
-          payload,
-        );
-      } else {
-        // CREATE
-        response = await apiService.address.createUserAddress(payload);
-      }
+      const response = await apiService.address.createUserAddress(payload);
 
       if (response.success) {
         await fetchAddresses();
         addressForm.reset();
-        setEditingAddressId(null);
         addingAddressState.close();
         setLastFetchedCep(null);
-
-        toast.success(
-          editingAddressId
-            ? "Endereço atualizado com sucesso!"
-            : "Endereço adicionado com sucesso!",
-        );
+        toast.success("Endereço adicionado com sucesso!");
       } else {
-        toast.error(
-          response.message ||
-            (editingAddressId
-              ? "Erro ao atualizar endereço"
-              : "Erro ao adicionar endereço"),
-        );
+        toast.error(response.message || "Erro ao adicionar endereço");
       }
     } catch (error) {
-      toast.error(
-        editingAddressId
-          ? "Erro ao atualizar endereço"
-          : "Erro ao adicionar endereço",
-      );
+      toast.error("Erro ao adicionar endereço");
     } finally {
       setIsSavingAddress(false);
     }
   };
-
   /**
    * Monta o payload completo de um endereço para envio ao backend.
    * O DTO de update valida o objeto inteiro (zipCode, state, city, etc.)
@@ -454,7 +421,6 @@ export const useProfileManagement = () => {
   const handleCloseAddressModal = () => {
     addressForm.reset();
     setLastFetchedCep(null);
-    setEditingAddressId(null);
     addingAddressState.close();
   };
 

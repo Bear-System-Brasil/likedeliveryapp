@@ -228,7 +228,6 @@ export function Addresses({
           isSavingAddress={isSavingAddress}
           addressForm={addressForm}
           isLoadingCep={isLoadingCep}
-          isEditing={!!editingAddressId}
         />
       )}
     </DataCard>

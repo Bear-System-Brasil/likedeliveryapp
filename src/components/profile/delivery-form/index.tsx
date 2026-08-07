@@ -12,7 +12,6 @@ type Props = {
   addressForm: AddressForm;
   isSavingAddress: boolean;
   isLoadingCep: boolean;
-  isEditing?: boolean;
 };
 
 export function DeliveryForm({
@@ -21,16 +20,12 @@ export function DeliveryForm({
   addressForm,
   isSavingAddress,
   isLoadingCep,
-  isEditing = false,
 }: Props) {
   return (
     <div className="inset-0 bg-black/50 flex items-center justify-center z-50 p-4 mt-8 rounded-md">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold">
-              {isEditing ? "Editar Endereço" : "Adicionar Novo Endereço"}
-            </h3>
             <Button
               variant="ghost"
               size="sm"
@@ -190,11 +185,9 @@ export function DeliveryForm({
                 type="submit"
                 size="sm"
                 isLoading={isSavingAddress}
-                loadingText={isEditing ? "Atualizando..." : "Salvando..."}
                 disabled={isSavingAddress}
               >
                 <Save className="h-4 w-4 mr-2" />
-                {isEditing ? "Atualizar Endereço" : "Salvar Endereço"}
               </GradientButton>
             </div>
           </form>
