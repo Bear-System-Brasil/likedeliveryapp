@@ -29,7 +29,7 @@ export function ErrorPage({ data }: Props) {
             {data.error || "Pedido não encontrado"}
           </p>
           <Button
-            onClick={() => router.push("/restaurants")}
+            onClick={() => router.push("/#lojas")}
             className="bg-linear-to-r from-orange-500 to-orange-500 hover:from-orange-600 hover:to-orange-600 cursor-pointer"
           >
             Voltar para Restaurantes

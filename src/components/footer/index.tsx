@@ -1,12 +1,4 @@
-import {
-  Facebook,
-  Instagram,
-  Linkedin,
-  Mail,
-  MapPin,
-  Phone,
-  Twitter,
-} from "lucide-react";
+import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import Link from "next/link";
 
 export function Footer() {
@@ -14,201 +6,128 @@ export function Footer() {
 
   return (
     <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 py-12 border-b border-gray-700">
-          {/* Company Info */}
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-5 border-b border-gray-700 py-5 md:grid-cols-[1.5fr_1fr_1fr] md:gap-10">
+          <div className="space-y-3">
+            <h3 className="bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-xl font-bold text-transparent">
               Like Delivery
             </h3>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              Conectando você aos melhores restaurantes da cidade com entrega
-              rápida e qualidade garantida.
+            <p className="max-w-sm text-sm leading-normal text-gray-400">
+              Encontre os melhores restaurantes e receba seu pedido com rapidez
+              e praticidade.
             </p>
 
-            {/* Social Links */}
-            <div className="flex space-x-4">
+            <div className="flex gap-2.5">
               <Link
                 href="https://facebook.com"
                 target="_blank"
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-800 hover:bg-orange-500 hover:text-white transition-all duration-300 cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-800 transition-colors hover:bg-orange-500 hover:text-white"
                 aria-label="Facebook"
               >
-                <Facebook className="w-4 h-4" />
+                <Facebook className="h-4 w-4" />
               </Link>
-
               <Link
                 href="https://instagram.com"
                 target="_blank"
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-800 hover:bg-orange-500 hover:text-white transition-all duration-300 cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-800 transition-colors hover:bg-orange-500 hover:text-white"
                 aria-label="Instagram"
               >
-                <Instagram className="w-4 h-4" />
+                <Instagram className="h-4 w-4" />
               </Link>
-
               <Link
                 href="https://twitter.com"
                 target="_blank"
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-800 hover:bg-orange-500 hover:text-white transition-all duration-300 cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-800 transition-colors hover:bg-orange-500 hover:text-white"
                 aria-label="Twitter"
               >
-                <Twitter className="w-4 h-4" />
+                <Twitter className="h-4 w-4" />
               </Link>
-
               <Link
                 href="https://linkedin.com"
                 target="_blank"
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-800 hover:bg-orange-500 hover:text-white transition-all duration-300 cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-800 transition-colors hover:bg-orange-500 hover:text-white"
                 aria-label="LinkedIn"
               >
-                <Linkedin className="w-4 h-4" />
+                <Linkedin className="h-4 w-4" />
               </Link>
             </div>
           </div>
 
-          {/* Quick Links */}
           <div>
-            <h4 className="text-white font-semibold text-lg mb-4">
-              Links Rápidos
+            <h4 className="mb-3 text-base font-semibold text-white">
+              Navegue
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               <li>
                 <Link
                   href="/"
-                  className="text-gray-400 hover:text-orange-400 transition-colors duration-200 text-sm"
+                  className="text-sm text-gray-400 transition-colors hover:text-orange-400"
                 >
-                  Home
+                  Inicio
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/restaurants"
-                  className="text-gray-400 hover:text-orange-400 transition-colors duration-200 text-sm"
+                  href="/#lojas"
+                  className="text-sm text-gray-400 transition-colors hover:text-orange-400"
                 >
-                  Restaurantes
+                  Lojas
                 </Link>
               </li>
               <li>
                 <Link
                   href="/orders"
-                  className="text-gray-400 hover:text-orange-400 transition-colors duration-200 text-sm"
+                  className="text-sm text-gray-400 transition-colors hover:text-orange-400"
                 >
-                  Meus Pedidos
+                  Meus pedidos
                 </Link>
               </li>
               <li>
                 <Link
                   href="/profile"
-                  className="text-gray-400 hover:text-orange-400 transition-colors duration-200 text-sm"
+                  className="text-sm text-gray-400 transition-colors hover:text-orange-400"
                 >
-                  Minha Conta
+                  Minha conta
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* For Business */}
           <div>
-            <h4 className="text-white font-semibold text-lg mb-4">
-              Para Empresas
-            </h4>
-            <ul className="space-y-3">
+            <h4 className="mb-3 text-base font-semibold text-white">Ajuda</h4>
+            <ul className="space-y-2">
               <li>
                 <Link
-                  href="/restaurant-register"
-                  className="text-gray-400 hover:text-orange-400 transition-colors duration-200 text-sm"
+                  href="/help"
+                  className="text-sm text-gray-400 transition-colors hover:text-orange-400"
                 >
-                  Cadastre seu Restaurante
+                  Central de ajuda
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/company-profile"
-                  className="text-gray-400 hover:text-orange-400 transition-colors duration-200 text-sm"
+                  href="/terms"
+                  className="text-sm text-gray-400 transition-colors hover:text-orange-400"
                 >
-                  Painel do Parceiro
+                  Termos de uso
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/menu-management"
-                  className="text-gray-400 hover:text-orange-400 transition-colors duration-200 text-sm"
+                  href="/privacy"
+                  className="text-sm text-gray-400 transition-colors hover:text-orange-400"
                 >
-                  Gerenciar Cardápio
+                  Privacidade
                 </Link>
-              </li>
-              <li>
-                <Link
-                  href="/order-management"
-                  className="text-gray-400 hover:text-orange-400 transition-colors duration-200 text-sm"
-                >
-                  Gerenciar Pedidos
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 className="text-white font-semibold text-lg mb-4">Contato</h4>
-            <ul className="space-y-3">
-              <li className="flex items-start space-x-3">
-                <MapPin className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-400">
-                  Av. Principal, 123
-                  <br />
-                  Centro, SP - Brasil
-                </span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Phone className="w-5 h-5 text-orange-400 shrink-0" />
-                <span className="text-sm text-gray-400">(11) 1234-5678</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Mail className="w-5 h-5 text-orange-400 shrink-0" />
-                <span className="text-sm text-gray-400">
-                  contato@likedelivery.com
-                </span>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Footer */}
-        <div className="py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-sm text-gray-500 text-center md:text-left">
-              © {currentYear} Like Delivery. Todos os direitos reservados.
-            </p>
-
-            <div className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2">
-              <Link
-                href="/terms"
-                className="text-sm text-gray-500 hover:text-orange-400 transition-colors duration-200"
-              >
-                Termos de Uso
-              </Link>
-              <Link
-                href="/privacy"
-                className="text-sm text-gray-500 hover:text-orange-400 transition-colors duration-200"
-              >
-                Política de Privacidade
-              </Link>
-              <Link
-                href="/cookies"
-                className="text-sm text-gray-500 hover:text-orange-400 transition-colors duration-200"
-              >
-                Cookies
-              </Link>
-              <Link
-                href="/help"
-                className="text-sm text-gray-500 hover:text-orange-400 transition-colors duration-200"
-              >
-                Ajuda
-              </Link>
-            </div>
-          </div>
+        <div className="py-3">
+          <p className="text-center text-sm text-gray-500">
+            © {currentYear} Like Delivery. Todos os direitos reservados.
+          </p>
         </div>
       </div>
     </footer>

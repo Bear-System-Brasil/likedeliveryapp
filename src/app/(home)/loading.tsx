@@ -15,28 +15,13 @@ export default function HomePageLoading() {
           </div>
         </section>
 
-        {/* Categorias */}
+        {/* Novidades / Lojas */}
         <section className="px-4 mt-8">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <Skeleton className="h-8 w-52" />
-              <Skeleton className="h-5 w-20" />
+            <div className="mb-4 flex items-center justify-between">
+              <Skeleton className="h-11 w-56 rounded-lg" />
+              <Skeleton className="hidden h-4 w-28 sm:block" />
             </div>
-
-            <div className="flex gap-3 overflow-hidden">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <Skeleton
-                  key={index}
-                  className="h-11 w-28 rounded-2xl shrink-0"
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Restaurantes */}
-        <section className="px-4 mt-10">
-          <div className="max-w-7xl mx-auto">
             <div className="mb-6">
               <Skeleton className="h-8 w-64 mb-2" />
               <Skeleton className="h-4 w-40" />

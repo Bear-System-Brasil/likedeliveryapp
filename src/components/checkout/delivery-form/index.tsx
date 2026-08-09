@@ -1,19 +1,24 @@
-import { Dispatch, SetStateAction, useState } from "react";
+"use client";
+
+import {
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+  useState,
+} from "react";
 
 import { toast } from "sonner";
 
 import { DeliveryInfo } from "@/hooks";
+import { cn } from "@/lib/utils";
 import { formatCep } from "@/utils";
 
-import { MapPin, Phone, Plus, User } from "lucide-react";
+import { Check, LocateFixed, MapPin, Phone, Plus, User } from "lucide-react";
 
-import { AddressList } from "@/components/ui/address-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GlassCard, GlassCardContent } from "@/components/ui/glass-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -33,6 +38,32 @@ type Props = {
   userAddresses: Address[];
   selectedAddressId: string | null;
 };
+
+type FieldProps = {
+  htmlFor: string;
+  label: string;
+  optional?: boolean;
+  className?: string;
+  children: ReactNode;
+};
+
+const fieldLabelClass = "text-[11px] font-bold text-gray-700";
+const inputClass =
+  "h-9 rounded-lg border-[#E9EAEE] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200";
+
+function Field({ htmlFor, label, optional, className, children }: FieldProps) {
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      <Label htmlFor={htmlFor} className={fieldLabelClass}>
+        {label}{" "}
+        {optional && (
+          <span className="font-semibold text-gray-400">(opcional)</span>
+        )}
+      </Label>
+      {children}
+    </div>
+  );
+}
 
 export function DeliveryForm({
   handleInputChange,
@@ -57,11 +88,9 @@ export function DeliveryForm({
       );
 
       if (!response.ok) {
-        if (response.status === 404) {
-          toast.error("CEP não encontrado");
-        } else {
-          toast.error("Erro ao buscar CEP");
-        }
+        toast.error(
+          response.status === 404 ? "CEP nao encontrado" : "Erro ao buscar CEP",
+        );
         return;
       }
 
@@ -72,10 +101,10 @@ export function DeliveryForm({
       handleInputChange("city", data.city || "");
       handleInputChange("state", data.state || "");
 
-      toast.success("CEP encontrado! Campos preenchidos automaticamente");
+      toast.success("CEP encontrado. Campos preenchidos.");
     } catch (error) {
       console.error("Erro ao buscar CEP:", error);
-      toast.error("Erro ao buscar CEP. Verifique sua conexão.");
+      toast.error("Erro ao buscar CEP. Verifique sua conexao.");
     } finally {
       setIsLoadingCep(false);
     }
@@ -98,328 +127,329 @@ export function DeliveryForm({
     }
   };
 
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Localizacao indisponivel neste dispositivo.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        handleInputChange("latitude", position.coords.latitude);
+        handleInputChange("longitude", position.coords.longitude);
+        toast.success("Localizacao capturada.");
+      },
+      () => {
+        toast.error("Nao foi possivel capturar sua localizacao.");
+      },
+    );
+  };
+
+  const shouldShowNewAddress =
+    !loadingAddresses && (addressMode === "new" || userAddresses.length === 0);
+
   return (
-    <GlassCard>
-      <GlassCardContent className="p-6">
-        <div className="flex items-center space-x-2 mb-6">
-          <MapPin className="h-5 w-5 text-orange-500" />
-          <h2 className="text-xl font-bold text-gray-900">Dados de Entrega</h2>
+    <form className="space-y-3">
+      <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+            <User className="h-4 w-4" />
+          </div>
+          <h2 className="text-sm font-extrabold text-gray-950">
+            Dados de entrega
+          </h2>
         </div>
 
-        <form>
-          {/* Personal Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="space-y-2">
-              <Label
-                htmlFor="name"
-                className="text-sm font-semibold text-gray-700"
-              >
-                Nome Completo *
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  id="name"
-                  placeholder="Seu nome completo"
-                  value={deliveryInfo.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="pl-10 rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                />
-              </div>
+        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+          <Field htmlFor="name" label="Nome completo">
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                id="name"
+                placeholder="Seu nome completo"
+                value={deliveryInfo.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                className={cn(inputClass, "pl-9")}
+              />
             </div>
+          </Field>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="phone"
-                className="text-sm font-semibold text-gray-700"
-              >
-                Telefone *
-              </Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  id="phone"
-                  placeholder="(11) 99999-9999"
-                  value={deliveryInfo.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="pl-10 rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                />
-              </div>
+          <Field htmlFor="phone" label="Telefone">
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                id="phone"
+                placeholder="(11) 99999-9999"
+                value={deliveryInfo.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                className={cn(inputClass, "pl-9")}
+              />
             </div>
+          </Field>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+              <MapPin className="h-4 w-4" />
+            </div>
+            <h2 className="text-sm font-extrabold text-gray-950">
+              Endereco de entrega
+            </h2>
           </div>
 
-          {/* Address Selection/Creation */}
-          <div className="border-t pt-6 space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Endereço de Entrega
-              </h3>
-              {!loadingAddresses && userAddresses.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNewAddress}
-                  className="rounded-xl border-2 border-orange-300 text-orange-600 hover:bg-linear-to-br hover:from-orange-50 hover:to-orange-50"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  {addressMode === "select"
-                    ? "Novo Endereço"
-                    : "Meus Endereços"}
-                </Button>
-              )}
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleUseLocation}
+              className="h-8 px-2 text-xs font-bold text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+            >
+              <LocateFixed className="h-4 w-4" />
+              Usar localizacao
+            </Button>
 
-            {/* Loading state */}
-            {loadingAddresses && (
-              <div className="space-y-3">
-                <Skeleton className="h-24 w-full rounded-xl" />
-                <Skeleton className="h-24 w-full rounded-xl" />
+            {!loadingAddresses && userAddresses.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleNewAddress}
+                className="h-8 rounded-lg border-[#E9EAEE] px-2 text-xs font-bold text-gray-800 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700"
+              >
+                <Plus className="h-4 w-4" />
+                {addressMode === "select" ? "Novo endereco" : "Meus enderecos"}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {loadingAddresses && (
+          <div className="grid gap-2">
+            <Skeleton className="h-20 w-full rounded-lg" />
+            <Skeleton className="h-20 w-full rounded-lg" />
+          </div>
+        )}
+
+        {!loadingAddresses &&
+          addressMode === "select" &&
+          userAddresses.length > 0 && (
+            <div className="grid gap-2">
+              {userAddresses.map((address) => {
+                const isSelected = selectedAddressId === address.id;
+
+                return (
+                  <button
+                    key={address.id}
+                    type="button"
+                    onClick={() => handleAddressSelect(address.id)}
+                    className={cn(
+                      "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors",
+                      isSelected
+                        ? "border-orange-500 bg-orange-50"
+                        : "border-[#E9EAEE] bg-[#FAFAFB] hover:border-orange-300 hover:bg-white",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                        isSelected
+                          ? "border-orange-500 bg-orange-500 text-white"
+                          : "border-gray-300 bg-white text-transparent",
+                      )}
+                    >
+                      <Check className="h-3 w-3" />
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-gray-950">
+                        {address.street}, {address.number}
+                      </span>
+                      <span className="mt-0.5 block text-xs font-semibold text-gray-600">
+                        {address.neighborhood} - {address.city}/{address.state}
+                      </span>
+                      <span className="mt-0.5 block text-xs font-medium text-gray-500">
+                        CEP {address.zipCode}
+                        {address.complement ? ` · ${address.complement}` : ""}
+                      </span>
+                    </span>
+
+                    {address.isDefault && (
+                      <span className="rounded-md bg-gray-950 px-2 py-1 text-[10px] font-bold text-white">
+                        Padrao
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+        {shouldShowNewAddress && (
+          <div className="space-y-3">
+            {userAddresses.length === 0 && (
+              <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
+                Preencha os dados abaixo para entregar este pedido.
               </div>
             )}
 
-            {/* Address Mode: Select from saved */}
-            {!loadingAddresses &&
-              addressMode === "select" &&
-              userAddresses.length > 0 && (
-                <RadioGroup
-                  value={selectedAddressId || ""}
-                  onValueChange={handleAddressSelect}
-                >
-                  <AddressList
-                    addresses={userAddresses}
-                    selectedId={selectedAddressId || undefined}
-                    selectable
-                    onSelect={handleAddressSelect}
-                  />
-                </RadioGroup>
-              )}
+            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-4">
+              <Field htmlFor="zipCode" label="CEP">
+                <Input
+                  id="zipCode"
+                  placeholder="00000-000"
+                  value={deliveryInfo.zipCode}
+                  maxLength={9}
+                  onChange={(e) => handleZipCode(formatCep(e.target.value))}
+                  disabled={isLoadingCep}
+                  className={inputClass}
+                />
+              </Field>
 
-            {/* Address Mode: Create new */}
-            {!loadingAddresses &&
-              (addressMode === "new" || userAddresses.length === 0) && (
-                <div>
-                  {userAddresses.length === 0 && (
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                      <p className="text-sm text-blue-700">
-                        Você ainda não tem endereços cadastrados. Preencha os
-                        dados abaixo:
-                      </p>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="zipCode"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        CEP *
-                      </Label>
+              <Field htmlFor="state" label="Estado">
+                <Input
+                  id="state"
+                  placeholder="SP"
+                  value={deliveryInfo.state}
+                  onChange={(e) => handleInputChange("state", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
 
-                      <div>
-                        <Input
-                          id="zipCode"
-                          placeholder="00000-000"
-                          value={deliveryInfo.zipCode}
-                          maxLength={9}
-                          onChange={(e) => {
-                            const formatted = formatCep(e.target.value);
+              <Field htmlFor="city" label="Cidade" className="md:col-span-2">
+                <Input
+                  id="city"
+                  placeholder="Sao Paulo"
+                  value={deliveryInfo.city}
+                  onChange={(e) => handleInputChange("city", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
 
-                            handleZipCode(formatted);
-                          }}
-                          disabled={isLoadingCep}
-                          className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                        />
-                        {deliveryInfo.zipCode.length <= 8 &&
-                          deliveryInfo.zipCode.length >= 1 && (
-                            <p className="text-red-500 text-sm mt-1">
-                              CEP deve ter 8 dígitos
-                            </p>
-                          )}
-                        <p className="text-xs text-gray-500 mt-1">
-                          🔍 Digite o CEP e os campos serão preenchidos
-                          automaticamente
-                        </p>
-                      </div>
-                    </div>
+              <p className="text-xs font-semibold text-gray-500 md:col-span-4">
+                {isLoadingCep
+                  ? "Buscando CEP..."
+                  : "Digite o CEP e os campos serao preenchidos."}
+              </p>
 
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="state"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Estado *
-                      </Label>
-                      <Input
-                        id="state"
-                        placeholder="SP"
-                        value={deliveryInfo.state}
-                        onChange={(e) =>
-                          handleInputChange("state", e.target.value)
-                        }
-                        className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="city"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Cidade *
-                      </Label>
-                      <Input
-                        id="city"
-                        placeholder="São Paulo"
-                        value={deliveryInfo.city}
-                        onChange={(e) =>
-                          handleInputChange("city", e.target.value)
-                        }
-                        className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="neighborhood"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Bairro *
-                      </Label>
-                      <Input
-                        id="neighborhood"
-                        placeholder="Centro"
-                        value={deliveryInfo.neighborhood}
-                        onChange={(e) =>
-                          handleInputChange("neighborhood", e.target.value)
-                        }
-                        className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="street"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Rua *
-                      </Label>
-                      <Input
-                        id="street"
-                        placeholder="Rua das Flores"
-                        value={deliveryInfo.street}
-                        onChange={(e) =>
-                          handleInputChange("street", e.target.value)
-                        }
-                        className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="number"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Número *
-                      </Label>
-                      <Input
-                        id="number"
-                        placeholder="123"
-                        value={deliveryInfo.number}
-                        onChange={(e) =>
-                          handleInputChange("number", e.target.value)
-                        }
-                        className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                      />
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label
-                        htmlFor="complement"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Complemento (opcional)
-                      </Label>
-                      <Input
-                        id="complement"
-                        placeholder="Apartamento, bloco, etc"
-                        value={deliveryInfo.complement}
-                        onChange={(e) =>
-                          handleInputChange("complement", e.target.value)
-                        }
-                        className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                      />
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label
-                        htmlFor="reference"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Ponto de Referência (opcional)
-                      </Label>
-                      <Input
-                        id="reference"
-                        placeholder="Próximo ao mercado, em frente à praça..."
-                        value={deliveryInfo.reference}
-                        onChange={(e) =>
-                          handleInputChange("reference", e.target.value)
-                        }
-                        className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="h-full w-full my-8">
-                    <span className="text-sm font-semibold text-gray-700">
-                      Marque sua localização no mapa para maior precisão.
-                    </span>
-                    <CheckoutMap
-                      updateCoords={(key, value) =>
-                        handleInputChange(key, value)
-                      }
-                    />
-                  </div>
-
-                  <div className="md:col-span-2 pt-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="saveAddress"
-                        checked={saveAddress}
-                        onCheckedChange={(checked) =>
-                          setSaveAddress(checked as boolean)
-                        }
-                      />
-                      <Label
-                        htmlFor="saveAddress"
-                        className="text-sm font-medium text-gray-700 cursor-pointer"
-                      >
-                        Salvar este endereço para pedidos futuros
-                      </Label>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            <div className="space-y-2 pt-4 border-t">
-              <Label
-                htmlFor="observations"
-                className="text-sm font-semibold text-gray-700"
+              <Field
+                htmlFor="neighborhood"
+                label="Bairro"
+                className="md:col-span-2"
               >
-                Observações do Pedido (opcional)
-              </Label>
-              <Textarea
-                id="observations"
-                placeholder="Observações sobre o pedido..."
-                value={deliveryInfo.observations}
-                onChange={(e) =>
-                  handleInputChange("observations", e.target.value)
-                }
-                className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
+                <Input
+                  id="neighborhood"
+                  placeholder="Centro"
+                  value={deliveryInfo.neighborhood}
+                  onChange={(e) =>
+                    handleInputChange("neighborhood", e.target.value)
+                  }
+                  className={inputClass}
+                />
+              </Field>
+
+              <Field htmlFor="street" label="Rua">
+                <Input
+                  id="street"
+                  placeholder="Rua das Flores"
+                  value={deliveryInfo.street}
+                  onChange={(e) => handleInputChange("street", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+
+              <Field htmlFor="number" label="Numero">
+                <Input
+                  id="number"
+                  placeholder="123"
+                  value={deliveryInfo.number}
+                  onChange={(e) => handleInputChange("number", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+
+              <Field
+                htmlFor="complement"
+                label="Complemento"
+                optional
+                className="md:col-span-2"
+              >
+                <Input
+                  id="complement"
+                  placeholder="Apartamento, bloco..."
+                  value={deliveryInfo.complement}
+                  onChange={(e) =>
+                    handleInputChange("complement", e.target.value)
+                  }
+                  className={inputClass}
+                />
+              </Field>
+
+              <Field
+                htmlFor="reference"
+                label="Ponto de referencia"
+                optional
+                className="md:col-span-2"
+              >
+                <Input
+                  id="reference"
+                  placeholder="Proximo ao mercado"
+                  value={deliveryInfo.reference}
+                  onChange={(e) =>
+                    handleInputChange("reference", e.target.value)
+                  }
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
+            <div className="rounded-lg border border-[#E9EAEE] bg-[#FAFAFB] p-2.5">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-gray-800">
+                  Localizacao no mapa
+                </span>
+                <span className="text-[11px] font-semibold text-gray-500">
+                  Clique no mapa para ajustar
+                </span>
+              </div>
+              <CheckoutMap
+                mapHeight={220}
+                updateCoords={(key, value) => handleInputChange(key, value)}
               />
             </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <Checkbox
+                id="saveAddress"
+                checked={saveAddress}
+                onCheckedChange={(checked) => setSaveAddress(Boolean(checked))}
+                className="rounded-md border-gray-300 data-[state=checked]:bg-orange-500"
+              />
+              <Label
+                htmlFor="saveAddress"
+                className="cursor-pointer text-xs font-semibold text-gray-700"
+              >
+                Salvar este endereco para pedidos futuros
+              </Label>
+            </div>
           </div>
-        </form>
-      </GlassCardContent>
-    </GlassCard>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+        <Field htmlFor="observations" label="Observacoes do pedido" optional>
+          <Textarea
+            id="observations"
+            placeholder="Ex: entregar na portaria"
+            value={deliveryInfo.observations}
+            onChange={(e) => handleInputChange("observations", e.target.value)}
+            className="min-h-[72px] resize-none rounded-lg border-[#E9EAEE] bg-[#FAFAFB] text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+          />
+        </Field>
+      </section>
+    </form>
   );
 }

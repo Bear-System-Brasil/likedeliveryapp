@@ -36,12 +36,12 @@ export function CategoriesFilter({
   rightContent,
 }: Props) {
   return (
-    <section className="px-3 sm:px-4 mb-8">
+    <section className="px-3 sm:px-4 mb-4 sm:mb-6">
       <div className="max-w-7xl mx-auto">
         {(title || rightContent) && (
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-3 sm:gap-4 mb-1.5 sm:mb-2">
             {title && (
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              <h2 className="text-sm sm:text-base font-bold text-gray-950">
                 {title}
               </h2>
             )}
@@ -62,16 +62,16 @@ export function CategoriesFilter({
 
           <div
             ref={categoriesScrollRef}
-            className="flex gap-2 overflow-x-auto scroll-smooth scrollbar-hide pb-4"
+            className="flex gap-2 sm:gap-3 overflow-x-auto scroll-smooth scrollbar-hide py-1"
           >
             {showAllOption && (
               <button
                 onClick={() => onSelect(null)}
                 className={cn(
-                  "shrink-0 px-5 py-2.5 rounded-2xl font-medium text-sm whitespace-nowrap transition-all",
+                  "shrink-0 h-8 sm:h-9 px-3 sm:px-4 rounded-full border text-xs sm:text-sm font-medium whitespace-nowrap transition-all",
                   selectedValue === null
-                    ? "bg-orange-500 text-white shadow-md"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200",
+                    ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                    : "bg-white text-gray-800 border-gray-200 shadow-sm hover:bg-gray-50",
                 )}
               >
                 {allLabel}
@@ -83,14 +83,16 @@ export function CategoriesFilter({
                 key={category.id ?? category.name}
                 onClick={() => onSelect(category.id)}
                 className={cn(
-                  "shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl font-medium text-sm whitespace-nowrap transition-all border",
+                  "shrink-0 flex h-8 sm:h-9 items-center gap-1.5 sm:gap-2 rounded-full border px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap shadow-sm transition-all",
                   selectedValue === category.id
-                    ? "bg-orange-500 text-white border-orange-500 shadow-md"
-                    : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50",
+                    ? "bg-orange-500 text-white border-orange-500"
+                    : "bg-white border-gray-200 text-gray-800 hover:border-orange-200 hover:bg-orange-50",
                 )}
               >
                 {category.icon && (
-                  <span className="text-base">{category.icon}</span>
+                  <span className="text-xs sm:text-sm leading-none">
+                    {category.icon}
+                  </span>
                 )}
                 {category.name}
               </button>

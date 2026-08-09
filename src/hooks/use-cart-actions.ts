@@ -187,7 +187,7 @@ export const useCartActions = () => {
         name: item.name,
         price: item.price,
         quantity: item.quantity || 1,
-        image: item.image,
+        imageUrl: item.image,
         specialInstructions: item.specialInstructions,
         restaurantId: item.restaurantId,
         restaurantName: item.restaurantName,

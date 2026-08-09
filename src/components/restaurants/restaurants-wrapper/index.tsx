@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCartStore } from "@/stores";
-import { useCategories, useRestaurantFilters } from "@/hooks";
+import {
+  useCategories,
+  useRestaurantFilters,
+  useSyncedUserLocation,
+} from "@/hooks";
 import { RESTAURANT_CATEGORIES } from "@/constants";
 import { AnimatedBackground } from "@/components/ui/custom";
 import { RestaurantsPageHeader } from "@/components/restaurants/restaurants-page-header";
@@ -15,14 +19,15 @@ import { Coords } from "@/types/restaurant";
 import { CategoriesFilter } from "@/components/categories-filter";
 
 type Props = {
-  userLocation: Coords;
+  userLocation?: Coords | null;
 };
 
 export function RestaurantsWrapper({ userLocation }: Props) {
   const router = useRouter();
   const { getTotalItems } = useCartStore();
+  const { location: activeLocation } = useSyncedUserLocation(userLocation);
   const { restaurants: filteredRestaurants, isLoading } =
-    useRestaurantFilters(userLocation);
+    useRestaurantFilters(activeLocation);
   const {
     data: categoriesData,
     isLoading: isCategoriesLoading,
@@ -57,9 +62,9 @@ export function RestaurantsWrapper({ userLocation }: Props) {
   const handleCategoryFilter = (categoryName: string | null) => {
     setSelectedCategoryName(categoryName);
     if (categoryName) {
-      router.push(`/restaurants?category=${encodeURIComponent(categoryName)}`);
+      router.push(`/?category=${encodeURIComponent(categoryName)}#lojas`);
     } else {
-      router.push(`/restaurants`);
+      router.push("/#lojas");
     }
   };
 

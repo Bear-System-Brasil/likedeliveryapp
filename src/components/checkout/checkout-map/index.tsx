@@ -11,9 +11,10 @@ type Coords = {
 
 type Props = {
   updateCoords: (key: "latitude" | "longitude", coord: number) => void;
+  mapHeight?: number;
 };
 
-export function CheckoutMap({ updateCoords }: Props) {
+export function CheckoutMap({ updateCoords, mapHeight = 400 }: Props) {
   const [currentCoords, setCurrentCoords] = useState<Coords>({
     lat: -15.7942,
     lng: -47.8822,
@@ -49,7 +50,7 @@ export function CheckoutMap({ updateCoords }: Props) {
     <GoogleMap
       mapContainerStyle={{
         width: "100%",
-        height: "400px",
+        height: `${mapHeight}px`,
         borderRadius: "8px",
       }}
       center={currentCoords}

@@ -1,38 +1,17 @@
-import { cookies } from "next/headers";
-
-import {
-  dehydrate,
-  HydrationBoundary,
-  QueryClient,
-} from "@tanstack/react-query";
-
-import { getActiveRestaurants } from "@/services/restaurants";
+import { Suspense } from "react";
 
 import { RestaurantsWrapper } from "@/components/restaurants/restaurants-wrapper";
 
-export default async function Restaurants() {
-  const queryClient = new QueryClient();
-
-  const cookieStore = await cookies();
-
-  const raw = cookieStore.get("userLocation")?.value;
-
-  let userLocation = null;
-
-  try {
-    userLocation = raw ? JSON.parse(raw) : null;
-  } catch (err) {
-    console.log("Erro ao parsear cookie: ", err);
-  }
-
-  await queryClient.prefetchQuery({
-    queryKey: ["restaurants", "active", userLocation],
-    queryFn: () => getActiveRestaurants(userLocation),
-  });
-
+export default function Restaurants() {
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <RestaurantsWrapper userLocation={userLocation} />
-    </HydrationBoundary>
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-white pt-32 text-center text-sm font-semibold text-gray-500">
+          Carregando restaurantes...
+        </main>
+      }
+    >
+      <RestaurantsWrapper />
+    </Suspense>
   );
 }

@@ -1,172 +1,196 @@
-import { Heart, Star, Clock, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
-import { usePrefetch, useRestaurantActions } from "@/hooks";
+import { useRouter } from "next/navigation";
+import { Bike, Heart, Star, Zap } from "lucide-react";
+
+import { getCategoryStyle } from "@/constants";
+import { cn } from "@/lib/utils";
 import { useFavoritesStore } from "@/stores";
 import { Restaurant as RestaurantType } from "@/types/restaurant";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { formatCurrency } from "@/utils/format-currency";
 
 type Props = {
   index: number;
   restaurant: RestaurantType;
 };
 
+function formatDeliveryFee(value?: string | number | null) {
+  if (value === undefined || value === null || value === "") return null;
+
+  if (typeof value === "string") {
+    const normalizedValue = value.trim();
+    const lowerValue = normalizedValue.toLowerCase();
+
+    if (lowerValue.includes("grátis") || lowerValue.includes("gratis")) {
+      return "Grátis";
+    }
+
+    const numericValue = Number(
+      normalizedValue
+        .replace(/R\$\s?/g, "")
+        .replace(/\./g, "")
+        .replace(",", "."),
+    );
+
+    if (!Number.isFinite(numericValue)) {
+      return normalizedValue;
+    }
+
+    return numericValue > 0 ? formatCurrency(numericValue) : "Grátis";
+  }
+
+  return value > 0 ? formatCurrency(value) : "Grátis";
+}
+
 export function Restaurant({ restaurant, index }: Props) {
-  const { handleRestaurantClick, handleCheckout } = useRestaurantActions();
+  const router = useRouter();
   const { favorites, toggleFavorite } = useFavoritesStore();
-  const { prefetchRestaurantWithProducts } = usePrefetch();
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const handleToggleFavorite = (restaurantId: string) => {
-    toggleFavorite(restaurantId);
+  const specialties = restaurant.specialty ?? [];
+  const categoryLabel =
+    specialties[0]?.name ||
+    restaurant.categories?.[0]?.name ||
+    restaurant.description ||
+    "Restaurante";
+  const categoryIcon = getCategoryStyle(categoryLabel).icon;
+  const description = specialties.length
+    ? specialties.map((specialty) => specialty.name).join(" · ")
+    : restaurant.description;
+  const discountNumber = Number(restaurant.discount);
+  const hasDiscount = Number.isFinite(discountNumber) && discountNumber > 0;
+  const promoBadge = hasDiscount
+    ? `${discountNumber}% OFF`
+    : restaurant.trending
+      ? "NOVO"
+      : null;
+  const rating = Number(restaurant.rating || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+  const distance =
+    typeof restaurant.distanceKm === "number" && restaurant.distanceKm > 0
+      ? `${restaurant.distanceKm.toLocaleString("pt-BR", {
+          maximumFractionDigits: 1,
+        })} km`
+      : null;
+  const imageSrc =
+    restaurant.cover_url || restaurant.logo_url || "/placeholder.svg";
+  const deliveryFeeLabel = formatDeliveryFee(restaurant.deliveryFee);
+  const handleOpenMenu = () => {
+    router.push(`/restaurant/${restaurant.id}`);
   };
 
   return (
-    <div
-      onClick={() => handleRestaurantClick(restaurant.id, restaurant.tradeName)}
-      onMouseEnter={() => prefetchRestaurantWithProducts(restaurant.id)}
+    <article
+      role="button"
+      tabIndex={0}
+      aria-label={`Abrir cardapio de ${restaurant.tradeName}`}
+      onClick={handleOpenMenu}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleOpenMenu();
+        }
+      }}
       className={cn(
-        "bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer",
+        "flex cursor-pointer overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow duration-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 sm:block",
         "animate-in fade-in slide-in-from-bottom-4 duration-300",
       )}
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      <div className="flex gap-4 p-4">
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {/* Badges */}
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {restaurant.trending && (
-              <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-100">
-                <TrendingUp className="w-3 h-3" />
-                Trending
-              </span>
+      <div className="relative h-[106px] w-[112px] shrink-0 overflow-hidden bg-gray-100 sm:h-[104px] sm:w-full">
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-100 animate-pulse" />
+        )}
+        <Image
+          fill
+          src={imageSrc}
+          alt={restaurant.tradeName}
+          className={cn(
+            "object-cover transition-opacity duration-300",
+            imageLoaded ? "opacity-100" : "opacity-0",
+          )}
+          priority={index < 4}
+          loading={index < 4 ? "eager" : "lazy"}
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 112px"
+          onLoad={() => setImageLoaded(true)}
+        />
+
+        {promoBadge && (
+          <span className="absolute left-2 top-2 rounded-md bg-gray-950 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold leading-none text-white">
+            {promoBadge}
+          </span>
+        )}
+
+        <button
+          aria-label="Favoritar restaurante"
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleFavorite(restaurant.id);
+          }}
+          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border border-gray-100 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 sm:right-3 sm:top-3 sm:h-7 sm:w-7"
+        >
+          <Heart
+            className={cn(
+              "h-3 w-3 sm:h-3.5 sm:w-3.5",
+              favorites.includes(restaurant.id)
+                ? "fill-red-500 text-red-500"
+                : "text-gray-500",
             )}
-            {restaurant.discount && (
-              <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-100">
-                {restaurant.discount}
-              </span>
-            )}
+          />
+        </button>
+      </div>
+
+      <div className="flex min-w-0 flex-1 flex-col justify-center p-2.5 sm:block sm:p-3">
+        <div className="mb-1 flex items-start justify-between gap-2 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-orange-50 text-xs">
+              {categoryIcon}
+            </span>
+            <h3 className="truncate text-sm font-bold text-gray-950">
+              {restaurant.tradeName}
+            </h3>
           </div>
 
-          {/* Name */}
-          <h3 className="font-bold text-gray-900 mb-1 line-clamp-1">
-            {restaurant.tradeName}
-          </h3>
-
-          {/* Description */}
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {restaurant.description}
-          </p>
-
-          {/* Rating + Time */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
-                <span className="text-sm font-semibold text-gray-900">
-                  {restaurant.rating}
-                </span>
-              </div>
-            </div>
-
-            {restaurant.time && (
-              <div className="flex items-center gap-1 text-gray-500">
-                <Clock className="w-3.5 h-3.5" />
-                <span className="text-xs">{restaurant.time}</span>
-              </div>
-            )}
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1 text-xs sm:text-sm font-bold text-gray-950">
+            <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-orange-400 text-orange-400" />
+            <span>{rating}</span>
           </div>
-
-          {/* Tags */}
-          {restaurant.tags && restaurant.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {restaurant.tags.map((tag, i) => (
-                <span
-                  key={i}
-                  className="text-[10px] sm:text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-100"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Delivery Fee */}
-          {restaurant.deliveryFee && (
-            <div className="text-sm">
-              <span className="text-gray-500">Entrega: </span>
-              <span
-                className={cn(
-                  "font-semibold",
-                  restaurant.deliveryFee === "Grátis"
-                    ? "text-green-600"
-                    : "text-gray-900",
-                )}
-              >
-                {restaurant.deliveryFee}
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Image + Favorite + CTA */}
-        <div className="relative flex-shrink-0">
-          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-gray-100 relative">
-            {!imageLoaded && (
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-100 animate-pulse" />
-            )}
-            <Image
-              width={128}
-              height={128}
-              src={restaurant.cover_url || "/placeholder.svg"}
-              alt={restaurant.tradeName}
-              className={cn(
-                "w-full h-full object-cover transition-opacity duration-300",
-                imageLoaded ? "opacity-100" : "opacity-0",
-              )}
-              priority={index < 3}
-              loading={index < 3 ? "eager" : "lazy"}
-              sizes="128px"
-              onLoad={() => setImageLoaded(true)}
-            />
-          </div>
+        <p className="mb-2 sm:mb-3 truncate text-[11px] sm:text-xs text-gray-500">
+          {description}
+        </p>
 
-          {/* Favorite Button */}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleFavorite(restaurant.id);
-            }}
-            className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-white border border-gray-200 shadow-md hover:bg-gray-50"
-          >
-            <Heart
-              className={cn(
-                "h-3.5 w-3.5",
-                favorites.includes(restaurant.id)
-                  ? "fill-red-500 text-red-500"
-                  : "text-gray-400",
-              )}
-            />
-          </Button>
-
-          {/* Ver Cardápio Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCheckout(restaurant.id);
-            }}
-            className="absolute -bottom-2 -right-2 h-9 px-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all active:scale-95 text-xs font-semibold"
-          >
-            <span className="hidden sm:inline">Ver</span>
-            <span className="sm:hidden">+</span>
-          </button>
+        <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+          {restaurant.time && (
+            <span className="rounded-md bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium text-gray-800">
+              {restaurant.time}
+            </span>
+          )}
+          {deliveryFeeLabel && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 sm:px-2 sm:py-1 sm:text-xs"
+              aria-label={`Frete ${deliveryFeeLabel}`}
+              title={`Frete ${deliveryFeeLabel}`}
+            >
+              <span className="relative inline-flex h-3.5 w-4 shrink-0 items-center text-emerald-600 sm:h-4 sm:w-4">
+                <Bike className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <Zap className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 fill-current text-orange-500" />
+              </span>
+              <span>Frete {deliveryFeeLabel}</span>
+            </span>
+          )}
+          {distance && (
+            <span className="rounded-md bg-orange-50 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium text-orange-600">
+              {distance}
+            </span>
+          )}
         </div>
       </div>
-    </div>
+    </article>
   );
 }

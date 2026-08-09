@@ -5,6 +5,7 @@ export * from './use-orders'
 export * from './use-prefetch'
 export * from './use-products'
 export * from './use-restaurants'
+export * from './use-synced-user-location'
 export * from './use-specialities'
 
 // Business logic hooks

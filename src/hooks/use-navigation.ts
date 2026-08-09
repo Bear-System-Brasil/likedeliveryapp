@@ -1,68 +1,80 @@
-import { CATEGORY_MAP } from '@/constants/home-data'
-import { useAuthStore } from '@/stores'
-import { isCompanyRole } from '@/utils/role-helpers'
-import { useRouter } from 'next/navigation'
-import { useCallback } from 'react'
+import { useAuthStore } from "@/stores";
+import { isCompanyRole } from "@/utils/role-helpers";
+import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 
-/**
- * Hook centralizado para gerenciar navegação na aplicação
- */
 export function useNavigation() {
-  const router = useRouter()
-  const { user } = useAuthStore()
+  const router = useRouter();
+  const { user } = useAuthStore();
+
+  const navigateToStores = useCallback(() => {
+    router.push("/#lojas");
+  }, [router]);
 
   const navigateToHome = useCallback(() => {
-    router.push("/")
-  }, [router])
+    router.push("/");
+  }, [router]);
 
   const navigateToRestaurants = useCallback(() => {
-    router.push("/restaurants")
-  }, [router])
+    navigateToStores();
+  }, [navigateToStores]);
 
   const navigateToOffers = useCallback(() => {
-    router.push("/restaurants?filter=ofertas")
-  }, [router])
+    navigateToStores();
+  }, [navigateToStores]);
 
   const navigateToCart = useCallback(() => {
-    router.push("/cart")
-  }, [router])
+    router.push("/cart");
+  }, [router]);
 
   const navigateToProfile = useCallback(() => {
-    // Redirect based on user role - company roles go to company-profile
     if (isCompanyRole(user?.role)) {
-      router.push("/company-profile")
+      router.push("/company-profile");
     } else {
-      router.push("/profile")
+      router.push("/profile");
     }
-  }, [router, user])
+  }, [router, user]);
 
-  const navigateToRestaurant = useCallback((restaurantId: number, restaurantName?: string) => {
-    if (restaurantName) {
-    }
-    router.push(`/restaurant/${restaurantId}`)
-  }, [router])
+  const navigateToRestaurant = useCallback(
+    (restaurantId: number, restaurantName?: string) => {
+      void restaurantId;
+      void restaurantName;
+      navigateToStores();
+    },
+    [navigateToStores],
+  );
 
-  const navigateToCategory = useCallback((categoryName: string) => {
-    const categoryValue = CATEGORY_MAP[categoryName] || categoryName.toLowerCase()
-    router.push(`/restaurants?category=${categoryValue}`)
-  }, [router])
+  const navigateToCategory = useCallback(
+    (categoryName: string) => {
+      void categoryName;
+      navigateToStores();
+    },
+    [navigateToStores],
+  );
 
-  const navigateToFilter = useCallback((filterLabel: string) => {
-    const filterValue = filterLabel.toLowerCase().replace(/\s+/g, "-")
-    router.push(`/restaurants?filter=${filterValue}`)
-  }, [router])
+  const navigateToFilter = useCallback(
+    (filterLabel: string) => {
+      void filterLabel;
+      navigateToStores();
+    },
+    [navigateToStores],
+  );
 
   const navigateToRestaurantsWithFilters = useCallback(() => {
-    router.push("/restaurants?view=filters")
-  }, [router])
+    navigateToStores();
+  }, [navigateToStores]);
 
-  const navigateToLocation = useCallback((location: string) => {
-    if (!location.trim()) {
-      return false
-    }
-    router.push(`/restaurants?location=${encodeURIComponent(location)}`)
-    return true
-  }, [router])
+  const navigateToLocation = useCallback(
+    (location: string) => {
+      if (!location.trim()) {
+        return false;
+      }
+
+      navigateToStores();
+      return true;
+    },
+    [navigateToStores],
+  );
 
   return {
     navigateToHome,
@@ -75,5 +87,5 @@ export function useNavigation() {
     navigateToFilter,
     navigateToRestaurantsWithFilters,
     navigateToLocation,
-  }
+  };
 }

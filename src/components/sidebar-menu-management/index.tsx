@@ -100,7 +100,7 @@ const navGroups = [
         label: "Cadastrar Restaurante",
         icon: UserPlus,
       },
-      { href: "/restaurants", label: "Restaurantes", icon: ChefHat },
+      { href: "/#lojas", label: "Restaurantes", icon: ChefHat },
     ],
   },
   {

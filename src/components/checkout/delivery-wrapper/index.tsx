@@ -10,12 +10,11 @@ import { useCartActions, useCheckoutProcess } from "@/hooks";
 
 import { useAuth } from "@/contexts/auth-provider";
 
-import { Shield, Store, ThumbsUp } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Store, ThumbsUp } from "lucide-react";
 
 import { AnimatedBackground } from "@/components/ui/animated-background";
 import { GradientButton } from "@/components/ui/gradient-button";
 
-import { BackButton } from "@/components/back-button";
 import { DeliveryForm } from "@/components/checkout/delivery-form";
 import { OrderSummary } from "@/components/checkout/order-sumary";
 import { PaymentMethod } from "@/components/checkout/payment-method";
@@ -56,7 +55,6 @@ export function DeliveryWrapper() {
     isNavigating,
   } = useCheckoutProcess();
 
-  // Sincronizar carrinho se não houver restaurant
   useEffect(() => {
     if (
       isAuthenticated &&
@@ -69,30 +67,26 @@ export function DeliveryWrapper() {
     }
   }, [isAuthenticated, cartItems.length, restaurant?.id, isSyncing]);
 
-  // Redirect if not authenticated or cart is empty
   useEffect(() => {
     if (!isAuthenticated) {
       showAuthModal();
     }
 
-    // Não redirecionar se estiver processando, sincronizando ou navegando
     if (isProcessing || isSyncing || isNavigating) {
       return;
     }
 
-    // Redirect if cart is empty
     if (cartItems.length === 0) {
-      toast.error("Seu carrinho está vazio!");
-      router.push("/restaurants");
+      toast.error("Seu carrinho esta vazio!");
+      router.push("/#lojas");
       return;
     }
 
-    // Redirect if no restaurant data (após tentar sincronizar)
     if (!restaurant?.id) {
       toast.error(
         "Erro ao carregar dados do restaurante. Adicione os itens novamente ao carrinho.",
       );
-      router.push("/restaurants");
+      router.push("/#lojas");
       return;
     }
   }, [
@@ -109,19 +103,19 @@ export function DeliveryWrapper() {
   if (!isAuthenticated) {
     return (
       <AnimatedBackground showBlobs={false}>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center px-4">
           <div className="text-center">
-            <div className="w-16 h-16 bg-linear-to-br from-orange-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ThumbsUp className="w-8 h-8 text-orange-600" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
+              <ThumbsUp className="h-8 w-8 text-orange-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Login Necessário
+            <h2 className="mb-2 text-2xl font-bold text-gray-950">
+              Login necessario
             </h2>
-            <p className="text-gray-600 mb-6">
-              Você precisa estar logado para finalizar seu pedido
+            <p className="mb-6 text-gray-600">
+              Voce precisa estar logado para finalizar seu pedido
             </p>
             <GradientButton onClick={() => showAuthModal()}>
-              Fazer Login
+              Fazer login
             </GradientButton>
           </div>
         </div>
@@ -129,16 +123,15 @@ export function DeliveryWrapper() {
     );
   }
 
-  // Loading state enquanto sincroniza carrinho
   if (isSyncing) {
     return (
       <AnimatedBackground showBlobs={false}>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center px-4">
           <div className="text-center">
-            <div className="w-16 h-16 bg-linear-to-br from-orange-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <Store className="w-8 h-8 text-orange-600" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
+              <Store className="h-8 w-8 animate-pulse text-orange-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="mb-2 text-2xl font-bold text-gray-950">
               Carregando carrinho...
             </h2>
             <p className="text-gray-600">Sincronizando dados do restaurante</p>
@@ -149,7 +142,7 @@ export function DeliveryWrapper() {
   }
 
   return (
-    <AnimatedBackground blobCount={2}>
+    <AnimatedBackground showBlobs={false}>
       <MainHeader
         cartItems={cartItems.length}
         onCartClick={() => router.push("/cart")}
@@ -157,26 +150,28 @@ export function DeliveryWrapper() {
         showNav={false}
       />
 
-      <div className="pt-24 pb-32 px-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Spacing for fixed BackButton */}
-          <div className="h-16 sm:h-20 mb-2"></div>
+      <main className="min-h-screen bg-[#F7F7F8] px-3 pb-28 pt-20 sm:px-5 md:pb-12">
+        <div className="mx-auto max-w-[1160px]">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              aria-label="Voltar para o carrinho"
+              onClick={() => router.push("/cart")}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E9EAEE] bg-white text-gray-700 shadow-sm transition-colors hover:border-orange-300 hover:text-orange-600"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
 
-          <BackButton sticky onClick={() => router.push("/cart")} />
+            <h1 className="text-xl font-extrabold text-gray-950">Checkout</h1>
 
-          <div className="mb-6 flex items-center justify-end">
-            <div className="flex items-center space-x-2">
-              <Shield className="h-5 w-5 text-green-500" />
-              <span className="text-sm font-semibold text-gray-900">
-                Pagamento Seguro
-              </span>
-            </div>
+            <span className="inline-flex h-7 items-center gap-1 rounded-md bg-emerald-50 px-2 text-[11px] font-bold text-emerald-700">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Pagamento seguro
+            </span>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Checkout Form */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Delivery Information */}
 
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+            <div className="space-y-3">
               <DeliveryForm
                 setSelectedAddressId={setSelectedAddressId}
                 handleAddressSelect={handleAddressSelect}
@@ -191,8 +186,6 @@ export function DeliveryWrapper() {
                 saveAddress={saveAddress}
               />
 
-              {/* Payment Method */}
-
               <PaymentMethod
                 setPaymentMethod={setPaymentMethod}
                 setNeedsChange={setNeedsChange}
@@ -203,7 +196,6 @@ export function DeliveryWrapper() {
                 total={total}
               />
             </div>
-            {/* Order Summary */}
 
             <OrderSummary
               handleSubmitOrder={handleSubmitOrder}
@@ -217,7 +209,7 @@ export function DeliveryWrapper() {
             />
           </div>
         </div>
-      </div>
+      </main>
     </AnimatedBackground>
   );
 }

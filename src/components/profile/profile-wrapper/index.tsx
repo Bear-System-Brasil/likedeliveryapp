@@ -19,7 +19,6 @@ import { OrderHistory } from "@/components/profile/order-history";
 import { PersonalInformation } from "@/components/profile/personal-information";
 import { Security } from "@/components/profile/security";
 import { UserPhotoUpload } from "@/components/user-photo-upload";
-import { BottomBar } from "@/components/ui/bottom-bar";
 
 export function ProfileWrapper() {
   const router = useRouter();
@@ -114,8 +113,7 @@ export function ProfileWrapper() {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
         <PageHeader
           title="Meu Perfil"
           description="Gerencie suas informações pessoais"
@@ -194,7 +192,5 @@ export function ProfileWrapper() {
           <Security />
         </div>
       </div>
-      <BottomBar activeTab="profile" />
-    </>
   );
 }

@@ -1,4 +1,5 @@
 import { ErrorBoundary } from "@/components/error-boundary";
+import { BottomBar } from "@/components/ui/bottom-bar";
 import { AuthProvider } from "@/contexts/auth-provider";
 import { Providers } from "@/providers";
 import { GeistMono } from "geist/font/mono";
@@ -28,6 +29,7 @@ export default function RootLayout({
           <Providers>
             <AuthProvider>
               <Suspense fallback={null}>{children}</Suspense>
+              <BottomBar />
             </AuthProvider>
           </Providers>
         </ErrorBoundary>

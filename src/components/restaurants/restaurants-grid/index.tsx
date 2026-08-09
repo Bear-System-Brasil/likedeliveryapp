@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 
-import { Search } from "lucide-react";
+import { Search, Store } from "lucide-react";
 
 import { GradientButton } from "@/components/ui/custom";
 import { Restaurant } from "@/components/ui/restaurant";
 
 import { NoRestaurantNear } from "@/components/ui/no-restaurant-near";
+import { Button } from "@/components/ui/button";
 
 import { RestaurantGridSkeleton } from "@/components/restaurant-card-skeleton";
 
@@ -27,6 +28,8 @@ export function RestaurantsGrid({
   const hasAnyWithinRadius = displayedRestaurants.some(
     (restaurant) => restaurant.isWithinRadius,
   );
+  const shouldShowRestaurants =
+    displayedRestaurants.length > 0 && (!location || hasAnyWithinRadius);
 
   useEffect(() => {
     const handler = () => {
@@ -71,7 +74,7 @@ export function RestaurantsGrid({
 
         {isLoading ? (
           <RestaurantGridSkeleton count={9} />
-        ) : hasAnyWithinRadius && location ? (
+        ) : shouldShowRestaurants ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {displayedRestaurants.map((restaurant, index) => (
@@ -115,6 +118,14 @@ export function RestaurantsGrid({
               <p className="text-gray-600 mb-6">
                 Ainda não há restaurantes perto de você.
               </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-lg border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              >
+                <Store className="h-4 w-4 text-orange-500" />
+                Indique um restaurante
+              </Button>
             </div>
           )
         )}

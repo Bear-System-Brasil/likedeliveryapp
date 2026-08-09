@@ -2,48 +2,62 @@
 
 import { useMemo, useState } from "react";
 
-import { useParams, useRouter } from "next/navigation";
-
 import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Clock3,
+  Heart,
+  Plus,
+  ShoppingBag,
+  Star,
+} from "lucide-react";
 
-import { useAuthStore } from "@/stores/auth-store";
-
-import { formatCurrency } from "@/utils/format-currency";
-
+import { CustomizeOrder } from "@/components/customize-order/customize-order";
+import { MainHeader } from "@/components/main-header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { AnimatedBackground } from "@/components/ui/animated-background";
+import { GradientButton } from "@/components/ui/gradient-button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAllCategories,
   useCartActions,
   useCompanyProducts,
   useRestaurant,
 } from "@/hooks";
+import { useAuthStore } from "@/stores/auth-store";
+import { formatCurrency } from "@/utils/format-currency";
 
-import { Clock, Heart, Minus, Plus, Star } from "lucide-react";
+function getProductCategoryName(
+  productCategory: any,
+  categoryMap: Record<string, string>,
+) {
+  if (typeof productCategory === "string") {
+    return categoryMap[productCategory] || productCategory;
+  }
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  AnimatedBackground,
-  GlassCard,
-  GlassCardContent,
-  GradientButton,
-} from "@/components/ui/custom";
-import { Skeleton } from "@/components/ui/skeleton";
+  return (
+    categoryMap[productCategory?.categoryId] ||
+    productCategory?.category?.name ||
+    productCategory?.name ||
+    ""
+  );
+}
 
-import { BackButton } from "@/components/back-button";
-import { CustomizeOrder } from "@/components/customize-order/customize-order";
-import { MainHeader } from "@/components/main-header";
+function getImageUrl(item: any) {
+  return item?.imageURL?.[0]?.url || item?.image || "/placeholder.svg";
+}
 
 export default function RestaurantPage() {
   const router = useRouter();
   const params = useParams();
   const companyId = params.id as string;
 
-  const { items, totalItems, totalPrice, handleUpdateQuantity } =
-    useCartActions();
+  const { totalItems, totalPrice } = useCartActions();
   const { isAuthenticated } = useAuthStore();
 
-  // React Query hooks - aproveita cache e prefetch!
   const {
     data: restaurant,
     isLoading: loadingRestaurant,
@@ -54,65 +68,79 @@ export default function RestaurantPage() {
     isLoading: loadingProducts,
     error: productsError,
   } = useCompanyProducts(companyId);
-
   const { data: allCategories } = useAllCategories();
 
-  // Derived state
+  const [selectedCategory, setSelectedCategory] = useState("Todos");
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+
   const loading = loadingRestaurant || loadingProducts;
   const error = restaurantError || productsError;
 
   const categoryMap = useMemo(() => {
     if (!allCategories) return {};
 
-    return Object.fromEntries(allCategories.map((c: any) => [c.id, c.name]));
+    return Object.fromEntries(allCategories.map((category: any) => [category.id, category.name]));
   }, [allCategories]);
 
-  // Categorias derivadas dos produtos
   const categories = useMemo(() => {
-    return [
-      "Todos",
-      ...new Set(
-        menuItems
-          .flatMap(
-            (p: any) =>
-              p.productCategories?.map(
-                (pc: any) => categoryMap[pc.categoryId],
-              ) || [],
-          )
-          .filter(Boolean),
+    const productCategories = menuItems.flatMap((item: any) =>
+      (item.productCategories || [])
+        .map((productCategory: any) =>
+          getProductCategoryName(productCategory, categoryMap),
+        )
+        .filter(Boolean),
+    );
+
+    return ["Todos", ...new Set(productCategories)];
+  }, [categoryMap, menuItems]);
+
+  const filteredItems = useMemo(() => {
+    if (selectedCategory === "Todos") return menuItems;
+
+    return menuItems.filter((item: any) =>
+      (item.productCategories || []).some(
+        (productCategory: any) =>
+          getProductCategoryName(productCategory, categoryMap) === selectedCategory,
       ),
-    ];
-  }, [menuItems, categoryMap]);
+    );
+  }, [categoryMap, menuItems, selectedCategory]);
 
-  // UI state
-  const [selectedCategory, setSelectedCategory] = useState("Todos");
-  const [isFavorite, setIsFavorite] = useState(false);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-
-  const filteredItems =
-    selectedCategory === "Todos"
-      ? menuItems
-      : menuItems.filter((item) => {
-          if (!item.productCategories) return false;
-
-          return item.productCategories.some(
-            (pc: any) => categoryMap[pc.categoryId] === selectedCategory,
-          );
-        });
+  const restaurantData = restaurant as any;
+  const specialties = restaurantData?.specialty || restaurantData?.speciality || [];
+  const restaurantCategory =
+    specialties[0]?.name || restaurantData?.categories?.[0]?.name || "Delivery";
+  const restaurantRating = Number(restaurantData?.rating || 0);
+  const totalReviews = Number(restaurantData?.totalReviews || 0);
+  const hasRating = Number.isFinite(restaurantRating) && restaurantRating > 0;
+  const deliveryTime = restaurantData?.time || "30-40 min";
+  const deliveryFee = Number.parseFloat(
+    String(restaurantData?.deliveryFee ?? "").replace(",", "."),
+  );
+  const deliveryLabel =
+    Number.isFinite(deliveryFee) && deliveryFee > 0
+      ? formatCurrency(deliveryFee)
+      : "Entrega grátis";
+  const isOpen =
+    typeof restaurantData?.isOpen === "boolean" ? restaurantData.isOpen : null;
+  const restaurantDescription = restaurantData?.description?.trim();
 
   const handleOpenModal = (item: any) => {
     if (!isAuthenticated) {
       router.push("/cart");
       return;
     }
+
     setSelectedItem(item);
     setIsModalOpen(true);
   };
 
   return (
-    <AnimatedBackground blobCount={2}>
+    <AnimatedBackground
+      showBlobs={false}
+      className="bg-[#f4f5f7] py-0"
+    >
       <MainHeader
         cartItems={totalItems}
         onCartClick={() => router.push("/cart")}
@@ -120,349 +148,221 @@ export default function RestaurantPage() {
         showNav={true}
       />
 
-      {/* Restaurant Hero Section */}
-      <section className="pt-20 sm:pt-24 pb-6 sm:pb-8 px-3 sm:px-4">
-        <div className="max-w-7xl mx-auto">
-          {/* Espaço reservado para botão fixo */}
-          <div className="h-16 sm:h-20 mb-2"></div>
-          <BackButton onClick={() => router.push("/restaurants")} sticky />
-
+      <main className="px-3 pb-28 pt-20 sm:px-5 sm:pt-24">
+        <div className="mx-auto max-w-[1160px]">
           {loading ? (
-            <GlassCard className="shadow-2xl overflow-hidden">
-              {/* Skeleton para imagem de capa */}
-              <div className="w-full aspect-16/5">
-                <Skeleton className="w-full h-full rounded-none" />
-              </div>
-
-              <GlassCardContent className="p-4 sm:p-6">
-                <div className="mb-4 sm:mb-6 space-y-3">
-                  <Skeleton className="h-8 sm:h-10 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-8 w-full" />
-                </div>
-              </GlassCardContent>
-            </GlassCard>
+            <RestaurantPageSkeleton />
           ) : error || !restaurant ? (
-            <GlassCard className="shadow-2xl overflow-hidden">
-              <div className="text-center p-8">
-                <p className="text-red-600 mb-4">
-                  {error?.message || "Restaurante não encontrado"}
-                </p>
-                <GradientButton onClick={() => router.push("/restaurants")}>
-                  Voltar para Restaurantes
-                </GradientButton>
-              </div>
-            </GlassCard>
+            <Card className="border-[#e9eaee] bg-white p-8 text-center shadow-sm">
+              <p className="mb-4 text-red-600">
+                {error?.message || "Restaurante não encontrado"}
+              </p>
+              <GradientButton onClick={() => router.push("/#lojas")} size="sm">
+                Voltar para restaurantes
+              </GradientButton>
+            </Card>
           ) : (
-            <GlassCard className="shadow-2xl overflow-hidden">
-              <div className="relative w-full aspect-16/5 overflow-hidden bg-gray-100">
-                <Image
-                  width={1200}
-                  height={375}
-                  src={
-                    restaurant.cover_url ||
-                    restaurant.logo_url ||
-                    "/placeholder.svg"
-                  }
-                  alt={restaurant.tradeName || "Restaurante"}
-                  className="w-full h-full object-cover object-center"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/90 hover:bg-white border-0 rounded-full h-9 w-9 sm:h-10 sm:w-10 cursor-pointer"
-                >
-                  <Heart
-                    className={`h-4 w-4 sm:h-5 sm:w-5 ${isFavorite ? "fill-red-500 text-red-500" : ""}`}
-                  />
-                </Button>
-
-                {/* Temporariamente desabilitado - propriedade isOpen não existe em Company */}
-                {/* {restaurant.isOpen !== undefined && (
-                  <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4">
-                    <Badge className={`${restaurant.isOpen
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-red-600 hover:bg-red-700'
-                      } text-white border-0 text-xs sm:text-sm`}>
-                      {restaurant.isOpen ? '🟢 Aberto agora' : '🔴 Fechado'}
-                    </Badge>
-                  </div>
-                )} */}
-              </div>
-
-              <GlassCardContent className="p-4 sm:p-6">
-                <div className="mb-4 sm:mb-6">
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                    {restaurant.tradeName}
-                  </h1>
-                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
-                    {restaurant.description || "Sem descrição disponível"}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                  <div className="flex items-center space-x-1.5 sm:space-x-2">
-                    <div className="flex items-center space-x-1 bg-orange-100 rounded-full px-2 sm:px-3 py-1">
-                      <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-orange-500 text-orange-500" />
-                      <span className="font-bold text-orange-700 text-xs sm:text-sm">
-                        Novo
-                      </span>
-                    </div>
-                    <span className="text-xs sm:text-sm text-gray-600">
-                      (0 avaliações)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center space-x-1.5 sm:space-x-2">
-                    <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
-                    <span className="text-xs sm:text-sm text-gray-600">
-                      30-40 min
-                    </span>
-                  </div>
-
-                  {/* Temporariamente desabilitado - propriedade isOpen não existe em Company */}
-                  {/* <div className="flex items-center space-x-1.5 sm:space-x-2">
-                    <div className={`flex items-center space-x-1 rounded-full px-2 sm:px-3 py-1 ${restaurant.isOpen ? 'bg-green-100' : 'bg-red-100'
-                      }`}>
-                      <div className={`w-2 h-2 rounded-full ${restaurant.isOpen ? 'bg-green-500' : 'bg-red-500'
-                        }`} />
-                      <span className={`font-medium text-xs sm:text-sm ${restaurant.isOpen ? 'text-green-700' : 'text-red-700'
-                        }`}>
-                        {restaurant.isOpen ? 'Aberto' : 'Fechado'}
-                      </span>
-                    </div>
-                  </div> */}
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          )}
-        </div>
-      </section>
-
-      {/* Categories */}
-      {!loading && !error && restaurant && (
-        <section className="px-3 sm:px-4 mb-6 sm:mb-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-2 overflow-x-auto overflow-y-hidden pb-2 scrollbar-categories">
-              {categories.map((category) => {
-                const isActive = selectedCategory === category;
-                return (
-                  <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`relative rounded-xl whitespace-nowrap h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm font-medium transition-all inline-flex items-center justify-center overflow-hidden group border-2 cursor-pointer ${
-                      isActive
-                        ? "bg-linear-to-r from-orange-500 to-orange-500 text-white shadow-lg border-transparent"
-                        : "bg-white text-gray-700 hover:text-orange-600"
-                    }`}
-                    style={
-                      !isActive
-                        ? {
-                            borderColor: "#e5e7eb",
-                            backgroundImage: "none",
-                          }
-                        : undefined
+            <>
+              <section className="overflow-hidden rounded-[14px] border border-[#e9eaee] bg-white shadow-sm">
+                <div className="relative h-32 bg-[#edeef1] sm:h-40 md:h-[158px]">
+                  <Image
+                    fill
+                    priority
+                    sizes="(max-width: 640px) 100vw, 1160px"
+                    src={
+                      restaurantData.cover_url ||
+                      restaurantData.logo_url ||
+                      "/placeholder.svg"
                     }
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundImage =
-                          "linear-gradient(white, white), linear-gradient(to right, #f97316, #ec4899)";
-                        e.currentTarget.style.backgroundOrigin = "border-box";
-                        e.currentTarget.style.backgroundClip =
-                          "padding-box, border-box";
-                        e.currentTarget.style.borderColor = "transparent";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundImage = "none";
-                        e.currentTarget.style.borderColor = "#e5e7eb";
-                      }
-                    }}
+                    alt={restaurantData.tradeName || "Restaurante"}
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+
+                  <button
+                    type="button"
+                    onClick={() => router.push("/#lojas")}
+                    className="absolute left-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-gray-700 shadow-sm transition hover:bg-white"
+                    aria-label="Voltar para restaurantes"
+                    title="Voltar para restaurantes"
                   >
-                    {isActive && (
-                      <span
-                        className="absolute inset-0 bg-white opacity-30 rotate-45 -translate-x-full group-hover:translate-x-full
-                                      blur-sm transition-transform duration-500 pointer-events-none overflow-hidden rounded-xl"
-                      />
-                    )}
-                    <span className="relative z-10">{category}</span>
+                    <ArrowLeft className="h-4 w-4" />
                   </button>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
 
-      {/* Menu Items */}
-      {loading ? (
-        <section className="px-4 mb-8 pb-32">
-          <div className="max-w-7xl mx-auto">
-            {/* Skeleton para categorias */}
-            <div className="flex gap-2 mb-6 sm:mb-8 overflow-x-auto pb-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton
-                  key={i}
-                  className="h-9 sm:h-10 w-24 rounded-xl shrink-0"
-                />
-              ))}
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsFavorite((favorite) => !favorite)}
+                    className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-gray-700 shadow-sm transition hover:bg-white"
+                    aria-label={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                    title={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                  >
+                    <Heart
+                      className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`}
+                    />
+                  </button>
+                </div>
 
-            {/* Skeleton para cards dos pratos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Card
-                  key={i}
-                  className="border-0 bg-white/80 backdrop-blur-sm shadow-lg overflow-hidden"
-                >
-                  <Skeleton className="w-full aspect-16/10 rounded-none" />
-                  <div className="p-4 sm:p-5 space-y-3">
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-2/3" />
-                    <div className="flex items-center justify-between pt-2">
-                      <Skeleton className="h-8 w-24" />
-                      <Skeleton className="h-9 w-28 rounded-xl" />
+                <div className="flex items-start gap-3 px-3 pb-4 sm:px-4">
+                  <Image
+                    width={56}
+                    height={56}
+                    src={restaurantData.logo_url || "/placeholder.svg"}
+                    alt={`Logo de ${restaurantData.tradeName || "restaurante"}`}
+                    className="relative z-10 -mt-7 h-14 w-14 shrink-0 rounded-[14px] border-[3px] border-white bg-[#edeef1] object-cover"
+                  />
+
+                  <div className="min-w-0 flex-1 pt-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="truncate text-[18px] font-extrabold tracking-[-0.02em] text-[#14161a]">
+                        {restaurantData.tradeName}
+                      </h1>
+                      {isOpen !== null && (
+                        <span
+                          className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-extrabold ${
+                            isOpen
+                              ? "bg-[#e9f7ef] text-[#1b7f4c]"
+                              : "bg-[#fff1e7] text-[#e05a00]"
+                          }`}
+                        >
+                          {isOpen ? "Aberto" : "Fechado"}
+                        </span>
+                      )}
+                    </div>
+
+                    {restaurantDescription && (
+                      <p className="mt-1 line-clamp-2 text-xs font-medium text-[#8a8f99]">
+                        {restaurantDescription}
+                      </p>
+                    )}
+
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold">
+                      {hasRating && (
+                        <span className="flex items-center gap-1 rounded-full bg-[#f4f5f7] px-2.5 py-1 text-[#14161a]">
+                          <Star className="h-3 w-3 fill-[#ffb020] text-[#ffb020]" />
+                          {restaurantRating.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1,
+                          })}
+                          {totalReviews > 0 && (
+                            <span className="font-medium text-[#8a8f99]">
+                              ({totalReviews})
+                            </span>
+                          )}
+                        </span>
+                      )}
+                      <span className="rounded-full bg-[#f4f5f7] px-2.5 py-1 text-[#3d4149]">
+                        {restaurantCategory}
+                      </span>
+                      <span className="flex items-center gap-1 rounded-full bg-[#f4f5f7] px-2.5 py-1 text-[#3d4149]">
+                        <Clock3 className="h-3 w-3" />
+                        {deliveryTime}
+                      </span>
+                      <span className="rounded-full bg-[#e9f7ef] px-2.5 py-1 text-[#1b7f4c]">
+                        {deliveryLabel}
+                      </span>
                     </div>
                   </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : (
-        !error &&
-        restaurant && (
-          <section className="px-4 mb-8 pb-32">
-            <div className="max-w-7xl mx-auto">
-              {filteredItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-600">
-                    Nenhum produto disponível nesta categoria
-                  </p>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {filteredItems.map((item) => {
-                    const cartItem = items.find(
-                      (ci) => ci.id === item.id.toString(),
-                    );
-                    const inCart = !!cartItem;
-                    const cartQuantity = cartItem?.quantity || 0;
+              </section>
 
-                    return (
-                      <Card
-                        key={item.id}
-                        className="border-0 bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group"
-                      >
-                        {/* Image Section */}
-                        <div className="relative w-full aspect-16/10 overflow-hidden bg-gray-100">
-                          <Image
-                            width={500}
-                            height={312}
-                            src={item.imageURL?.[0]?.url || "/placeholder.svg"}
-                            alt={item.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          {!item.isAvailable && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <Badge className="bg-red-600 text-white border-0 text-sm font-bold shadow-lg">
-                                Indisponível
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
+              <nav className="sticky top-[72px] z-30 -mx-3 flex gap-2 overflow-x-auto bg-[#f4f5f7]/95 px-3 py-3 backdrop-blur sm:top-[82px] sm:-mx-5 sm:px-5">
+                {categories.map((category) => {
+                  const isActive = selectedCategory === category;
 
-                        {/* Content Section */}
-                        <div className="p-4 sm:p-5">
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 line-clamp-1">
-                            {item.name}
-                          </h3>
-                          <p className="text-gray-600 text-xs sm:text-sm mb-4 leading-relaxed line-clamp-2">
-                            {item.description || "Sem descrição"}
-                          </p>
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => setSelectedCategory(category)}
+                      className={`shrink-0 rounded-lg border px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                        isActive
+                          ? "border-gray-900 bg-gray-900 text-white"
+                          : "border-[#e9eaee] bg-white text-[#3d4149] hover:border-gray-300"
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  );
+                })}
+              </nav>
 
-                          {/* Price and Action Section */}
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex flex-col">
-                              <div className="flex items-baseline gap-2">
-                                <span className="text-xl sm:text-2xl font-bold text-gray-900">
-                                  {formatCurrency(item.salePrice || 0)}
-                                </span>
-                              </div>
-                            </div>
+              <section aria-label="Itens do cardápio">
+                {filteredItems.length === 0 ? (
+                  <Card className="border-[#e9eaee] bg-white p-10 text-center shadow-sm">
+                    <p className="text-sm font-medium text-gray-600">
+                      Nenhum produto disponível nesta categoria.
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredItems.map((item: any) => {
+                      const isAvailable = item.isAvailable !== false;
 
-                            <div className="flex items-center">
-                              {!item.isAvailable ? (
-                                <Button
-                                  disabled
-                                  className="rounded-xl bg-gray-300 text-gray-500 cursor-not-allowed px-3 sm:px-4 h-9 sm:h-10 text-xs sm:text-sm"
-                                >
-                                  Indisponível
-                                </Button>
-                              ) : inCart ? (
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() =>
-                                      handleUpdateQuantity(
-                                        item.id.toString(),
-                                        cartQuantity - 1,
-                                      )
-                                    }
-                                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border-2 border-orange-300 hover:bg-orange-50 cursor-pointer"
-                                  >
-                                    <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
-                                  </Button>
-                                  <span className="font-bold text-base sm:text-lg min-w-6 sm:min-w-8 text-center">
-                                    {cartQuantity}
-                                  </span>
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() =>
-                                      handleUpdateQuantity(
-                                        item.id.toString(),
-                                        cartQuantity + 1,
-                                      )
-                                    }
-                                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border-2 border-orange-300 hover:bg-orange-50 cursor-pointer"
-                                  >
-                                    <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <GradientButton
-                                  onClick={() => handleOpenModal(item)}
-                                  size="sm"
-                                >
-                                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                  Adicionar
-                                </GradientButton>
-                              )}
+                      return (
+                        <Card
+                          key={item.id}
+                          onClick={() => isAvailable && handleOpenModal(item)}
+                          className={`group flex min-h-[116px] gap-3 overflow-visible rounded-[13px] border border-[#e9eaee] bg-white p-3 shadow-sm transition hover:border-[#dddfe4] hover:shadow-md ${
+                            isAvailable ? "cursor-pointer" : "cursor-default"
+                          }`}
+                        >
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <h2 className="truncate text-sm font-bold tracking-[-0.01em] text-[#14161a]">
+                              {item.name}
+                            </h2>
+                            {item.description && (
+                              <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-[#8a8f99]">
+                                {item.description}
+                              </p>
+                            )}
+                            <div className="mt-auto flex items-center gap-2 pt-3">
+                              <span className="text-[15px] font-extrabold tracking-[-0.02em] text-[#14161a]">
+                                {formatCurrency(Number(item.salePrice || 0))}
+                              </span>
                             </div>
                           </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </section>
-        )
-      )}
+
+                          <div className="relative h-[92px] w-[92px] shrink-0">
+                            <Image
+                              width={184}
+                              height={184}
+                              src={getImageUrl(item)}
+                              alt={item.name}
+                              className={`h-full w-full rounded-[10px] bg-[#edeef1] object-cover ${
+                                !isAvailable ? "opacity-60" : ""
+                              }`}
+                            />
+
+                            {!isAvailable ? (
+                              <Badge className="absolute inset-x-1 bottom-1 justify-center border-0 bg-black/70 px-1 py-1 text-[10px] text-white">
+                                Indisponível
+                              </Badge>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="icon"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleOpenModal(item);
+                                }}
+                                className="absolute -bottom-1 -right-1 h-7 w-7 rounded-lg border-2 border-white bg-orange-500 text-white shadow-md hover:bg-orange-600"
+                                aria-label={`Adicionar ${item.name}`}
+                                title={`Adicionar ${item.name}`}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+        </div>
+      </main>
 
       {selectedItem && (
         <CustomizeOrder
@@ -472,34 +372,72 @@ export default function RestaurantPage() {
         />
       )}
 
-      {/* Floating Cart Summary */}
       {totalItems > 0 && (
-        <div className="fixed bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 z-50">
-          <div className="max-w-7xl mx-auto">
-            <GlassCard variant="gradient" className="shadow-2xl">
-              <GlassCardContent className="p-3 sm:p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-sm sm:text-base">
-                      {totalItems} {totalItems === 1 ? "item" : "itens"} no
-                      carrinho
-                    </p>
-                    <p className="text-white/90 text-xs sm:text-sm">
-                      Total: {formatCurrency(totalPrice || 0)}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => router.push("/cart")}
-                    className="relative bg-white text-orange-600 hover:bg-gray-50 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all cursor-pointer h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap overflow-hidden group"
-                  >
-                    <span className="relative z-10">Ver Carrinho</span>
-                  </Button>
+        <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-3 right-3 z-40 sm:left-4 sm:right-4 md:bottom-4">
+          <div className="mx-auto max-w-[1160px] rounded-xl bg-[#14161a] px-3 py-3 text-white shadow-xl sm:px-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <ShoppingBag className="h-4 w-4 shrink-0 text-orange-400" />
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold sm:text-sm">
+                    {totalItems} {totalItems === 1 ? "item" : "itens"} no carrinho
+                  </p>
+                  <p className="text-[11px] font-medium text-gray-300 sm:text-xs">
+                    Total: {formatCurrency(totalPrice || 0)}
+                  </p>
                 </div>
-              </GlassCardContent>
-            </GlassCard>
+              </div>
+              <Button
+                type="button"
+                onClick={() => router.push("/cart")}
+                className="h-9 shrink-0 rounded-lg bg-white px-3 text-xs font-bold text-orange-600 hover:bg-orange-50 sm:px-4"
+              >
+                Ver carrinho
+              </Button>
+            </div>
           </div>
         </div>
       )}
     </AnimatedBackground>
+  );
+}
+
+function RestaurantPageSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Card className="overflow-hidden border-[#e9eaee] bg-white shadow-sm">
+        <Skeleton className="h-32 w-full rounded-none sm:h-40 md:h-[158px]" />
+        <div className="flex gap-3 px-3 pb-4 sm:px-4">
+          <Skeleton className="relative z-10 -mt-7 h-14 w-14 shrink-0 rounded-[14px]" />
+          <div className="flex-1 space-y-2 pt-3">
+            <Skeleton className="h-5 w-44" />
+            <Skeleton className="h-3 w-full max-w-md" />
+            <Skeleton className="h-6 w-72 max-w-full" />
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex gap-2 overflow-hidden py-3">
+        {["a", "b", "c", "d"].map((item) => (
+          <Skeleton key={item} className="h-8 w-20 shrink-0 rounded-lg" />
+        ))}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {["a", "b", "c", "d", "e", "f"].map((item) => (
+          <Card
+            key={item}
+            className="flex min-h-[116px] gap-3 border-[#e9eaee] bg-white p-3"
+          >
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="mt-auto h-4 w-20" />
+            </div>
+            <Skeleton className="h-[92px] w-[92px] shrink-0 rounded-[10px]" />
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }

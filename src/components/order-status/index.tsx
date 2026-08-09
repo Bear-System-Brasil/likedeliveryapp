@@ -156,7 +156,7 @@ export function OrderStatus({ data, token }: Props) {
           {/* Ações */}
           <Card className="bg-linear-to-br from-orange-50 to-orange-50 border-orange-100">
             <CardContent className="pt-6 space-y-3">
-              <Link href="/restaurants" className="block cursor-pointer">
+              <Link href="/#lojas" className="block cursor-pointer">
                 <Button
                   variant="default"
                   className="w-full bg-linear-to-r from-orange-500 to-orange-500 hover:from-orange-600 hover:to-orange-600 text-white shadow-lg cursor-pointer"

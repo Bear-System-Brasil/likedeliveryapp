@@ -1,94 +1,77 @@
-import { useAuth } from '@/contexts/auth-provider'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useAuth } from "@/contexts/auth-provider";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-/**
- * Hook customizado para gerenciar ações relacionadas a restaurantes
- * na página principal (navegação, favoritos, filtros, etc)
- */
 export const useRestaurantActions = () => {
-  const router = useRouter()
-  const { showAuthModal } = useAuth()
-  const [favorites, setFavorites] = useState<string[]>([])
+  const router = useRouter();
+  const { showAuthModal } = useAuth();
+  const [favorites, setFavorites] = useState<string[]>([]);
 
-  /**
-   * Alterna o status de favorito de um restaurante
-   */
+  const navigateToStores = () => {
+    router.push("/#lojas");
+  };
+
   const handleToggleFavorite = (restaurantId: string) => {
     setFavorites((prev) =>
       prev.includes(restaurantId)
         ? prev.filter((id) => id !== restaurantId)
-        : [...prev, restaurantId]
-    )
-  }
+        : [...prev, restaurantId],
+    );
+  };
 
   const handleCategoryClick = (categoryName: string) => {
-    router.push(`/restaurants?category=${encodeURIComponent(categoryName)}`)
-  }
-  /**
-   * Navega para página de restaurantes com filtro de ação rápida
-   */
-  const handleQuickAction = (actionLabel: string) => {
-    router.push(`/restaurants?filter=${actionLabel.toLowerCase().replace(/\s+/g, "-")}`)
-  }
+    void categoryName;
+    navigateToStores();
+  };
 
-  /**
-   * Busca restaurantes pela localização informada
-   */
+  const handleQuickAction = (actionLabel: string) => {
+    void actionLabel;
+    navigateToStores();
+  };
+
   const handleFindFood = (location: string) => {
     if (!location.trim()) {
-      alert("Por favor, digite sua localização")
-      return
+      alert("Por favor, digite sua localizacao");
+      return;
     }
-    router.push(`/restaurants?location=${encodeURIComponent(location)}`)
-  }
 
-  /**
-   * Navega para a página de detalhes de um restaurante específico
-   */
-  const handleRestaurantClick = (restaurantId: string, restaurantName?: string) => {
-    if (restaurantName) {
-    }
-    router.push(`/restaurant/${restaurantId}`)
-  }
+    navigateToStores();
+  };
 
-  /**
-   * Navega para a página do carrinho
-   */
+  const handleRestaurantClick = (
+    restaurantId: string,
+    restaurantName?: string,
+  ) => {
+    void restaurantId;
+    void restaurantName;
+    navigateToStores();
+  };
+
   const handleCartClick = () => {
-    router.push("/cart")
-  }
+    router.push("/cart");
+  };
 
-  /**
-   * Inicia o processo de checkout para um restaurante
-   */
   const handleCheckout = (restaurantId: string) => {
-    router.push(`/restaurant/${restaurantId}`)
-  }
+    void restaurantId;
+    navigateToStores();
+  };
 
-  /**
-   * Abre o modal de autenticação na aba de registro
-   */
   const handleSignup = () => {
-    showAuthModal('register')
-  }
+    showAuthModal("register");
+  };
 
-  /**
-   * Navegação geral entre páginas principais
-   */
   const handleNavigation = (page: string) => {
-
     const routes: Record<string, string> = {
       home: "/",
-      restaurantes: "/restaurants",
-      ofertas: "/restaurants?filter=ofertas"
-    }
+      restaurantes: "/#lojas",
+      ofertas: "/#lojas",
+    };
 
-    const route = routes[page]
+    const route = routes[page];
     if (route) {
-      router.push(route)
+      router.push(route);
     }
-  }
+  };
 
   return {
     favorites,
@@ -101,5 +84,5 @@ export const useRestaurantActions = () => {
     handleCheckout,
     handleSignup,
     handleNavigation,
-  }
-}
+  };
+};

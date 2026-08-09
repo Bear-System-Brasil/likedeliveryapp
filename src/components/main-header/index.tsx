@@ -13,18 +13,23 @@ import { useAuthStore } from "@/stores";
 import { isCompanyRole } from "@/utils/role-helpers";
 import clsx from "clsx";
 import {
+  ChevronDown,
   LogOut,
   MapPin,
   Menu,
+  Navigation,
   Package,
+  PencilLine,
   Search,
   ShoppingCart,
   Store,
   User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { LikeDeliveryLogo } from "../ui/likedelivery-logo";
+
+const DEFAULT_LOCATION_LABEL = "Escolha seu endereço";
 
 interface MainHeaderProps {
   cartItems?: number;
@@ -50,10 +55,164 @@ export function MainHeader({
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [locationLabel, setLocationLabel] = useState(DEFAULT_LOCATION_LABEL);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [isChangingLocation, setIsChangingLocation] = useState(false);
+  const [manualLocation, setManualLocation] = useState("");
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState("");
 
   // Montagem do componente
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  const saveLocation = (location: {
+    lat: number;
+    lng: number;
+    city: string;
+    address: string;
+  }) => {
+    document.cookie = `userLocation=${encodeURIComponent(
+      JSON.stringify(location),
+    )}; path=/; max-age=86400; SameSite=Lax`;
+
+    setLocationLabel(location.address || location.city);
+    setLocationOpen(false);
+    setIsChangingLocation(false);
+    setManualLocation("");
+    setLocationError("");
+    window.dispatchEvent(new Event("locationChanged"));
+  };
+
+  const handleManualLocation = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const query = manualLocation.trim();
+    if (!query) {
+      setLocationError("Digite uma cidade, bairro ou endereço.");
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError("");
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+          `${query}, Brasil`,
+        )}&format=jsonv2&limit=1&addressdetails=1`,
+      );
+
+      if (!response.ok) throw new Error("Falha ao buscar localização");
+
+      const results = await response.json();
+      const result = results?.[0];
+
+      if (!result?.lat || !result?.lon) {
+        throw new Error("Localização não encontrada");
+      }
+
+      const city =
+        result.address?.city ||
+        result.address?.town ||
+        result.address?.municipality ||
+        query;
+
+      saveLocation({
+        lat: Number(result.lat),
+        lng: Number(result.lon),
+        city,
+        address: result.display_name || query,
+      });
+    } catch {
+      setLocationError("Não encontramos esse local. Tente uma cidade ou bairro.");
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  const handleCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      setLocationError("Seu navegador não permite localização automática.");
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError("");
+
+    try {
+      const position = await new Promise<GeolocationPosition>(
+        (resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 10000,
+          }),
+      );
+      const { latitude, longitude } = position.coords;
+      const response = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=pt`,
+      );
+
+      if (!response.ok) throw new Error("Falha ao buscar endereço");
+
+      const data = await response.json();
+      const city = data.city || data.locality || "Minha localização";
+      const address = [
+        data.street,
+        data.streetNumber,
+        data.neighbourhood,
+        city,
+        data.principalSubdivision,
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      saveLocation({
+        lat: latitude,
+        lng: longitude,
+        city,
+        address: address || city,
+      });
+    } catch {
+      setLocationError("Não foi possível encontrar sua localização.");
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const syncLocation = () => {
+      const locationCookie = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("userLocation="));
+
+      if (!locationCookie) {
+        setLocationLabel(DEFAULT_LOCATION_LABEL);
+        return;
+      }
+
+      const encodedLocation = locationCookie.split("=").slice(1).join("=");
+
+      try {
+        const parsedLocation = JSON.parse(decodeURIComponent(encodedLocation));
+        const label =
+          parsedLocation?.address ||
+          parsedLocation?.locality ||
+          parsedLocation?.city;
+
+        setLocationLabel(label || DEFAULT_LOCATION_LABEL);
+      } catch {
+        setLocationLabel(DEFAULT_LOCATION_LABEL);
+      }
+    };
+
+    syncLocation();
+    window.addEventListener("locationChanged", syncLocation);
+
+    return () => {
+      window.removeEventListener("locationChanged", syncLocation);
+    };
   }, []);
 
   // Espera a store terminar de rehydrar do localStorage
@@ -96,6 +255,11 @@ export function MainHeader({
     setMobileMenuOpen(false);
   };
 
+  const hasSavedLocation = locationLabel !== DEFAULT_LOCATION_LABEL;
+  const currentLocationText = hasSavedLocation
+    ? locationLabel
+    : "Nenhum endereço selecionado";
+
   return (
     <header
       className={clsx(
@@ -104,20 +268,143 @@ export function MainHeader({
         "rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden",
       )}
     >
-      <div className="px-3 sm:px-6 py-3 sm:py-4">
+      <div className="px-3 py-2 sm:px-6 sm:py-3">
         <div className="flex items-center justify-between gap-1">
           {/* Logo + Endereço */}
-          <div className="flex items-center gap-1 flex-col">
-            <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
-            <div className="leading-tight">
-              <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                <MapPin className="w-3 h-3" />
-                <span className="truncate max-w-[140px]">
-                  Rua Machado de Assis, 334
-                </span>
+              <div className="flex min-w-0 items-center gap-2">
+                <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
+                <div className="min-w-0 leading-tight">
+                  <Sheet
+                    open={locationOpen}
+                    onOpenChange={(open) => {
+                      setLocationOpen(open);
+                      if (open) {
+                        setIsChangingLocation(!hasSavedLocation);
+                        return;
+                      }
+
+                      setLocationError("");
+                      setIsChangingLocation(false);
+                    }}
+                  >
+                    <SheetTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex max-w-[120px] cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-200 xs:max-w-[150px] sm:max-w-[260px]"
+                        title="Alterar endereço"
+                      >
+                        <MapPin className="h-3.5 w-3.5 shrink-0 fill-pink-500 text-pink-500" />
+                        <span className="truncate" title={locationLabel}>
+                          {locationLabel}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                      </button>
+                    </SheetTrigger>
+                    <SheetContent
+                      side="top"
+                      className="border-b border-orange-100 bg-white px-4 py-5 sm:px-6"
+                    >
+                      <div className="mx-auto w-full max-w-xl space-y-4">
+                        <div className="space-y-1 pr-8">
+                          <SheetTitle className="text-lg font-bold text-gray-950">
+                            Endereço de entrega
+                          </SheetTitle>
+                          <p className="text-sm text-gray-500">
+                            Confira onde seu pedido será entregue ou troque para
+                            outro local.
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4 shadow-sm">
+                          <div className="flex gap-3">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                              <MapPin className="h-5 w-5 fill-pink-500" />
+                            </span>
+
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-orange-600">
+                                Entregando em
+                              </p>
+                              <p className="mt-1 text-sm font-semibold leading-snug text-gray-950">
+                                {currentLocationText}
+                              </p>
+                              <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                                Esse endereço será usado para encontrar
+                                restaurantes próximos e calcular a entrega.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setManualLocation("");
+                                setLocationError("");
+                                setIsChangingLocation(true);
+                              }}
+                              className="h-11 justify-center rounded-xl border-orange-200 bg-white text-orange-600 hover:bg-orange-50"
+                            >
+                              <PencilLine className="mr-2 h-4 w-4" />
+                              Trocar endereço
+                            </Button>
+
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={locationLoading}
+                              onClick={handleCurrentLocation}
+                              className="h-11 justify-center rounded-xl border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            >
+                              <Navigation className="mr-2 h-4 w-4" />
+                              Usar minha localização
+                            </Button>
+                          </div>
+                        </div>
+
+                        {(isChangingLocation || !hasSavedLocation) && (
+                          <form
+                            onSubmit={handleManualLocation}
+                            className="rounded-2xl border border-gray-200 bg-gray-50 p-3"
+                          >
+                            <p className="mb-3 text-sm font-semibold text-gray-950">
+                              {hasSavedLocation
+                                ? "Digite o novo endereço"
+                                : "Adicionar endereço"}
+                            </p>
+
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                              <Input
+                                autoFocus
+                                value={manualLocation}
+                                onChange={(event) =>
+                                  setManualLocation(event.target.value)
+                                }
+                                placeholder="Ex.: Rua Machado de Assis, 334"
+                                className="h-11 rounded-xl bg-white"
+                              />
+                              <Button
+                                type="submit"
+                                disabled={locationLoading}
+                                className="h-11 shrink-0 rounded-xl bg-orange-500 px-5 hover:bg-orange-600"
+                              >
+                                {locationLoading ? "Buscando..." : "Salvar"}
+                              </Button>
+                            </div>
+                          </form>
+                        )}
+
+                        {locationError && (
+                          <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+                            {locationError}
+                          </p>
+                        )}
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
               </div>
-            </div>
-          </div>
 
           {/* Actions */}
           <div className="flex items-center space-x-3">

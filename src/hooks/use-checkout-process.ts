@@ -197,7 +197,9 @@ export const useCheckoutProcess = () => {
       paymentMethod === "pix" ||
       paymentMethod === "credit" ||
       paymentMethod === "debit" ||
-      paymentMethod === "bank_transfer";
+      paymentMethod === "bank_transfer" ||
+      paymentMethod === "card_machine" ||
+      paymentMethod === "pix_on_delivery";
 
     // Se é dinheiro e precisa de troco, validar valor
     const changeValid =
@@ -224,13 +226,13 @@ export const useCheckoutProcess = () => {
   const handleSubmitOrder = async () => {
     if (cartItems.length === 0) {
       toast.error("Seu carrinho está vazio!");
-      router.push("/restaurants");
+      router.push("/#lojas");
       return;
     }
 
     if (!user?.id) {
       toast.error("Você precisa estar logado para finalizar o pedido");
-      router.push("/restaurants");
+      router.push("/#lojas");
       return;
     }
 
@@ -239,7 +241,7 @@ export const useCheckoutProcess = () => {
         "Erro ao identificar o restaurante. Por favor, adicione os itens novamente ao carrinho.",
       );
       clearCart();
-      router.push("/restaurants");
+      router.push("/#lojas");
       return;
     }
 
@@ -340,11 +342,15 @@ export const useCheckoutProcess = () => {
               ? PaymentMethod.CREDIT_CARD
               : paymentMethod === "debit"
                 ? PaymentMethod.DEBIT_CARD
-                : paymentMethod === "pix"
-                  ? PaymentMethod.PIX
-                  : paymentMethod === "cash"
-                    ? PaymentMethod.CASH
-                    : PaymentMethod.BANK_TRANSFER,
+                : paymentMethod === "card_machine"
+                  ? PaymentMethod.DEBIT_CARD
+                  : paymentMethod === "pix"
+                    ? PaymentMethod.PIX
+                    : paymentMethod === "pix_on_delivery"
+                      ? PaymentMethod.PIX
+                      : paymentMethod === "cash"
+                        ? PaymentMethod.CASH
+                        : PaymentMethod.BANK_TRANSFER,
           amount: total,
           status: PaymentStatus.PENDING,
         };
