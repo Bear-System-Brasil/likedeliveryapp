@@ -4,11 +4,8 @@ import { cn } from "@/lib/utils";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import {
-  Building2,
-  ChefHat,
   ClipboardList,
   CreditCard,
-  Globe,
   House,
   LayoutDashboard,
   LayoutGrid,
@@ -16,7 +13,6 @@ import {
   ThumbsUp,
   TrendingUp,
   User,
-  UserPlus,
   Users,
   UtensilsCrossed,
   Wallet,
@@ -81,23 +77,6 @@ const navGroups = [
         label: "Configurações",
         icon: Settings,
       },
-    ],
-  },
-  {
-    label: "Restaurante",
-    links: [
-      {
-        href: "/restaurant-landing-page",
-        label: "Página Pública",
-        icon: Globe,
-      },
-      { href: "/company-profile", label: "Perfil da Empresa", icon: Building2 },
-      {
-        href: "/restaurant-register",
-        label: "Cadastrar Restaurante",
-        icon: UserPlus,
-      },
-      { href: "/#lojas", label: "Restaurantes", icon: ChefHat },
     ],
   },
   {
