@@ -20,6 +20,13 @@ import { Label } from "@/components/ui/label";
 
 import { cn } from "@/lib/utils";
 
+type CardInfo = {
+  number: string;
+  name: string;
+  expiry: string;
+  cvv: string;
+};
+
 type Props = {
   setPaymentMethod: Dispatch<SetStateAction<string>>;
   setNeedsChange: Dispatch<SetStateAction<boolean>>;
@@ -28,6 +35,8 @@ type Props = {
   paymentMethod: string;
   changeAmount: string;
   needsChange: boolean;
+  cardInfo: CardInfo;
+  handleCardInputChange: (field: string, value: string) => void;
 };
 
 type PaymentMoment = "now" | "delivery";
@@ -108,6 +117,8 @@ export function PaymentMethod({
   paymentMethod,
   changeAmount,
   needsChange,
+  cardInfo,
+  handleCardInputChange,
 }: Props) {
   const [paymentMoment, setPaymentMoment] = useState<PaymentMoment>(
     paymentMethod === "cash" ||
@@ -230,18 +241,77 @@ export function PaymentMethod({
 
       {(paymentMethod === "credit" || paymentMethod === "debit") &&
         paymentMoment === "now" && (
-          <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-              <div>
-                <p className="text-sm font-bold text-blue-900">
-                  Pagamento online com cartao
-                </p>
-                <p className="mt-1 text-xs font-semibold text-blue-700">
-                  Depois de confirmar o pedido, voce segue para a etapa segura
-                  de pagamento.
-                </p>
-              </div>
+          <div className="mt-3 grid grid-cols-1 gap-2.5 rounded-lg border border-[#E9EAEE] bg-[#FAFAFB] p-3 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label
+                htmlFor="cardNumber"
+                className="text-[11px] font-bold text-gray-700"
+              >
+                Numero do cartao
+              </Label>
+              <Input
+                id="cardNumber"
+                inputMode="numeric"
+                placeholder="0000 0000 0000 0000"
+                value={cardInfo.number}
+                onChange={(e) =>
+                  handleCardInputChange("number", e.target.value)
+                }
+                className="h-9 rounded-lg border-[#E4E6EA] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="cardExpiry"
+                className="text-[11px] font-bold text-gray-700"
+              >
+                Validade
+              </Label>
+              <Input
+                id="cardExpiry"
+                placeholder="MM/AA"
+                value={cardInfo.expiry}
+                onChange={(e) =>
+                  handleCardInputChange("expiry", e.target.value)
+                }
+                className="h-9 rounded-lg border-[#E4E6EA] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="cardCvv"
+                className="text-[11px] font-bold text-gray-700"
+              >
+                CVV
+              </Label>
+              <Input
+                id="cardCvv"
+                inputMode="numeric"
+                placeholder="123"
+                value={cardInfo.cvv}
+                onChange={(e) => handleCardInputChange("cvv", e.target.value)}
+                className="h-9 rounded-lg border-[#E4E6EA] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label
+                htmlFor="cardName"
+                className="text-[11px] font-bold text-gray-700"
+              >
+                Nome impresso no cartao
+              </Label>
+              <Input
+                id="cardName"
+                placeholder="Como esta no cartao"
+                value={cardInfo.name}
+                onChange={(e) =>
+                  handleCardInputChange("name", e.target.value)
+                }
+                className="h-9 rounded-lg border-[#E4E6EA] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+              />
             </div>
           </div>
         )}

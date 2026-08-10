@@ -1,17 +1,10 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useAllCategories, useCartActions, useRestaurant } from "@/hooks";
 import { formatCurrency } from "@/utils";
-import { Plus } from "lucide-react";
+import { Minus, Plus, X } from "lucide-react";
 
-import { Accordion } from "@/components/ui/accordion";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { SelectOptions } from "../select-options";
@@ -41,7 +34,7 @@ type CustomOrderType = {
   currentPrice: number;
 };
 
-type OptionsType = {
+export type OptionsType = {
   label: string;
   price: number;
 };
@@ -93,19 +86,25 @@ const optionalOptions: OptionalsList[] = [
   },
 ];
 
+const initialCustomOrder = (salePrice: number): CustomOrderType => ({
+  specialInstructions: "",
+  size: "medium",
+  extraIngredients: [],
+  currentPrice: salePrice,
+});
+
 export function CustomizeOrder({
   productData,
   isModalOpen,
   setIsModalOpen,
 }: Props) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [notesOpen, setNotesOpen] = useState(false);
 
-  const [customOrder, setCustomOrder] = useState<CustomOrderType>({
-    specialInstructions: "",
-    size: "medium",
-    extraIngredients: [],
-    currentPrice: productData.salePrice,
-  });
+  const [customOrder, setCustomOrder] = useState<CustomOrderType>(
+    initialCustomOrder(productData.salePrice),
+  );
 
   const { data: restaurant } = useRestaurant(productData.companyId);
 
@@ -130,6 +129,12 @@ export function CustomizeOrder({
       .filter(Boolean);
   };
 
+  const resetState = () => {
+    setCustomOrder(initialCustomOrder(productData.salePrice));
+    setQuantity(1);
+    setNotesOpen(false);
+  };
+
   const handleConfirmAddToCart = async () => {
     if (!productData || !restaurant) return;
 
@@ -139,27 +144,17 @@ export function CustomizeOrder({
       const success = await addToCart({
         id: productData.id.toString(),
         name: productData.name,
-        price:
-          customOrder.currentPrice >= productData.salePrice
-            ? customOrder.currentPrice
-            : productData.salePrice + customOrder.currentPrice,
-
+        price: unitPrice,
         image: productData.imageURL?.[0]?.url || "/placeholder.svg",
         restaurantId: restaurant.id,
         restaurantName: restaurant.tradeName,
         specialInstructions: customOrder.specialInstructions,
-        quantity: 1,
+        quantity,
       });
 
       if (success) {
         setIsModalOpen(false);
-
-        setCustomOrder({
-          specialInstructions: "",
-          size: "medium",
-          extraIngredients: [""],
-          currentPrice: 0,
-        });
+        resetState();
       }
     } catch (error) {
       console.error("Erro ao adicionar ao carrinho:", error);
@@ -182,16 +177,22 @@ export function CustomizeOrder({
     }
   };
 
-  const handleModalClose = (val: boolean) => {
-    setCustomOrder({
-      specialInstructions: "",
-      size: "medium",
-      extraIngredients: [],
-      currentPrice: productData.salePrice,
-    });
+  const productTags = getProductCategoryNames(
+    productData.productCategories,
+    categoryMap,
+  );
 
+  const handleModalClose = (val: boolean) => {
+    resetState();
     setIsModalOpen(val);
   };
+
+  const unitPrice =
+    customOrder.currentPrice >= productData.salePrice
+      ? customOrder.currentPrice
+      : productData.salePrice + customOrder.currentPrice;
+
+  const totalPrice = unitPrice * quantity;
 
   return (
     <Dialog
@@ -200,109 +201,141 @@ export function CustomizeOrder({
         handleModalClose(open);
       }}
     >
-      <DialogContent className="overflow-y-auto border-0 w-[calc(100%-1.5rem)] sm:w-full max-w-2xl max-h-[90vh] p-0 flex flex-col ">
-        <DialogHeader className="relative sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-gray-100 shrink-0">
+      <DialogContent
+        hideClose
+        className="flex w-[calc(100%-2rem)] max-h-[86dvh] max-w-[440px] flex-col gap-0 overflow-hidden rounded-2xl border-0 p-0 shadow-2xl sm:w-full sm:rounded-2xl"
+      >
+        {/* Header image */}
+        <div className="relative h-[118px] shrink-0 bg-[#EDEEF1]">
           <Image
-            width={500}
-            height={500}
+            width={440}
+            height={118}
             src={productData.imageURL?.[0]?.url || "/placeholder.svg"}
             alt={productData.name}
-            className="absolute top-0 left-0 w-full h-52 object-cover z-0"
+            className="absolute inset-0 h-full w-full object-cover"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
 
-          <div className="flex flex-col  items-start justify-end py-4 min-h-48 z-10">
-            <div className="flex h-full flex-wrap items-center justify-start gap-4">
-              {getProductCategoryNames(
-                productData.productCategories,
-                categoryMap,
-              ).map((tag) => (
-                <span
-                  key={tag}
-                  className="bg-orange-500 px-2 min-w-24 text-center text-sm md:px-3 md:py-0.5 rounded-xl text-white font-bold"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
+          {productTags.length > 0 && (
+            <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2.5 py-[3px] text-[10.5px] font-extrabold text-[#3D4149]">
+              {productTags[0]}
+            </span>
+          )}
 
-          <DialogTitle>{productData.name}</DialogTitle>
-
-          <DialogDescription className="text-start">
-            {productData.description}
-          </DialogDescription>
-          <p className="text-start text-xl font-bold text-orange-600 mt-2">
-            {formatCurrency(productData.salePrice || 0)}
-          </p>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-4 mb-8 mt-4">
-          {optionalOptions.map((item) => (
-            <Accordion
-              className="px-4"
-              key={item.label}
-              type="single"
-              collapsible
-              defaultValue={optionalOptions[0].label}
-            >
-              <SelectOptions data={item} changePrice={handleFinalPrice} />
-            </Accordion>
-          ))}
+          <button
+            type="button"
+            onClick={() => handleModalClose(false)}
+            className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-[#3D4149] transition hover:bg-white"
+            aria-label="Fechar"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
 
-        {/* Special Instructions */}
-        <div className="px-4">
-          <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-gray-900">
-            Observações Especiais
-          </h3>
-          <Textarea
-            placeholder="Ex: Sem cebola, bem passado, etc..."
-            value={customOrder.specialInstructions}
-            onChange={(e) =>
-              setCustomOrder((prev) => ({
-                ...prev,
-                specialInstructions: e.target.value,
-              }))
-            }
-            className="min-h-20 sm:min-h-24 resize-none rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm"
-          />
-        </div>
+        {/* Radix requires a title/description for a11y; the product name is shown visually below */}
+        <DialogTitle className="sr-only">{productData.name}</DialogTitle>
+        <DialogDescription className="sr-only">
+          {productData.description || productData.name}
+        </DialogDescription>
 
-        {/* Price Summary and Add Button */}
-        {productData && (
-          <div className="border-t px-4 sm:px-6 py-4 sm:py-5 shrink-0">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <span className="text-base sm:text-lg font-semibold text-gray-900">
-                Total:
-              </span>
-              <span className="text-xl sm:text-2xl font-bold text-orange-600">
-                {formatCurrency(
-                  customOrder.currentPrice >= productData.salePrice
-                    ? customOrder.currentPrice
-                    : productData.salePrice + customOrder.currentPrice,
-                )}
-              </span>
-            </div>
-            <Button
-              className="bg-orange-500 w-full cursor-pointer hover:bg-orange-400 px-2 min-w-24 text-center text-sm md:px-3 md:py-0.5 rounded-xl text-white font-bold"
-              onClick={handleConfirmAddToCart}
-              disabled={isAddingToCart}
-              size="lg"
-            >
-              {isAddingToCart ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2"></div>
-                  Adicionando...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                  Adicionar ao Carrinho
-                </>
+        {/* Scrollable middle section - keeps header and footer always visible */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-[18px] pb-3 pt-3.5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="truncate text-[18px] font-extrabold tracking-[-0.02em] text-[#14161A]">
+                {productData.name}
+              </h2>
+              {productData.description && (
+                <p className="mt-[3px] text-[12.5px] font-medium text-[#8A8F99]">
+                  {productData.description}
+                </p>
               )}
-            </Button>
+            </div>
+            <span className="shrink-0 text-[16px] font-extrabold text-[#14161A]">
+              {formatCurrency(productData.salePrice || 0)}
+            </span>
           </div>
-        )}
+
+          <div className="mt-3.5 flex flex-col gap-3.5">
+            {optionalOptions.map((item) => (
+              <SelectOptions
+                key={item.label}
+                data={item}
+                changePrice={handleFinalPrice}
+              />
+            ))}
+          </div>
+
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setNotesOpen((prev) => !prev)}
+              className="text-[11.5px] font-bold text-orange-500"
+            >
+              + Observações
+            </button>
+
+            {notesOpen && (
+              <Textarea
+                placeholder="Ex: sem cebola, bem passado…"
+                value={customOrder.specialInstructions}
+                onChange={(e) =>
+                  setCustomOrder((prev) => ({
+                    ...prev,
+                    specialInstructions: e.target.value,
+                  }))
+                }
+                rows={2}
+                className="mt-2 resize-none rounded-[9px] border border-[#E4E6EA] bg-[#FAFAFB] text-[12.5px] shadow-none focus-visible:ring-orange-400"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Quantity and Add button */}
+        <div className="flex shrink-0 items-center gap-3 border-t border-[#E9EAEE] bg-white px-[18px] py-3">
+          <div className="flex h-10 shrink-0 items-center gap-0.5 rounded-[10px] bg-[#F4F5F7] px-1">
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              disabled={quantity <= 1}
+              className="flex h-8 w-[30px] items-center justify-center rounded-lg text-[#3D4149] disabled:opacity-40"
+              aria-label="Diminuir quantidade"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <span className="min-w-[22px] text-center text-sm font-extrabold text-[#14161A]">
+              {quantity}
+            </span>
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => q + 1)}
+              className="flex h-8 w-[30px] items-center justify-center rounded-lg text-[#3D4149]"
+              aria-label="Aumentar quantidade"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <Button
+            onClick={handleConfirmAddToCart}
+            disabled={isAddingToCart}
+            className="h-10 flex-1 rounded-[10px] bg-orange-500 text-[13.5px] font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,.3)] hover:bg-orange-600"
+          >
+            {isAddingToCart ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+                Adicionando...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <span>Adicionar</span>
+                <span className="opacity-60">•</span>
+                <span>{formatCurrency(totalPrice)}</span>
+              </span>
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

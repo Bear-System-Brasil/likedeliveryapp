@@ -60,6 +60,11 @@ export const useCheckoutProcess = () => {
   const [addressMode, setAddressMode] = useState<"select" | "new">("select");
   const [saveAddress, setSaveAddress] = useState(true);
 
+  // Delivery vs pickup
+  const [orderType, setOrderType] = useState<"delivery" | "pickup">(
+    "delivery",
+  );
+
   // Form state
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
     name: user?.name || "",
@@ -178,18 +183,32 @@ export const useCheckoutProcess = () => {
   };
 
   /**
+   * Valida os dados de entrega (etapa 1 do checkout)
+   * Endereco so e obrigatorio quando o pedido e para entrega
+   */
+  const isDeliveryValid = () => {
+    const contactValid = Boolean(deliveryInfo.name && deliveryInfo.phone);
+
+    if (orderType === "pickup") {
+      return contactValid;
+    }
+
+    return Boolean(
+      contactValid &&
+        deliveryInfo.street &&
+        deliveryInfo.number &&
+        deliveryInfo.neighborhood &&
+        deliveryInfo.city &&
+        deliveryInfo.state &&
+        deliveryInfo.zipCode,
+    );
+  };
+
+  /**
    * Valida formulário antes de submeter
    */
   const isFormValid = () => {
-    const requiredFields =
-      deliveryInfo.name &&
-      deliveryInfo.phone &&
-      deliveryInfo.street &&
-      deliveryInfo.number &&
-      deliveryInfo.neighborhood &&
-      deliveryInfo.city &&
-      deliveryInfo.state &&
-      deliveryInfo.zipCode;
+    const requiredFields = isDeliveryValid();
 
     // Pagamentos que não precisam de dados adicionais no checkout
     const paymentValid =
@@ -201,13 +220,23 @@ export const useCheckoutProcess = () => {
       paymentMethod === "card_machine" ||
       paymentMethod === "pix_on_delivery";
 
+    // Se e cartao online, validar dados do cartao
+    const cardValid =
+      (paymentMethod !== "credit" && paymentMethod !== "debit") ||
+      Boolean(
+        cardInfo.number.trim() &&
+          cardInfo.expiry.trim() &&
+          cardInfo.cvv.trim() &&
+          cardInfo.name.trim(),
+      );
+
     // Se é dinheiro e precisa de troco, validar valor
     const changeValid =
       paymentMethod !== "cash" ||
       !needsChange ||
       (changeAmount && parseFloat(changeAmount) > total);
 
-    return requiredFields && paymentValid && changeValid;
+    return requiredFields && paymentValid && cardValid && changeValid;
   };
 
   /**
@@ -249,37 +278,39 @@ export const useCheckoutProcess = () => {
 
     try {
       // --------------------------------------------------
-      // 1️⃣ GARANTIR QUE EXISTE UM ADDRESS
+      // 1️⃣ GARANTIR QUE EXISTE UM ADDRESS (apenas para entrega)
       // --------------------------------------------------
 
       let deliveryAddressId = selectedAddressId;
 
-      // For "new" address mode: always create address (delivery needs an addressId)
-      if (addressMode === "new" && !deliveryAddressId) {
-        deliveryAddressId = await saveNewAddress();
-      }
+      if (orderType === "delivery") {
+        // For "new" address mode: always create address (delivery needs an addressId)
+        if (addressMode === "new" && !deliveryAddressId) {
+          deliveryAddressId = await saveNewAddress();
+        }
 
-      // Fallback: if we still don't have an address, create one
-      if (!deliveryAddressId) {
-        const newAddressData = {
-          zipCode: deliveryInfo.zipCode,
-          street: deliveryInfo.street,
-          number: deliveryInfo.number,
-          neighborhood: deliveryInfo.neighborhood,
-          city: deliveryInfo.city,
-          state: deliveryInfo.state,
-          latitude: String(deliveryInfo.latitude),
-          longitude: String(deliveryInfo.longitude),
-          isDefault: false,
-        };
+        // Fallback: if we still don't have an address, create one
+        if (!deliveryAddressId) {
+          const newAddressData = {
+            zipCode: deliveryInfo.zipCode,
+            street: deliveryInfo.street,
+            number: deliveryInfo.number,
+            neighborhood: deliveryInfo.neighborhood,
+            city: deliveryInfo.city,
+            state: deliveryInfo.state,
+            latitude: String(deliveryInfo.latitude),
+            longitude: String(deliveryInfo.longitude),
+            isDefault: false,
+          };
 
-        const addressResponse =
-          await apiService.address.createUserAddress(newAddressData);
+          const addressResponse =
+            await apiService.address.createUserAddress(newAddressData);
 
-        if (addressResponse.success && addressResponse.data?.id) {
-          deliveryAddressId = addressResponse.data.id;
-        } else {
-          throw new Error("Erro ao criar endereço de entrega");
+          if (addressResponse.success && addressResponse.data?.id) {
+            deliveryAddressId = addressResponse.data.id;
+          } else {
+            throw new Error("Erro ao criar endereço de entrega");
+          }
         }
       }
 
@@ -365,20 +396,22 @@ export const useCheckoutProcess = () => {
       }
 
       // --------------------------------------------------
-      // 4️⃣ DELIVERY (USANDO O MESMO ADDRESS)
+      // 4️⃣ DELIVERY (USANDO O MESMO ADDRESS) — pulado quando é retirada no local
       // --------------------------------------------------
 
-      try {
-        const deliveryData = {
-          orderId: finalOrderId,
-          deliveryAddressId: deliveryAddressId,
-          observations: deliveryInfo.observations || undefined,
-          estimatedTime: "30-40 min",
-        };
+      if (orderType === "delivery" && deliveryAddressId) {
+        try {
+          const deliveryData = {
+            orderId: finalOrderId,
+            deliveryAddressId: deliveryAddressId,
+            observations: deliveryInfo.observations || undefined,
+            estimatedTime: "30-40 min",
+          };
 
-        await apiService.deliveries.create(deliveryData);
-      } catch (error) {
-        console.error("Erro no delivery:", error);
+          await apiService.deliveries.create(deliveryData);
+        } catch (error) {
+          console.error("Erro no delivery:", error);
+        }
       }
 
       toast.success("Pedido realizado com sucesso!");
@@ -439,6 +472,11 @@ export const useCheckoutProcess = () => {
     handleAddressSelect,
     loadAddressData,
     setSelectedAddressId,
+
+    // Delivery vs pickup
+    orderType,
+    setOrderType,
+    isDeliveryValid,
 
     // Form state
     deliveryInfo,

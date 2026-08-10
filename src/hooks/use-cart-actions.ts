@@ -228,20 +228,25 @@ export const useCartActions = () => {
       // Timeout de 10 segundos (previne requisições travadas)
       const timeoutId = setTimeout(() => abortController.abort(), 10000);
 
-      console.log(
-        "order id:",
-        currentOrderId,
-        "item id:",
-        item.id,
-        "user id",
-        user.id,
-      );
+      const revertAddToCart = (message?: string) => {
+        const currentItems = useCartStore.getState().items;
+        const revertedItems = currentItems.filter((i) => i.id !== item.id);
+        setItems(revertedItems);
+        toast.error(message || "Erro ao adicionar item. Tente novamente.");
+      };
 
       apiService.orderItems
         .addProductToCart(currentOrderId, item.id, user.id, item.quantity || 1)
-        .then(() => {
+        .then((response) => {
           clearTimeout(timeoutId);
           pendingRequests.current.delete(item.id);
+
+          // A requisição pode resolver normalmente mesmo quando o backend
+          // recusa (ex: 403 de permissão) - sem checar `success` o app
+          // mantinha o item no carrinho local como se tivesse sido salvo
+          if (!response.success) {
+            revertAddToCart(response.message);
+          }
         })
         .catch((error) => {
           clearTimeout(timeoutId);
@@ -250,12 +255,8 @@ export const useCartActions = () => {
           // Ignorar erros de abort (esperado)
           if (error.name === "AbortError") return;
 
-          // Se falhar, reverter usando estado atual do store
           console.error("Erro ao adicionar item:", error);
-          const currentItems = useCartStore.getState().items;
-          const revertedItems = currentItems.filter((i) => i.id !== item.id);
-          setItems(revertedItems);
-          toast.error("Erro ao adicionar item. Tente novamente.");
+          revertAddToCart();
         });
 
       // Retornar true imediatamente (optimistic)
@@ -372,10 +373,23 @@ export const useCartActions = () => {
               Math.abs(diff),
             );
 
+      const revertQuantity = (message?: string) => {
+        const currentItems = useCartStore.getState().items;
+        const revertedItems = currentItems.map((i) =>
+          i.id === itemId ? { ...i, quantity: item.quantity } : i,
+        );
+        setItems(revertedItems);
+        toast.error(message || "Erro ao atualizar. Tente novamente.");
+      };
+
       apiCall
-        .then(() => {
+        .then((response) => {
           clearTimeout(timeoutId);
           pendingRequests.current.delete(itemId);
+
+          if (!response.success) {
+            revertQuantity(response.message);
+          }
         })
         .catch((error) => {
           clearTimeout(timeoutId);
@@ -384,14 +398,8 @@ export const useCartActions = () => {
           // Ignorar erros de abort
           if (error.name === "AbortError") return;
 
-          // Reverter para quantidade original
           console.error("Erro ao atualizar quantidade:", error);
-          const currentItems = useCartStore.getState().items;
-          const revertedItems = currentItems.map((i) =>
-            i.id === itemId ? { ...i, quantity: item.quantity } : i,
-          );
-          setItems(revertedItems);
-          toast.error("Erro ao atualizar. Tente novamente.");
+          revertQuantity();
         });
     }, 300); // Debounce de 300ms
 

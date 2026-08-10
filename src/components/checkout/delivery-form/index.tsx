@@ -13,7 +13,16 @@ import { DeliveryInfo } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { formatCep } from "@/utils";
 
-import { Check, LocateFixed, MapPin, Phone, Plus, User } from "lucide-react";
+import {
+  Check,
+  Clock,
+  LocateFixed,
+  MapPin,
+  Phone,
+  Plus,
+  Store,
+  User,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { CheckoutMap } from "@/components/checkout/checkout-map";
 import { Address } from "@/services/api";
+import { Restaurant } from "@/stores/cart-store";
 
 type Props = {
   handleInputChange: (field: string, value: string | number) => void;
@@ -37,6 +47,9 @@ type Props = {
   saveAddress: boolean;
   userAddresses: Address[];
   selectedAddressId: string | null;
+  orderType: "delivery" | "pickup";
+  setOrderType: Dispatch<SetStateAction<"delivery" | "pickup">>;
+  restaurant: Restaurant | null;
 };
 
 type FieldProps = {
@@ -77,6 +90,9 @@ export function DeliveryForm({
   userAddresses,
   saveAddress,
   selectedAddressId,
+  orderType,
+  setOrderType,
+  restaurant,
 }: Props) {
   const [isLoadingCep, setIsLoadingCep] = useState(false);
 
@@ -150,13 +166,40 @@ export function DeliveryForm({
 
   return (
     <form className="space-y-3">
+      <div className="grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1">
+        <button
+          type="button"
+          onClick={() => setOrderType("delivery")}
+          className={cn(
+            "flex h-9 items-center justify-center rounded-md text-sm font-bold transition-colors",
+            orderType === "delivery"
+              ? "bg-white text-gray-950 shadow-sm"
+              : "text-gray-500 hover:text-gray-700",
+          )}
+        >
+          Entrega
+        </button>
+        <button
+          type="button"
+          onClick={() => setOrderType("pickup")}
+          className={cn(
+            "flex h-9 items-center justify-center rounded-md text-sm font-bold transition-colors",
+            orderType === "pickup"
+              ? "bg-white text-gray-950 shadow-sm"
+              : "text-gray-500 hover:text-gray-700",
+          )}
+        >
+          Retirar no local
+        </button>
+      </div>
+
       <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
         <div className="mb-3 flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
             <User className="h-4 w-4" />
           </div>
           <h2 className="text-sm font-extrabold text-gray-950">
-            Dados de entrega
+            Dados de {orderType === "pickup" ? "contato" : "entrega"}
           </h2>
         </div>
 
@@ -189,6 +232,7 @@ export function DeliveryForm({
         </div>
       </section>
 
+      {orderType === "delivery" && (
       <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -438,6 +482,36 @@ export function DeliveryForm({
           </div>
         )}
       </section>
+      )}
+
+      {orderType === "pickup" && (
+        <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+              <Store className="h-4 w-4" />
+            </div>
+            <h2 className="text-sm font-extrabold text-gray-950">
+              Retirada no local
+            </h2>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-lg bg-orange-50 p-3">
+            <Store className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-orange-900">
+                {restaurant?.name || "Restaurante"}
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-orange-700">
+                {restaurant?.address || "Endereco disponivel apos confirmacao"}
+              </p>
+              <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-orange-600">
+                <Clock className="h-3.5 w-3.5" />
+                Pronto em cerca de 20-30 min
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
         <Field htmlFor="observations" label="Observacoes do pedido" optional>
