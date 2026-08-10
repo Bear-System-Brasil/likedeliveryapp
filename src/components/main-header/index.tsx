@@ -454,11 +454,11 @@ export function MainHeader({
               </div>
             )}
 
-            {/* Carrinho */}
+            {/* Carrinho (o BottomBar ja cobre isso no mobile) */}
             <Button
               variant="outline"
               size="icon"
-              className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-xl border-0 bg-gray-50/50"
+              className="relative hidden h-9 w-9 rounded-xl border-0 bg-gray-50/50 md:flex md:h-10 md:w-10"
               onClick={handleCartClick}
               aria-label="Carrinho"
             >
@@ -470,12 +470,12 @@ export function MainHeader({
               )}
             </Button>
 
-            {/* Meus Pedidos */}
+            {/* Meus Pedidos (o BottomBar ja cobre isso no mobile) */}
             {canShowAuthUI && isAuthenticated && user?.role === "client" && (
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border-0 bg-gray-50/50"
+                className="hidden h-9 w-9 rounded-xl border-0 bg-gray-50/50 md:flex md:h-10 md:w-10"
                 onClick={() => router.push("/orders")}
                 aria-label="Meus Pedidos"
               >
