@@ -24,9 +24,10 @@ import {
   ShoppingCart,
   Store,
   User,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { LikeDeliveryLogo } from "../ui/likedelivery-logo";
 
 const DEFAULT_LOCATION_LABEL = "Escolha seu endereço";
@@ -61,11 +62,16 @@ export function MainHeader({
   const [manualLocation, setManualLocation] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Montagem do componente
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
 
   const saveLocation = (location: {
     lat: number;
@@ -410,31 +416,71 @@ export function MainHeader({
           <div className="flex items-center space-x-3">
             {/* Search */}
             {showSearch && (
-              <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border-0 bg-gray-50/50"
-                  >
+              <div className="flex items-center">
+                <div
+                  className={clsx(
+                    "overflow-hidden transition-all duration-200 ease-out",
+                    searchOpen
+                      ? "mr-2 w-36 opacity-100 sm:w-56"
+                      : "w-0 opacity-0",
+                  )}
+                >
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Buscar comida..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setSearchOpen(false);
+                    }}
+                    className="h-9 rounded-xl border-0 bg-gray-50/50 sm:h-10"
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 rounded-xl border-0 bg-gray-50/50 sm:h-10 sm:w-10"
+                  onClick={() => setSearchOpen((open) => !open)}
+                  aria-label={searchOpen ? "Fechar busca" : "Buscar"}
+                >
+                  {searchOpen ? (
+                    <X className="h-4 w-4" />
+                  ) : (
                     <Search className="h-4 w-4" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="top" className="border-b border-pink-100">
-                  <div className="mt-10">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        autoFocus
-                        placeholder="Buscar comida..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 h-12 rounded-xl bg-gray-50/50 border-0"
-                      />
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* Carrinho */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-xl border-0 bg-gray-50/50"
+              onClick={handleCartClick}
+              aria-label="Carrinho"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              {cartItems > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                  {cartItems}
+                </span>
+              )}
+            </Button>
+
+            {/* Meus Pedidos */}
+            {canShowAuthUI && isAuthenticated && user?.role === "client" && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border-0 bg-gray-50/50"
+                onClick={() => router.push("/orders")}
+                aria-label="Meus Pedidos"
+              >
+                <Package className="h-4 w-4" />
+              </Button>
             )}
 
             {/* Área de autenticação */}

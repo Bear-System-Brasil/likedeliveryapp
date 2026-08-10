@@ -145,7 +145,7 @@ function StoreCategoriesFilter({
   return (
     <div className="mb-3 sm:mb-4">
       <div className="mb-1.5 sm:mb-2 flex items-center justify-between gap-3 sm:gap-4">
-        <h3 className="text-sm sm:text-base font-bold text-gray-950">
+        <h3 className="text-sm sm:text-base font-bold text-gray-700">
           Categorias
         </h3>
         <button
