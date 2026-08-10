@@ -625,7 +625,10 @@ function MenuManagementContent() {
 
 export default function MenuManagementPage() {
   return (
-    <ProtectedRoute allowedRoles={["owner", "admin", "manager"]}>
+    <ProtectedRoute
+      allowedRoles={["owner", "admin", "manager"]}
+      redirectOnFail
+    >
       <MenuManagementContent />
     </ProtectedRoute>
   );
