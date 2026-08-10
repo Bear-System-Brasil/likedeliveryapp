@@ -199,9 +199,7 @@ export function LikeDeliveryAppPage() {
           categoriesScrollRef={categoriesScrollRef}
           scrollCategories={scrollCategories}
           rightContent={
-            <GradientButton
-              onClick={() => router.push("/restaurants")}
-            >
+            <GradientButton onClick={() => router.push("/restaurants")}>
               Ver Todas →
             </GradientButton>
           }

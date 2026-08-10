@@ -38,43 +38,50 @@ export interface ProductCategory {
   category?: Category;
 }
 
-export interface Address {
+interface Address {
   id: string;
-  city: string;
+  zipCode: string;
   state: string;
+  city: string;
+  neighborhood: string;
   street: string;
   number: string;
-  latitude: string;
-  longitude: string;
-  neighborhood: string;
+  complement?: string;
+  reference?: string;
+  latitude?: string;
+  longitude?: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Restaurant {
   id: string;
-  time: string;
-  phone: string;
+  tradeName: string;
+  legalName: string;
+  description: string;
   logo_url: string;
   cover_url: string;
-  tradeName: string;
-  description: string;
-  deliveryFee: string;
-
-  tags?: string[];
-
+  phone: string;
+  email?: string;
+  cnpj?: string;
   rating: number;
-  discount: number;
-  distanceKm: number;
-  actionRadius: number;
   totalReviews: number;
-  actionRadiusKm: number;
-
   isOpen: boolean;
-  trending: boolean;
-  isWithinRadius: boolean;
-
   status: "active" | "inactive";
-
   openingHours: unknown[];
-  categories: Category[];
-  specialty?: Specialty[];
+  Address?: Address[];
+  speciality?: Specialty[];
+
+  // Campos que só existem na listagem
+  time?: string;
+  deliveryFee?: string;
+  tags?: string[];
+  discount?: number;
+  distanceKm?: number;
+  actionRadius?: number;
+  actionRadiusKm?: number;
+  trending?: boolean;
+  isWithinRadius?: boolean;
+  categories?: Category[];
 }
