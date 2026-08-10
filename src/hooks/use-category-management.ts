@@ -1,166 +1,151 @@
-import type { Category } from '@/services/api'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from './use-categories'
+import type { Category } from "@/services/api";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  useCategories,
+  useCreateCategory,
+  useDeleteCategory,
+  useUpdateCategory,
+} from "./use-categories";
 
 interface CategoryFormData {
-  name: string
-  description: string
+  name: string;
+  description: string;
 }
 
-/**
- * Hook para gerenciar categorias de produtos
- */
 export const useCategoryManagement = () => {
-  // React Query hooks
-  const { data: categories = [], isLoading, refetch } = useCategories()
-  const createCategory = useCreateCategory()
-  const updateCategory = useUpdateCategory()
-  const deleteCategory = useDeleteCategory()
+  const { data: categories = [], isLoading, refetch } = useCategories();
+  const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory();
+  const deleteCategory = useDeleteCategory();
 
-  // Local state
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [formData, setFormData] = useState<CategoryFormData>({
-    name: '',
-    description: '',
-  })
-  const [searchQuery, setSearchQuery] = useState('')
+    name: "",
+    description: "",
+  });
+  const [searchQuery, setSearchQuery] = useState("");
 
-  /**
-   * Categorias filtradas por busca
-   */
-  const filteredCategories = categories.filter((category: Category) =>
-    category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    category.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredCategories = categories.filter(
+    (category: Category) =>
+      category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      category.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
-  /**
-   * Abre modal para criar categoria
-   */
   const handleOpenCreateModal = () => {
-    setEditingCategory(null)
+    setEditingCategory(null);
     setFormData({
-      name: '',
-      description: '',
-    })
-    setIsModalOpen(true)
-  }
+      name: "",
+      description: "",
+    });
+    setIsModalOpen(true);
+  };
 
-  /**
-   * Abre modal para editar categoria
-   */
   const handleOpenEditModal = (category: Category) => {
-    setEditingCategory(category)
+    setEditingCategory(category);
     setFormData({
       name: category.name,
-      description: category.description || '',
-    })
-    setIsModalOpen(true)
-  }
+      description: category.description || "",
+    });
+    setIsModalOpen(true);
+  };
 
-  /**
-   * Fecha o modal e limpa o formulário
-   */
   const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setEditingCategory(null)
+    setIsModalOpen(false);
+    setEditingCategory(null);
     setFormData({
-      name: '',
-      description: '',
-    })
-  }
+      name: "",
+      description: "",
+    });
+  };
 
-  /**
-   * Atualiza campo do formulário
-   */
   const updateFormField = (field: keyof CategoryFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-  /**
-   * Valida o formulário
-   */
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
-      toast.error('Nome da categoria é obrigatório')
-      return false
+      toast.error("Nome da categoria é obrigatório");
+      return false;
     }
 
     if (formData.name.length < 3) {
-      toast.error('Nome deve ter pelo menos 3 caracteres')
-      return false
+      toast.error("Nome deve ter pelo menos 3 caracteres");
+      return false;
     }
 
-    return true
-  }
+    return true;
+  };
 
-  /**
-   * Salva a categoria (criar ou atualizar)
-   */
   const handleSaveCategory = async () => {
-    if (!validateForm()) return
+    if (!validateForm()) return;
 
     try {
       const categoryData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-      }
+      };
 
       if (editingCategory) {
         await updateCategory.mutateAsync({
           id: editingCategory.id,
           data: categoryData,
-        })
+        });
       } else {
-        await createCategory.mutateAsync(categoryData)
+        await createCategory.mutateAsync(categoryData);
       }
 
-      handleCloseModal()
-      refetch()
+      handleCloseModal();
+      refetch();
     } catch (error) {
-      console.error('Erro ao salvar categoria:', error)
+      console.error("Erro ao salvar categoria:", error);
     }
-  }
+  };
 
-  /**
-   * Deleta uma categoria
-   */
-  const handleDeleteCategory = async (category: Category) => {
-    const confirm = window.confirm(
-      `Deseja realmente deletar a categoria "${category.name}"?\nEsta ação não pode ser desfeita.`
-    )
-    if (!confirm) return
+  const handleRequestDelete = (category: Category) => {
+    setDeleteTarget(category);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteTarget(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
 
     try {
-      await deleteCategory.mutateAsync(category.id)
-      refetch()
+      await deleteCategory.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
+      refetch();
     } catch (error) {
-      console.error('Erro ao deletar categoria:', error)
+      console.error("Erro ao deletar categoria:", error);
     }
-  }
+  };
 
   return {
-    // Data
     categories: filteredCategories,
     allCategories: categories,
     isLoading,
 
-    // Modal state
     isModalOpen,
     editingCategory,
+    deleteTarget,
     formData,
 
-    // Filters
     searchQuery,
     setSearchQuery,
 
-    // Actions
     handleOpenCreateModal,
     handleOpenEditModal,
     handleCloseModal,
     handleSaveCategory,
-    handleDeleteCategory,
+    handleRequestDelete,
+    handleConfirmDelete,
+    handleCancelDelete,
     updateFormField,
-  }
-}
+    isSaving: createCategory.isPending || updateCategory.isPending,
+    isDeleting: deleteCategory.isPending,
+  };
+};

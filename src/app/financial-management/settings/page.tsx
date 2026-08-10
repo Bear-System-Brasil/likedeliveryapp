@@ -1,12 +1,16 @@
-import { Sidebar } from "@/components/sidebar"
+"use client";
+
+import { AdminPageLayout } from "@/components/admin-page-layout";
+import { Settings } from "lucide-react";
 
 export default function SettingsPage() {
   return (
-    <div className="flex bg-gray-50 min-h-screen">
-      <Sidebar selectedLabel="Configurações" />
-      <main className="flex-1 p-6">
-        <h1 className="text-2xl font-bold mb-6">Configurações</h1>
-      </main>
-    </div>
-  )
+    <AdminPageLayout
+      title="Configurações"
+      icon={Settings}
+      mainClassName="p-4 pb-10 sm:p-6 lg:pl-64 lg:pr-8"
+    >
+      <div className="mx-auto max-w-7xl" />
+    </AdminPageLayout>
+  );
 }

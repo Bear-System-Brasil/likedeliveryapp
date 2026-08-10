@@ -1,6 +1,6 @@
 "use client"
 
-import { Sidebar } from "@/components/sidebar"
+import { AdminPageLayout } from "@/components/admin-page-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -78,22 +78,23 @@ export default function OrdersPage() {
   }), [orders])
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
-      <Sidebar selectedLabel="Pedidos" />
-      <main className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Pedidos da Empresa</h1>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="rounded-xl gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Atualizar
-            </Button>
-          </div>
+    <AdminPageLayout
+      title="Pedidos da Empresa"
+      icon={ClipboardList}
+      mainClassName="p-4 pb-10 sm:p-6 lg:pl-64 lg:pr-8"
+      actions={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          className="rounded-xl gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Atualizar
+        </Button>
+      }
+    >
+      <div className="max-w-7xl mx-auto space-y-6">
 
           {/* Summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -203,7 +204,6 @@ export default function OrdersPage() {
             )}
           </div>
         </div>
-      </main>
-    </div>
+    </AdminPageLayout>
   )
 }

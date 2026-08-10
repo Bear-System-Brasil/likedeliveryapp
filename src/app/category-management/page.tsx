@@ -1,8 +1,15 @@
 "use client";
 
+import { AdminPageLayout } from "@/components/admin-page-layout";
 import ProtectedRoute from "@/components/role-check";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,16 +23,31 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useCategoryManagement } from "@/hooks";
-import { Building2, Edit, Plus, Search, Trash2 } from "lucide-react";
-import Link from "next/link";
+import {
+  CalendarDays,
+  Edit,
+  Eye,
+  LayoutGrid,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("pt-BR");
+}
 
 function CategoryManagementContent() {
-  // Hook centralizado para gerenciamento de categorias
   const {
     categories: filteredCategories,
+    allCategories,
     isLoading: loading,
     isModalOpen,
     editingCategory,
+    deleteTarget,
     formData,
     searchQuery,
     setSearchQuery,
@@ -33,237 +55,359 @@ function CategoryManagementContent() {
     handleOpenEditModal,
     handleCloseModal,
     handleSaveCategory,
-    handleDeleteCategory,
+    handleRequestDelete,
+    handleConfirmDelete,
+    handleCancelDelete,
     updateFormField,
+    isSaving,
+    isDeleting,
   } = useCategoryManagement();
 
-  return (
-    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0">
-        <div
-          className="absolute top-20 left-10 w-64 h-64 bg-linear-to-r from-orange-400/20 to-orange-400/20 
-                         rounded-full blur-3xl animate-pulse"
-        />
-        <div
-          className="absolute top-40 right-20 w-48 h-48 bg-linear-to-r from-purple-400/15 to-blue-400/15 
-                         rounded-full blur-2xl animate-pulse delay-1000"
-        />
-        <div
-          className="absolute bottom-40 left-1/4 w-80 h-80 bg-linear-to-r from-yellow-400/10 to-orange-400/10 
-                        rounded-full blur-3xl animate-pulse delay-2000"
-        />
-      </div>
+  const previewCategories = useMemo(
+    () => allCategories.slice(0, 10),
+    [allCategories],
+  );
 
-      <div className="relative z-10 p-3 sm:p-4 md:p-6 pt-20 sm:pt-24">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
-            <div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-linear-to-r from-orange-500 to-orange-500 bg-clip-text text-transparent">
-                Gerenciamento de Categorias
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
-                Organize seus produtos em categorias
-              </p>
+  return (
+    <AdminPageLayout
+      title="Categorias"
+      icon={LayoutGrid}
+      mainClassName="p-4 pb-10 sm:p-6 lg:pl-[17rem] lg:pr-8"
+      actions={
+        <Button
+          onClick={handleOpenCreateModal}
+          className="h-[34px] w-full cursor-pointer rounded-[8px] bg-[#FF6B00] px-4 text-[12.5px] font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,0.25)] hover:bg-[#E05F00] sm:w-auto"
+        >
+          <Plus className="h-4 w-4" />
+          Adicionar Categoria
+        </Button>
+      }
+    >
+      <div className="mx-auto max-w-7xl">
+            <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex h-9 w-full max-w-[340px] items-center gap-2 rounded-[8px] border border-[#E9EAEE] bg-white px-3">
+                <Search className="h-4 w-4 shrink-0 text-[#8A8F99]" />
+                <Input
+                  placeholder="Buscar categorias..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-auto min-w-0 border-0 bg-transparent p-0 text-[12.5px] font-medium text-[#14161A] shadow-none placeholder:text-[#A2A7B0] focus-visible:ring-0"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="rounded-[8px] border border-[#E9EAEE] bg-white px-2.5 py-1 text-[11.5px] font-bold text-[#3D4149]">
+                  {allCategories.length} categorias
+                </span>
+                <span className="rounded-[8px] border border-[#E9EAEE] bg-white px-2.5 py-1 text-[11.5px] font-bold text-[#3D4149]">
+                  {filteredCategories.length} exibidas
+                </span>
+                <span className="rounded-[8px] bg-[#F4F5F7] px-2.5 py-1 text-[11.5px] font-bold text-[#8A8F99]">
+                  {previewCategories.length} na prévia
+                </span>
+              </div>
             </div>
 
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Link href="/company-profile" className="flex-1 sm:flex-none">
+            <div className="grid min-h-0 items-start gap-3 md:h-[calc(100vh-165px)] xl:grid-cols-[minmax(0,1fr)_320px]">
+              <section className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[8px] border border-[#E9EAEE] bg-white md:h-full">
+                <div className="hidden shrink-0 grid-cols-[44px_minmax(0,1fr)_112px_112px_92px_68px] items-center gap-2 border-b border-[#E9EAEE] bg-[#FAFAFB] px-3.5 py-2.5 md:grid">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#A2A7B0]">
+                    #
+                  </span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#A2A7B0]">
+                    Categoria
+                  </span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#A2A7B0]">
+                    Criada em
+                  </span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#A2A7B0]">
+                    Atualizada
+                  </span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#A2A7B0]">
+                    Status
+                  </span>
+                  <span className="text-right text-[10px] font-extrabold uppercase tracking-wide text-[#A2A7B0]">
+                    Ações
+                  </span>
+                </div>
+
+                {loading && (
+                  <div className="min-h-0 flex-1 divide-y divide-[#F4F5F7] overflow-y-auto">
+                    {[1, 2, 3, 4, 5, 6].map((item) => (
+                      <div
+                        key={item}
+                        className="grid gap-2 p-3.5 md:grid-cols-[44px_minmax(0,1fr)_112px_112px_92px_68px] md:items-center"
+                      >
+                        <Skeleton className="h-4 w-7" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-36" />
+                          <Skeleton className="h-3 w-full" />
+                        </div>
+                        <Skeleton className="h-5 w-20 rounded-[6px]" />
+                        <Skeleton className="h-5 w-20 rounded-[6px]" />
+                        <Skeleton className="h-5 w-16 rounded-[6px]" />
+                        <div className="flex gap-1.5 md:justify-end">
+                          <Skeleton className="h-6 w-6 rounded-[7px]" />
+                          <Skeleton className="h-6 w-6 rounded-[7px]" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!loading && filteredCategories.length > 0 && (
+                  <div className="min-h-0 flex-1 divide-y divide-[#F4F5F7] overflow-y-auto">
+                    {filteredCategories.map((category, index) => (
+                      <div
+                        key={category.id}
+                        className="grid gap-3 p-3.5 md:grid-cols-[44px_minmax(0,1fr)_112px_112px_92px_68px] md:items-center md:gap-2"
+                      >
+                        <div className="flex items-center justify-between gap-3 md:block">
+                          <span className="text-[11px] font-extrabold text-[#C9CDD4]">
+                            #{String(index + 1).padStart(2, "0")}
+                          </span>
+                          <span className="rounded-[6px] bg-[#F4F5F7] px-2 py-0.5 text-[10.5px] font-bold text-[#5B6472] md:hidden">
+                            Cadastrada
+                          </span>
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="truncate text-[13.5px] font-bold tracking-tight text-[#14161A]">
+                            {category.name}
+                          </div>
+                          <div className="mt-1 truncate text-[11px] font-medium text-[#A2A7B0]">
+                            {category.description || "Sem descrição"}
+                          </div>
+                        </div>
+
+                        <div className="hidden items-center gap-1.5 text-[11.5px] font-bold text-[#5B6472] md:flex">
+                          <CalendarDays className="h-3.5 w-3.5 text-[#A2A7B0]" />
+                          {formatDate(category.created_at)}
+                        </div>
+
+                        <div className="hidden items-center gap-1.5 text-[11.5px] font-bold text-[#5B6472] md:flex">
+                          <CalendarDays className="h-3.5 w-3.5 text-[#A2A7B0]" />
+                          {formatDate(category.updated_at)}
+                        </div>
+
+                        <div className="hidden md:block">
+                          <span className="inline-flex rounded-[6px] bg-[#F4F5F7] px-2 py-0.5 text-[10.5px] font-bold text-[#5B6472]">
+                            Cadastrada
+                          </span>
+                        </div>
+
+                        <div className="flex justify-end gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEditModal(category)}
+                            className="h-7 w-7 cursor-pointer rounded-[7px] bg-[#F4F5F7] text-[#3D4149] hover:bg-[#EAECF0]"
+                            aria-label={`Editar ${category.name}`}
+                            title="Editar"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRequestDelete(category)}
+                            className="h-7 w-7 cursor-pointer rounded-[7px] bg-[#FDEEEE] text-[#D64545] hover:bg-[#FADADA] hover:text-[#B83232]"
+                            aria-label={`Remover ${category.name}`}
+                            title="Remover"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {filteredCategories.length === 0 && !loading && (
+                  <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-5 py-10 text-center">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[8px] bg-[#FFF7ED] text-[#FF6B00]">
+                      <LayoutGrid className="h-6 w-6" />
+                    </div>
+                    <p className="mt-3 text-sm font-bold text-[#14161A]">
+                      Nenhuma categoria encontrada
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-[#8A8F99]">
+                      {searchQuery
+                        ? "Tente outro termo de busca"
+                        : "Comece adicionando sua primeira categoria"}
+                    </p>
+                  </div>
+                )}
+              </section>
+
+              <aside className="rounded-[8px] border border-[#E9EAEE] bg-white p-3.5 md:max-h-full md:overflow-y-auto">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-[13px] font-extrabold text-[#14161A]">
+                      Prévia no app
+                    </h2>
+                    <p className="mt-1 text-[11px] font-semibold text-[#A2A7B0]">
+                      Abas do cardápio
+                    </p>
+                  </div>
+                  <Eye className="h-4 w-4 text-[#A2A7B0]" />
+                </div>
+
+                <div className="mt-3 rounded-[8px] border border-[#EDEEF1] bg-[#F7F8FA] p-3">
+                  {previewCategories.length === 0 ? (
+                    <div className="py-4 text-center text-[11.5px] font-semibold text-[#8A8F99]">
+                      Nenhuma categoria cadastrada
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="rounded-full bg-[#14161A] px-3 py-1.5 text-[11.5px] font-bold text-white">
+                        Todos
+                      </span>
+                      {previewCategories.map((category) => (
+                        <span
+                          key={category.id}
+                          className="rounded-full border border-[#E4E6EA] bg-white px-3 py-1.5 text-[11.5px] font-semibold text-[#3D4149]"
+                        >
+                          {category.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
+            <DialogContent className="max-h-[90vh] rounded-[8px] p-0 sm:max-w-[500px]">
+              <DialogHeader className="border-b border-[#E9EAEE] px-4 pb-3 pt-4 sm:px-6">
+                <DialogTitle className="text-lg font-extrabold text-[#14161A]">
+                  {editingCategory
+                    ? "Editar Categoria"
+                    : "Adicionar Nova Categoria"}
+                </DialogTitle>
+                <DialogDescription className="text-xs font-medium text-[#8A8F99]">
+                  Preencha as informações da categoria.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="max-h-[65vh] overflow-y-auto px-4 py-4 sm:px-6">
+                <div className="grid gap-3">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="name" className="text-xs">
+                      Nome da Categoria *
+                    </Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => updateFormField("name", e.target.value)}
+                      placeholder="Ex: Pizza, Sobremesas, Bebidas"
+                      className="h-10 rounded-[8px] border-[#E9EAEE] text-xs focus-visible:ring-orange-200"
+                    />
+                  </div>
+
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="description" className="text-xs">
+                      Descrição
+                    </Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) =>
+                        updateFormField("description", e.target.value)
+                      }
+                      placeholder="Descreva a categoria..."
+                      rows={3}
+                      className="resize-none rounded-[8px] border-[#E9EAEE] text-xs focus-visible:ring-orange-200"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="border-t border-[#E9EAEE] px-4 py-3 sm:px-6">
                 <Button
                   variant="outline"
-                  className="cursor-pointer border-2 border-gray-200 hover:border-orange-400 hover:bg-orange-50 hover:text-orange-600 
-                             transition-all w-full h-10 sm:h-11 text-sm sm:text-base"
+                  onClick={handleCloseModal}
+                  className="cursor-pointer rounded-[8px] border-[#E9EAEE] text-xs"
                 >
-                  <Building2 className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Perfil</span>
+                  Cancelar
                 </Button>
-              </Link>
-              <Button
-                onClick={handleOpenCreateModal}
-                className="cursor-pointer bg-linear-to-r from-orange-500 to-orange-500 hover:from-orange-600 
-                           hover:to-orange-600 text-white shadow-lg hover:shadow-xl transition-all flex-1 sm:flex-none text-sm sm:text-base h-10 sm:h-11"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Categoria
-              </Button>
-            </div>
-          </div>
-
-          <div className="mb-4 sm:mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <Input
-                placeholder="Buscar categorias..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 sm:pl-10 h-10 sm:h-12 text-sm sm:text-base rounded-xl border-2 border-gray-200 focus:border-orange-400 
-                         bg-white shadow-sm transition-all"
-              />
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Card key={i} className="border-2 border-gray-200">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <Skeleton className="h-6 w-32" />
-                      <div className="flex gap-1">
-                        <Skeleton className="h-8 w-8 rounded" />
-                        <Skeleton className="h-8 w-8 rounded" />
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-24 mt-2" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {filteredCategories.map((category) => (
-                <Card
-                  key={category.id}
-                  className="border-2 border-gray-200 hover:border-orange-300 transition-all shadow-sm hover:shadow-lg"
+                <Button
+                  onClick={handleSaveCategory}
+                  disabled={isSaving}
+                  className="cursor-pointer rounded-[8px] bg-[#FF6B00] text-xs font-bold text-white hover:bg-[#E05F00]"
                 >
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex justify-between items-start text-base sm:text-lg">
-                      <span className="text-gray-900">{category.name}</span>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenEditModal(category)}
-                          className="h-8 w-8 hover:bg-orange-100 hover:text-orange-600 cursor-pointer"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteCategory(category)}
-                          className="h-8 w-8 hover:bg-red-100 hover:text-red-600 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm text-gray-600">
-                      {category.description}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Criado em:{" "}
-                      {new Date(category.created_at).toLocaleDateString(
-                        "pt-BR",
-                      )}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {editingCategory ? "Atualizando..." : "Criando..."}
+                    </>
+                  ) : (
+                    <>{editingCategory ? "Atualizar" : "Criar"} Categoria</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-          {filteredCategories.length === 0 && !loading && (
-            <div className="text-center py-16 bg-white rounded-2xl border-2 border-gray-200 shadow-sm">
-              <div
-                className="w-16 h-16 mx-auto mb-4 rounded-full bg-linear-to-r from-orange-100 to-orange-100 
-                            flex items-center justify-center"
-              >
-                <Plus className="w-8 h-8 text-orange-500" />
-              </div>
-              <p className="text-gray-700 font-medium mb-2">
-                Nenhuma categoria encontrada
-              </p>
-              <p className="text-gray-400 text-sm">
-                {searchQuery
-                  ? "Tente outro termo de busca"
-                  : "Comece adicionando sua primeira categoria"}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
-        <DialogContent className="sm:max-w-[500px] rounded-2xl max-h-[90vh] p-0 flex flex-col">
-          <DialogHeader className="px-4 sm:px-6 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b border-gray-100 shrink-0">
-            <DialogTitle
-              className="text-lg sm:text-xl font-bold bg-linear-to-r from-orange-500 to-orange-500 
-                                    bg-clip-text text-transparent"
-            >
-              {editingCategory
-                ? "Editar Categoria"
-                : "Adicionar Nova Categoria"}
-            </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm text-gray-600">
-              Preencha as informações da categoria abaixo.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 flex-1">
-            <div className="grid gap-2.5 sm:gap-3">
-              <div className="grid gap-1 sm:gap-1.5">
-                <Label htmlFor="name" className="text-xs sm:text-sm">
-                  Nome da Categoria *
-                </Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => updateFormField("name", e.target.value)}
-                  placeholder="Ex: Pizza, Sobremesas, Bebidas"
-                  className="h-9 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm"
-                />
+          <AlertDialog
+            open={!!deleteTarget}
+            onOpenChange={(open) => {
+              if (!open && !isDeleting) {
+                handleCancelDelete();
+              }
+            }}
+          >
+            <AlertDialogContent className="w-fit rounded-[8px] bg-white text-center shadow-2xl sm:max-w-sm">
+              <div className="mx-auto mt-2 flex h-12 w-12 items-center justify-center rounded-[8px] bg-yellow-100">
+                <TriangleAlert className="h-6 w-6 text-yellow-600" />
               </div>
 
-              <div className="grid gap-1 sm:gap-1.5">
-                <Label htmlFor="description" className="text-xs sm:text-sm">
-                  Descrição *
-                </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    updateFormField("description", e.target.value)
-                  }
-                  placeholder="Descreva a categoria..."
-                  rows={3}
-                  className="rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm resize-none"
-                />
-              </div>
-            </div>
-          </div>
+              <AlertDialogHeader className="space-y-3 px-4">
+                <AlertDialogTitle className="text-center text-xl font-bold text-[#14161A]">
+                  Atenção!
+                </AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2 text-sm text-[#8A8F99]">
+                  <p>
+                    Você está prestes a remover{" "}
+                    <strong className="text-[#14161A]">
+                      &quot;{deleteTarget?.name}&quot;
+                    </strong>{" "}
+                    das categorias.
+                  </p>
+                  <p className="font-medium text-red-600">
+                    Esta ação não poderá ser desfeita.
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
 
-          <DialogFooter className="px-4 sm:px-6 pb-3 sm:pb-4 pt-2 sm:pt-3 border-t border-gray-100 flex-col-reverse sm:flex-row gap-2 sm:gap-0 shrink-0">
-            <Button
-              variant="outline"
-              onClick={handleCloseModal}
-              className="cursor-pointer w-full sm:w-auto text-sm"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSaveCategory}
-              className="cursor-pointer relative bg-linear-to-r from-orange-500 to-orange-500 
-                         font-semibold text-white shadow-xl hover:shadow-2xl overflow-hidden transition-all group transform w-full sm:w-auto text-sm sm:text-base"
-            >
-              <span
-                className="absolute inset-0 bg-white opacity-30 rotate-45 -translate-x-full group-hover:translate-x-full
-                              blur-sm transition-transform duration-500"
-              />
-              <span className="relative z-10">
-                {editingCategory ? "Atualizar" : "Criar"} Categoria
-              </span>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+              <div className="flex w-full flex-row gap-3 px-4 pb-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={handleCancelDelete}
+                  disabled={isDeleting}
+                  className="h-10 flex-1 cursor-pointer rounded-[8px] border-[#E9EAEE] font-medium text-[#3D4149] hover:bg-[#F7F8FA]"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  className="h-10 flex-1 cursor-pointer rounded-[8px] bg-red-600 font-medium text-white hover:bg-red-700"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Removendo...
+                    </>
+                  ) : (
+                    "Remover"
+                  )}
+                </Button>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
+    </AdminPageLayout>
   );
 }
 

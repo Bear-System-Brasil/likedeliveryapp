@@ -1,6 +1,6 @@
 "use client";
 
-import { Sidebar } from "@/components/sidebar";
+import { AdminPageLayout } from "@/components/admin-page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -212,12 +212,12 @@ export default function FinancePage() {
   };
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
-      <Sidebar selectedLabel="Financeiro" />
-      <main className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Gestão de Pagamentos</h1>
-
+    <AdminPageLayout
+      title="Gestão de Pagamentos"
+      icon={DollarSign}
+      mainClassName="p-4 pb-10 sm:p-6 lg:pl-64 lg:pr-8"
+    >
+      <div className="max-w-7xl mx-auto">
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl p-4 border border-gray-200">
@@ -538,7 +538,6 @@ export default function FinancePage() {
             )}
           </div>
         </div>
-      </main>
-    </div>
+    </AdminPageLayout>
   );
 }

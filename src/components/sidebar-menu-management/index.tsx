@@ -1,33 +1,30 @@
 "use client";
 
-import Link from "next/link";
+import { cn } from "@/lib/utils";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
-import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import {
-  ShoppingCart,
-  LayoutGrid,
-  CreditCard,
   Building2,
-  TrendingUp,
-  UtensilsCrossed,
-  ClipboardList,
-  MapPin,
-  ShoppingBag,
-  User,
-  Globe,
-  UserPlus,
-  X,
   ChefHat,
+  ClipboardList,
+  CreditCard,
+  Globe,
+  House,
   LayoutDashboard,
-  Users,
+  LayoutGrid,
   Settings,
   ThumbsUp,
-  House,
+  TrendingUp,
+  User,
+  UserPlus,
+  Users,
+  UtensilsCrossed,
   Wallet,
+  X,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -119,56 +116,62 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-linear-to-br from-orange-500 to-orange-500 flex items-center justify-center">
-            <ThumbsUp className="w-4 h-4 text-white" />
+    <div className="flex h-full flex-col bg-white text-[#14161A]">
+      <div className="flex shrink-0 items-center justify-between px-[18px] py-4">
+        <Link
+          href="/"
+          onClick={onClose}
+          className="flex min-w-0 items-center gap-[9px]"
+        >
+          <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[#FF6B00] text-white">
+            <ThumbsUp className="h-[15px] w-[15px]" />
           </div>
-          <span className="font-bold text-gray-900 tracking-tight">
+          <span className="truncate text-[15px] font-extrabold tracking-normal">
             Like Delivery
           </span>
-        </div>
+        </Link>
+
         {onClose && (
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Fechar menu"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-[#A0A6B0] transition-colors hover:bg-[#F7F8FA] hover:text-[#3D4149]"
           >
-            <X className="w-4 h-4 cursor-pointer" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-1">
         {navGroups.map((group) => (
-          <div key={group.label}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 px-2 mb-1.5">
+          <div key={group.label} className="mt-4 first:mt-3">
+            <p className="mb-2 px-3 text-[10.5px] font-extrabold uppercase tracking-normal text-[#A9AFB9]">
               {group.label}
             </p>
-            <div className="space-y-0.5">
+            <div className="space-y-1.5">
               {group.links.map(({ href, label, icon: Icon }) => {
                 const active = isActive(href);
+
                 return (
                   <Link
                     key={href}
                     href={href}
                     onClick={onClose}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150",
+                      "flex h-[38px] items-center gap-[11px] rounded-[14px] px-3 text-[13px] font-semibold transition-colors",
                       active
-                        ? "bg-linear-to-r from-orange-500 to-orange-500 text-white font-medium shadow-sm shadow-orange-200"
-                        : "text-gray-600 hover:bg-orange-50 hover:text-orange-600",
+                        ? "bg-[#FF6B00] text-white shadow-[0_6px_14px_rgba(255,107,0,0.35)]"
+                        : "text-[#3B4B66] hover:bg-[#F7F8FA] hover:text-[#14161A]",
                     )}
                   >
                     <Icon
                       className={cn(
-                        "w-4 h-4 shrink-0",
-                        active ? "text-white" : "text-gray-400",
+                        "h-4 w-4 shrink-0",
+                        active ? "text-white" : "text-[#A0A6B0]",
                       )}
                     />
-                    {label}
+                    <span className="truncate">{label}</span>
                   </Link>
                 );
               })}
@@ -177,9 +180,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-gray-100">
-        <p className="text-[11px] text-gray-400 text-center">v1.0.0</p>
+      <div className="shrink-0 border-t border-[#E9EAEE] px-[18px] py-[14px] text-center text-[10.5px] font-semibold text-[#A2A7B0]">
+        v1.0.0
       </div>
     </div>
   );
@@ -191,14 +193,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     setIsDesktop(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    const handler = (event: MediaQueryListEvent) =>
+      setIsDesktop(event.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
 
   if (isDesktop) {
     return (
-      <aside className="fixed top-0 left-0 h-full w-64 border-r border-gray-100 shadow-sm z-40">
+      <aside className="fixed left-0 top-0 z-40 h-full w-[220px] border-r border-[#E9EAEE] bg-white">
         <SidebarContent />
       </aside>
     );
@@ -212,7 +215,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <SheetPrimitive.Portal>
         <SheetPrimitive.Content
           className={cn(
-            "fixed top-0 left-0 z-50 h-full w-64 border-r border-gray-100 shadow-lg",
+            "fixed left-0 top-0 z-50 h-full w-[220px] border-r border-[#E9EAEE] bg-white shadow-lg",
             "data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:slide-in-from-left-8 data-[state=open]:duration-200",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:slide-out-to-left-8 data-[state=closed]:duration-200",
           )}

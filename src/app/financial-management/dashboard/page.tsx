@@ -1,6 +1,6 @@
 "use client";
 
-import { Sidebar } from "@/components/sidebar";
+import { AdminPageLayout } from "@/components/admin-page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -150,29 +150,26 @@ export default function CashRegisterPage() {
     refundMutation.isPending;
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
-      <Sidebar selectedLabel="Caixa" />
-
-      <main className="flex-1 p-6">
-        <div className="max-w-5xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Controle de Caixa</h1>
-              <p className="text-sm text-gray-500">
-                Abertura, fechamento e movimentos financeiros
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetchSummary()}
-              className="rounded-xl gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Atualizar
-            </Button>
-          </div>
+    <AdminPageLayout
+      title="Controle de Caixa"
+      icon={Banknote}
+      mainClassName="p-4 pb-10 sm:p-6 lg:pl-64 lg:pr-8"
+      actions={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetchSummary()}
+          className="rounded-xl gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Atualizar
+        </Button>
+      }
+    >
+      <div className="max-w-5xl mx-auto space-y-6">
+        <p className="text-sm text-gray-500">
+          Abertura, fechamento e movimentos financeiros
+        </p>
 
           {/* Status do Caixa */}
           {registerLoading ? (
@@ -327,8 +324,7 @@ export default function CashRegisterPage() {
               </p>
             </div>
           )}
-        </div>
-      </main>
+      </div>
 
       {/* Dialog Abrir Caixa */}
       <Dialog open={dialog === "open-register"} onOpenChange={closeDialog}>
@@ -511,7 +507,7 @@ export default function CashRegisterPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminPageLayout>
   );
 }
 

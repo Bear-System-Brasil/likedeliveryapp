@@ -1,10 +1,10 @@
 "use client";
 
+import { AdminPageLayout } from "@/components/admin-page-layout";
 import { CompanyCoverUpload } from "@/components/company-cover-upload";
 import { CompanyLogoUpload } from "@/components/company-logo-upload";
 import { DataCard } from "@/components/data-card";
 import { FormField } from "@/components/form-field";
-import { PageHeader } from "@/components/page-header";
 import ProtectedRoute from "@/components/protected-route";
 import { ErrorState } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
@@ -104,32 +104,34 @@ function CompanyProfileContent() {
     return null;
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <PageHeader
-        title="Perfil da Empresa"
-        description="Gerencie as informações do seu restaurante"
-        showBackButton
-        badge={{
-          text:
-            user.role === "owner"
-              ? "Proprietário"
-              : user.role === "admin"
-                ? "Admin"
-                : "Gerente",
-        }}
-      />
+  const userRoleLabel =
+    user.role === "owner"
+      ? "Proprietário"
+      : user.role === "admin"
+        ? "Admin"
+        : "Gerente";
 
+  return (
+    <AdminPageLayout
+      title="Perfil da Empresa"
+      icon={Building2}
+      mainClassName="px-4 py-8 lg:pl-64 lg:pr-8"
+      actions={
+        <Badge className="border-0 bg-linear-to-br from-orange-100 to-orange-100 text-orange-700">
+          {userRoleLabel}
+        </Badge>
+      }
+    >
       {/* Error State */}
       {profileError && !isLoadingProfile && (
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
           <ErrorState message={profileError} />
         </div>
       )}
 
       {/* Content */}
       {!profileError && (
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8">
           {/* Logo Section */}
           <DataCard
             title="Logo do Restaurante"
@@ -679,6 +681,6 @@ function CompanyProfileContent() {
           </DataCard>
         </div>
       )}
-    </div>
+    </AdminPageLayout>
   );
 }

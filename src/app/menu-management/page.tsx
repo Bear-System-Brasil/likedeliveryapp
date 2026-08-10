@@ -1,8 +1,8 @@
 "use client";
 
+import { AdminPageLayout } from "@/components/admin-page-layout";
 import { AdminDish, AdminDishCard } from "@/components/admin-dish-card";
 import ProtectedRoute from "@/components/role-check";
-import Sidebar from "@/components/sidebar-menu-management/index";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -11,7 +11,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { CurrencyCentsInput } from "@/components/ui/currency-cents-input";
 import {
   Dialog,
@@ -28,17 +27,52 @@ import { StockQuantityInput } from "@/components/ui/stock-quantity-input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useMenuManagement } from "@/hooks";
-import { Building2, Loader2, Plus, Search, TriangleAlert } from "lucide-react";
+import {
+  Building2,
+  GripHorizontal,
+  Loader2,
+  MoveHorizontal,
+  Plus,
+  Search,
+  TriangleAlert,
+  UtensilsCrossed,
+} from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import { toast } from "sonner";
+
+const fieldClassName =
+  "h-9 sm:h-10 rounded-[10px] border-[#E9EAEE] bg-white text-xs sm:text-sm shadow-none focus-visible:ring-1 focus-visible:ring-[#FF6B00]";
+
+const textareaClassName =
+  "min-h-[64px] rounded-[10px] border-[#E9EAEE] bg-white text-xs sm:text-sm shadow-none resize-none focus-visible:ring-1 focus-visible:ring-[#FF6B00]";
 
 function MenuManagementContent() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [canCategoryScroll, setCanCategoryScroll] = useState(false);
+  const [isCategoryDragActive, setIsCategoryDragActive] = useState(false);
+  const categoriesScrollRef = useRef<HTMLDivElement>(null);
+  const categoryDragTrackRef = useRef<HTMLDivElement>(null);
+  const categoryDragButtonRef = useRef<HTMLButtonElement>(null);
+  const categoryDragStartRef = useRef<{
+    pointerX: number;
+    scrollLeft: number;
+  } | null>(null);
+  const canCategoryScrollRef = useRef(false);
+  const categoryScrollProgressRef = useRef(0);
+  const categoryVisualFrameRef = useRef<number | null>(null);
+  const categoryDragFrameRef = useRef<number | null>(null);
+  const pendingCategoryScrollLeftRef = useRef<number | null>(null);
 
-  // Hook centralizado para gerenciamento de menu
   const {
     products,
     categories,
@@ -68,7 +102,6 @@ function MenuManagementContent() {
     setNewCategoryName,
   } = useMenuManagement();
 
-  // Converter produtos para formato AdminDish
   const filteredDishes: AdminDish[] = useMemo(() => {
     return products.map((product) => ({
       id: product.id,
@@ -86,10 +119,204 @@ function MenuManagementContent() {
     }));
   }, [products]);
 
-  // Criar array de categorias para o Tabs
   const allCategories = useMemo(() => {
     return [{ id: "all", name: "Todas" }, ...categories];
   }, [categories]);
+
+  const syncCategoryDragVisualState = useCallback(() => {
+    const scrollElement = categoriesScrollRef.current;
+    const trackElement = categoryDragTrackRef.current;
+    const buttonElement = categoryDragButtonRef.current;
+    if (!scrollElement) return;
+
+    const maxScroll = scrollElement.scrollWidth - scrollElement.clientWidth;
+    const nextCanScroll = maxScroll > 1;
+    const nextProgress =
+      maxScroll > 0
+        ? Math.min(Math.max(scrollElement.scrollLeft / maxScroll, 0), 1)
+        : 0;
+
+    categoryScrollProgressRef.current = nextProgress;
+
+    if (buttonElement && trackElement) {
+      const maxHandleOffset = Math.max(
+        trackElement.clientWidth - buttonElement.offsetWidth,
+        0,
+      );
+      const handleOffset = nextProgress * maxHandleOffset;
+      buttonElement.style.transform = `translate3d(${handleOffset}px, -50%, 0)`;
+    }
+
+    if (canCategoryScrollRef.current !== nextCanScroll) {
+      canCategoryScrollRef.current = nextCanScroll;
+      setCanCategoryScroll(nextCanScroll);
+    }
+  }, []);
+
+  const scheduleCategoryDragVisualSync = useCallback(() => {
+    if (categoryVisualFrameRef.current !== null) return;
+
+    categoryVisualFrameRef.current = window.requestAnimationFrame(() => {
+      categoryVisualFrameRef.current = null;
+      syncCategoryDragVisualState();
+    });
+  }, [syncCategoryDragVisualState]);
+
+  const applyPendingCategoryScrollLeft = useCallback(() => {
+    const scrollElement = categoriesScrollRef.current;
+    const nextScrollLeft = pendingCategoryScrollLeftRef.current;
+
+    if (!scrollElement || nextScrollLeft === null) return;
+
+    scrollElement.scrollLeft = nextScrollLeft;
+    pendingCategoryScrollLeftRef.current = null;
+    syncCategoryDragVisualState();
+  }, [syncCategoryDragVisualState]);
+
+  const requestCategoryScrollLeft = useCallback(
+    (nextScrollLeft: number) => {
+      pendingCategoryScrollLeftRef.current = nextScrollLeft;
+
+      if (categoryDragFrameRef.current !== null) return;
+
+      categoryDragFrameRef.current = window.requestAnimationFrame(() => {
+        categoryDragFrameRef.current = null;
+        applyPendingCategoryScrollLeft();
+      });
+    },
+    [applyPendingCategoryScrollLeft],
+  );
+
+  useEffect(() => {
+    const scrollElement = categoriesScrollRef.current;
+    if (!scrollElement) return;
+
+    syncCategoryDragVisualState();
+    scheduleCategoryDragVisualSync();
+
+    scrollElement.addEventListener("scroll", scheduleCategoryDragVisualSync, {
+      passive: true,
+    });
+    window.addEventListener("resize", scheduleCategoryDragVisualSync);
+
+    return () => {
+      if (categoryVisualFrameRef.current !== null) {
+        window.cancelAnimationFrame(categoryVisualFrameRef.current);
+        categoryVisualFrameRef.current = null;
+      }
+
+      if (categoryDragFrameRef.current !== null) {
+        window.cancelAnimationFrame(categoryDragFrameRef.current);
+        categoryDragFrameRef.current = null;
+      }
+
+      scrollElement.removeEventListener("scroll", scheduleCategoryDragVisualSync);
+      window.removeEventListener("resize", scheduleCategoryDragVisualSync);
+    };
+  }, [
+    allCategories.length,
+    scheduleCategoryDragVisualSync,
+    syncCategoryDragVisualState,
+  ]);
+
+  useEffect(() => {
+    if (canCategoryScroll) {
+      scheduleCategoryDragVisualSync();
+    }
+  }, [canCategoryScroll, scheduleCategoryDragVisualSync]);
+
+  const handleCategoryDragPointerDown = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      const scrollElement = categoriesScrollRef.current;
+      if (!scrollElement) return;
+
+      event.preventDefault();
+      categoryDragStartRef.current = {
+        pointerX: event.clientX,
+        scrollLeft: scrollElement.scrollLeft,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setIsCategoryDragActive(true);
+    },
+    [],
+  );
+
+  const handleCategoryDragPointerMove = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+
+      const scrollElement = categoriesScrollRef.current;
+      const trackElement = categoryDragTrackRef.current;
+      const buttonElement = categoryDragButtonRef.current;
+      const dragStart = categoryDragStartRef.current;
+
+      if (!scrollElement || !trackElement || !buttonElement || !dragStart) {
+        return;
+      }
+
+      const maxScroll = scrollElement.scrollWidth - scrollElement.clientWidth;
+      const availableTrackWidth = Math.max(
+        trackElement.clientWidth - buttonElement.offsetWidth,
+        1,
+      );
+      const deltaX = event.clientX - dragStart.pointerX;
+      const nextScrollLeft =
+        dragStart.scrollLeft + deltaX * (maxScroll / availableTrackWidth);
+
+      requestCategoryScrollLeft(
+        Math.min(Math.max(nextScrollLeft, 0), maxScroll),
+      );
+    },
+    [requestCategoryScrollLeft],
+  );
+
+  const handleCategoryDragPointerEnd = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+
+      categoryDragStartRef.current = null;
+      setIsCategoryDragActive(false);
+      applyPendingCategoryScrollLeft();
+    },
+    [applyPendingCategoryScrollLeft],
+  );
+
+  const handleCategoryDragKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLButtonElement>) => {
+      const scrollElement = categoriesScrollRef.current;
+      if (!scrollElement) return;
+
+      const maxScroll = scrollElement.scrollWidth - scrollElement.clientWidth;
+      const step = Math.max(scrollElement.clientWidth * 0.32, 96);
+      let nextScrollLeft: number | null = null;
+
+      if (event.key === "ArrowLeft") {
+        nextScrollLeft = scrollElement.scrollLeft - step;
+      } else if (event.key === "ArrowRight") {
+        nextScrollLeft = scrollElement.scrollLeft + step;
+      } else if (event.key === "Home") {
+        nextScrollLeft = 0;
+      } else if (event.key === "End") {
+        nextScrollLeft = maxScroll;
+      }
+
+      if (nextScrollLeft === null) return;
+
+      event.preventDefault();
+      scrollElement.scrollTo({
+        left: Math.min(Math.max(nextScrollLeft, 0), maxScroll),
+        behavior: "smooth",
+      });
+    },
+    [],
+  );
+
+  const resetImageState = useCallback(() => {
+    setImagePreview(null);
+    setSelectedImage(null);
+  }, []);
 
   const handleEditDish = (dish: AdminDish) => {
     const product = products.find((p) => p.id === dish.id);
@@ -113,17 +340,11 @@ function MenuManagementContent() {
     }
   };
 
-  const resetImageState = useCallback(() => {
-    setImagePreview(null);
-    setSelectedImage(null);
-  }, []);
-
   const handleCloseModalWithReset = () => {
     resetImageState();
     handleCloseModal();
   };
 
-  // Centralized cleanup: revoke blob URLs when imagePreview changes or on unmount
   useEffect(() => {
     return () => {
       if (imagePreview?.startsWith("blob:")) {
@@ -142,147 +363,156 @@ function MenuManagementContent() {
   };
 
   return (
-    <>
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <AdminPageLayout
+      title="Cardápio"
+      icon={UtensilsCrossed}
+      mainClassName="px-4 pb-10 pt-5 sm:px-6 lg:pl-[252px] lg:pr-8 lg:pt-[26px]"
+      actions={
+        <>
+          <Button
+            asChild
+            variant="outline"
+            className="h-[34px] flex-1 cursor-pointer rounded-[9px] border-[#E9EAEE] bg-white px-3 text-[12.5px] font-bold text-[#3D4149] shadow-none transition-colors hover:border-[#FFD3B0] hover:bg-white hover:text-[#FF6B00] sm:flex-none"
+          >
+            <Link href="/company-profile">
+              <Building2 className="h-4 w-4" />
+              Perfil
+            </Link>
+          </Button>
 
-      <div className="min-h-screen bg-gray-50 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-orange-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute top-40 right-20 w-48 h-48 bg-gradient-to-r from-purple-400/15 to-blue-400/15 rounded-full blur-2xl animate-pulse delay-1000" />
-          <div className="absolute bottom-40 left-1/4 w-80 h-80 bg-gradient-to-r from-yellow-400/10 to-orange-400/10 rounded-full blur-3xl animate-pulse delay-2000" />
-        </div>
-
-        <div className="relative z-10 p-3 sm:p-4 md:p-6 pt-6 lg:pl-72">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
-              {/* Lado esquerdo: botão do menu + título juntos */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 shadow-sm flex-shrink-0 lg:hidden cursor-pointer"
-                >
-                  ☰
-                </button>
-                <Sidebar
-                  isOpen={sidebarOpen}
-                  onClose={() => setSidebarOpen(false)}
-                />
-
-                <div>
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-orange-500 bg-clip-text text-transparent">
-                    Gerenciamento do Cardápio
-                  </h1>
-                  <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
-                    Gerencie os pratos do seu restaurante
-                  </p>
-                </div>
-              </div>
-
-              {/* Lado direito: botões de ação */}
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Link href="/company-profile" className="flex-1 sm:flex-none">
-                  <Button
-                    variant="outline"
-                    className="cursor-pointer border-2 border-gray-200 hover:border-orange-400 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-50 hover:text-orange-600 
-                         transition-all w-full h-10 sm:h-11 text-sm sm:text-base"
-                  >
-                    <Building2 className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Perfil</span>
-                  </Button>
-                </Link>
-                <Button
-                  onClick={() => {
-                    resetImageState();
-                    handleOpenCreateModal();
-                  }}
-                  className="cursor-pointer bg-gradient-to-r from-orange-500 to-orange-500 hover:from-orange-600 
-                       hover:to-orange-600 text-white shadow-lg hover:shadow-xl transition-all flex-1 sm:flex-none text-sm sm:text-base h-10 sm:h-11"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Prato
-                </Button>
-              </div>
-            </div>
-            <div className="flex gap-3 sm:gap-4 mb-4 sm:mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <Button
+            onClick={() => {
+              resetImageState();
+              handleOpenCreateModal();
+            }}
+            className="h-[34px] flex-1 cursor-pointer rounded-[9px] bg-[#FF6B00] px-4 text-[12.5px] font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,0.25)] transition-colors hover:bg-[#E05A00] sm:flex-none"
+          >
+            <Plus className="h-4 w-4" />
+            Adicionar Prato
+          </Button>
+        </>
+      }
+    >
+      <div className="mx-auto max-w-[1180px]">
+            <div className="mb-3 max-w-[420px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8A8F99]" />
                 <Input
                   placeholder="Buscar pratos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 sm:pl-10 h-10 sm:h-12 text-sm sm:text-base rounded-xl border-2 border-gray-200 focus:border-orange-400 
-                             bg-white shadow-sm transition-all"
+                  className="h-[38px] rounded-[10px] border-[#E9EAEE] bg-white pl-9 text-[12.5px] font-medium text-[#14161A] shadow-none transition-colors placeholder:text-[#8A8F99] focus-visible:ring-1 focus-visible:ring-[#FF6B00]"
                 />
               </div>
             </div>
+
             <Tabs
               value={selectedCategory}
               onValueChange={setSelectedCategory}
-              className="mb-4 sm:mb-6"
+              className="mb-4"
             >
-              <TabsList className="bg-white border-2 border-gray-200 shadow-sm w-full sm:w-auto flex-wrap h-auto gap-1 p-1">
+              <TabsList
+                ref={categoriesScrollRef}
+                id="menu-category-tabs"
+                className="scrollbar-hide h-auto w-full justify-start gap-[7px] overflow-x-auto scroll-smooth bg-transparent p-0"
+              >
                 {allCategories.map((category) => (
                   <TabsTrigger
                     key={category.id}
                     value={category.id}
-                    className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+                    className="h-[30px] shrink-0 rounded-full border border-[#E9EAEE] bg-white px-[13px] py-0 text-xs font-semibold text-[#3D4149] shadow-none transition-colors data-[state=active]:border-[#14161A] data-[state=active]:bg-[#14161A] data-[state=active]:text-white data-[state=active]:shadow-none"
                   >
                     {category.name}
                   </TabsTrigger>
                 ))}
               </TabsList>
-            </Tabs>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {filteredDishes.map((dish) => (
-                <AdminDishCard
-                  key={dish.id}
-                  dish={dish}
-                  onEdit={handleEditDish}
-                  onDelete={handleDeleteDish}
-                  onToggleAvailability={handleToggleAvail}
-                />
-              ))}
-            </div>{" "}
-            {filteredDishes.length === 0 && !loading && (
-              <div className="text-center py-16 bg-white rounded-2xl border-2 border-gray-200 shadow-sm">
+
+              {canCategoryScroll && (
                 <div
-                  className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-orange-100 to-orange-100 
-                              flex items-center justify-center"
+                  ref={categoryDragTrackRef}
+                  className="relative mt-2 h-[38px] overflow-hidden rounded-full border border-[#FFD3B0] bg-white shadow-[inset_0_1px_2px_rgba(20,22,26,0.06)]"
                 >
-                  <Plus className="w-8 h-8 text-orange-500" />
+                  <div className="pointer-events-none absolute left-3 right-3 top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#FFE1CC]" />
+                  <button
+                    ref={categoryDragButtonRef}
+                    type="button"
+                    aria-controls="menu-category-tabs"
+                    aria-label="Arraste para navegar pelas categorias"
+                    title="Arraste para navegar pelas categorias"
+                    onPointerDown={handleCategoryDragPointerDown}
+                    onPointerMove={handleCategoryDragPointerMove}
+                    onPointerUp={handleCategoryDragPointerEnd}
+                    onPointerCancel={handleCategoryDragPointerEnd}
+                    onKeyDown={handleCategoryDragKeyDown}
+                    className={`absolute left-0 top-1/2 z-10 flex h-[30px] min-w-[112px] touch-none select-none items-center justify-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold text-white shadow-[0_8px_18px_rgba(255,107,0,0.26)] outline-none transition-[background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-[#FF6B00]/35 sm:min-w-[126px] ${
+                      isCategoryDragActive
+                        ? "cursor-grabbing bg-[#E05A00] shadow-[0_10px_22px_rgba(255,107,0,0.34)]"
+                        : "cursor-grab bg-[#FF6B00] hover:bg-[#E05A00]"
+                    }`}
+                    style={{
+                      transform: "translate3d(0, -50%, 0)",
+                      willChange: "transform",
+                    }}
+                  >
+                    <MoveHorizontal className="h-3.5 w-3.5" />
+                    <span>Arraste</span>
+                    <GripHorizontal className="h-3.5 w-3.5 opacity-80" />
+                  </button>
                 </div>
-                <p className="text-gray-700 font-medium mb-2">
+              )}
+            </Tabs>
+
+            {loading ? (
+              <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="flex gap-3 rounded-[13px] border border-[#E9EAEE] bg-white p-2.5"
+                  >
+                    <Skeleton className="h-[72px] w-[72px] shrink-0 rounded-[10px]" />
+                    <div className="flex flex-1 flex-col justify-center gap-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <Skeleton className="h-4 w-36" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <Skeleton className="h-3 w-4/5" />
+                      <div className="flex gap-1.5">
+                        <Skeleton className="h-5 w-20 rounded-md" />
+                        <Skeleton className="h-5 w-24 rounded-md" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col justify-center gap-1.5">
+                      <Skeleton className="h-7 w-7 rounded-lg" />
+                      <Skeleton className="h-7 w-7 rounded-lg" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredDishes.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+                {filteredDishes.map((dish) => (
+                  <AdminDishCard
+                    key={dish.id}
+                    dish={dish}
+                    onEdit={handleEditDish}
+                    onDelete={handleDeleteDish}
+                    onToggleAvailability={handleToggleAvail}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-[13px] border border-[#E9EAEE] bg-white px-5 py-9 text-center">
+                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#F4F5F7] text-[#FF6B00]">
+                  <Plus className="h-5 w-5" />
+                </div>
+                <p className="text-[13.5px] font-bold text-[#14161A]">
                   Nenhum prato encontrado
                 </p>
-                <p className="text-gray-400 text-sm">
+                <p className="mt-1 text-xs font-medium text-[#8A8F99]">
                   {searchQuery
                     ? "Tente outro termo de busca"
                     : "Comece adicionando seu primeiro prato"}
                 </p>
-              </div>
-            )}
-            {loading && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Card key={i} className="border-2 border-gray-200">
-                    <Skeleton className="w-full h-48 rounded-t-lg" />
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <Skeleton className="h-5 w-32" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-20" />
-                          <Skeleton className="h-5 w-24" />
-                        </div>
-                      </div>
-                      <Skeleton className="h-4 w-full mb-2" />
-                      <Skeleton className="h-4 w-3/4 mb-4" />
-                      <div className="flex gap-2">
-                        <Skeleton className="h-9 flex-1 rounded-xl" />
-                        <Skeleton className="h-9 w-9 rounded-xl" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
               </div>
             )}
           </div>
@@ -295,26 +525,22 @@ function MenuManagementContent() {
               }
             }}
           >
-            <DialogContent className="sm:max-w-[500px] rounded-2xl max-h-[90vh] p-0 flex flex-col">
-              <DialogHeader className="px-4 sm:px-6 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b border-gray-100 shrink-0">
-                <DialogTitle
-                  className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-500 
-                                      bg-clip-text text-transparent"
-                >
+            <DialogContent className="max-h-[90vh] rounded-[14px] border-[#E9EAEE] bg-white p-0 shadow-[0_24px_70px_rgba(20,22,26,0.18)] sm:max-w-[520px]">
+              <DialogHeader className="shrink-0 border-b border-[#E9EAEE] px-4 pb-3 pt-4 sm:px-6">
+                <DialogTitle className="text-base font-extrabold text-[#14161A] sm:text-lg">
                   {editingProduct ? "Editar Prato" : "Adicionar Novo Prato"}
                 </DialogTitle>
-                <DialogDescription className="text-xs sm:text-sm text-gray-600">
+                <DialogDescription className="text-xs font-medium text-[#8A8F99] sm:text-sm">
                   Preencha as informações do prato.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 flex-1">
-                <div className="grid gap-2.5 sm:gap-3">
-                  {/* Image Upload */}
-                  <div className="grid gap-1 sm:gap-1.5">
+              <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
+                <div className="grid gap-3">
+                  <div className="grid gap-1.5">
                     <Label
                       htmlFor="productImage"
-                      className="text-xs sm:text-sm"
+                      className="text-xs font-bold text-[#3D4149] sm:text-sm"
                     >
                       Imagem do Prato
                     </Label>
@@ -325,7 +551,6 @@ function MenuManagementContent() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          // Validate file size (max 5MB)
                           if (file.size > 5 * 1024 * 1024) {
                             toast.error("Imagem muito grande. Máximo 5MB");
                             e.target.value = "";
@@ -335,7 +560,7 @@ function MenuManagementContent() {
                           setImagePreview(URL.createObjectURL(file));
                         }
                       }}
-                      className="h-9 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm"
+                      className={fieldClassName}
                     />
 
                     {imagePreview && (
@@ -343,27 +568,30 @@ function MenuManagementContent() {
                         <img
                           src={imagePreview}
                           alt="Preview da imagem"
-                          className="w-32 h-32 object-cover rounded-lg border"
+                          className="h-24 w-24 rounded-[10px] border border-[#E9EAEE] object-cover"
                         />
                       </div>
                     )}
 
                     {selectedImage && (
-                      <p className="text-[10px] sm:text-xs text-green-600">
-                        ✓ {selectedImage.name}
+                      <p className="text-[11px] font-bold text-[#1B7F4C]">
+                        {selectedImage.name}
                       </p>
                     )}
                     {editingProduct &&
                       editingProduct.imageURL &&
                       editingProduct.imageURL.length > 0 && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs font-medium text-[#8A8F99]">
                           Imagem atual: {editingProduct.imageURL.length} foto(s)
                         </p>
                       )}
                   </div>
 
-                  <div className="grid gap-1 sm:gap-1.5">
-                    <Label htmlFor="name" className="text-xs sm:text-sm">
+                  <div className="grid gap-1.5">
+                    <Label
+                      htmlFor="name"
+                      className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                    >
                       Nome do Prato *
                     </Label>
                     <Input
@@ -371,24 +599,26 @@ function MenuManagementContent() {
                       value={formData.name}
                       onChange={(e) => updateFormField("name", e.target.value)}
                       placeholder="Nome do prato"
-                      className="h-9 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm"
+                      className={fieldClassName}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Categoria *</Label>
+                      <Label className="text-xs font-bold text-[#3D4149] sm:text-sm">
+                        Categoria *
+                      </Label>
                       <button
                         type="button"
                         onClick={() => {
                           setIsCreatingCategory(!isCreatingCategory);
                           if (isCreatingCategory) {
-                            setNewCategoryName(""); // Limpa o texto se cancelar a criação
+                            setNewCategoryName("");
                           } else {
-                            updateFormField("categoryId", ""); // Limpa o select se for criar
+                            updateFormField("categoryId", "");
                           }
                         }}
-                        className="text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors cursor-pointer"
+                        className="cursor-pointer text-xs font-extrabold text-[#FF6B00] transition-colors hover:text-[#E05A00]"
                       >
                         {isCreatingCategory
                           ? "Selecionar existente"
@@ -402,7 +632,7 @@ function MenuManagementContent() {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="Digite o nome da nova categoria"
-                        className="h-9 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm"
+                        className={fieldClassName}
                         autoFocus
                       />
                     ) : (
@@ -411,7 +641,7 @@ function MenuManagementContent() {
                         onChange={(e) =>
                           updateFormField("categoryId", e.target.value)
                         }
-                        className="w-full h-9 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm px-3 bg-white"
+                        className="h-9 w-full rounded-[10px] border border-[#E9EAEE] bg-white px-3 text-xs font-medium text-[#14161A] outline-none transition-colors focus:border-[#FF6B00] sm:h-10 sm:text-sm"
                       >
                         <option value="">Selecione uma categoria</option>
                         {categories.map((cat) => (
@@ -423,8 +653,11 @@ function MenuManagementContent() {
                     )}
                   </div>
 
-                  <div className="grid gap-1 sm:gap-1.5">
-                    <Label htmlFor="description" className="text-xs sm:text-sm">
+                  <div className="grid gap-1.5">
+                    <Label
+                      htmlFor="description"
+                      className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                    >
                       Descrição *
                     </Label>
                     <Textarea
@@ -434,13 +667,16 @@ function MenuManagementContent() {
                         updateFormField("description", e.target.value)
                       }
                       placeholder="Descreva o prato"
-                      className="rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm resize-none min-h-[60px]"
+                      className={textareaClassName}
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                    <div className="grid gap-1 sm:gap-1.5">
-                      <Label htmlFor="costPrice" className="text-xs sm:text-sm">
+                    <div className="grid gap-1.5">
+                      <Label
+                        htmlFor="costPrice"
+                        className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                      >
                         Custo
                       </Label>
 
@@ -452,12 +688,15 @@ function MenuManagementContent() {
                         }
                         maskWhileTyping={true}
                         placeholder="R$ 0,01"
-                        className="h-9 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm"
+                        className={fieldClassName}
                       />
                     </div>
 
-                    <div className="grid gap-1 sm:gap-1.5">
-                      <Label htmlFor="salePrice" className="text-xs sm:text-sm">
+                    <div className="grid gap-1.5">
+                      <Label
+                        htmlFor="salePrice"
+                        className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                      >
                         Venda *
                       </Label>
 
@@ -469,15 +708,15 @@ function MenuManagementContent() {
                         }
                         maskWhileTyping={true}
                         placeholder="R$ 0,01"
-                        className="h-9 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm"
+                        className={fieldClassName}
                       />
                     </div>
                   </div>
 
-                  <div className="grid gap-1 sm:gap-1.5">
+                  <div className="grid gap-1.5">
                     <Label
                       htmlFor="stockQuantity"
-                      className="text-xs sm:text-sm"
+                      className="text-xs font-bold text-[#3D4149] sm:text-sm"
                     >
                       Qtd. Estoque
                     </Label>
@@ -491,11 +730,11 @@ function MenuManagementContent() {
                       placeholder="1"
                       minValue={1}
                       maxValue={9999}
-                      className="h-9 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-orange-400 text-xs sm:text-sm"
+                      className={fieldClassName}
                     />
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2 rounded-[10px] border border-[#E9EAEE] bg-[#F7F8FA] px-3 py-2">
                     <input
                       type="checkbox"
                       id="isAvailable"
@@ -503,11 +742,11 @@ function MenuManagementContent() {
                       onChange={(e) =>
                         updateFormField("available", e.target.checked)
                       }
-                      className="rounded border-gray-300"
+                      className="h-4 w-4 cursor-pointer accent-[#FF6B00]"
                     />
                     <Label
                       htmlFor="isAvailable"
-                      className="cursor-pointer text-xs sm:text-sm"
+                      className="cursor-pointer text-xs font-bold text-[#3D4149] sm:text-sm"
                     >
                       Disponível para venda
                     </Label>
@@ -515,19 +754,19 @@ function MenuManagementContent() {
                 </div>
               </div>
 
-              <DialogFooter className="px-4 sm:px-6 pb-3 sm:pb-4 pt-2 sm:pt-3 border-t border-gray-100 flex-col-reverse sm:flex-row gap-2 sm:gap-0 shrink-0">
+              <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-[#E9EAEE] px-4 py-3 sm:flex-row sm:px-6">
                 <Button
                   variant="ghost"
                   onClick={handleClearForm}
-                  className="cursor-pointer text-gray-500 hover:text-gray-700 w-full sm:w-auto text-sm"
+                  className="h-9 w-full cursor-pointer rounded-[9px] text-sm font-bold text-[#8A8F99] hover:bg-[#F7F8FA] hover:text-[#3D4149] sm:w-auto"
                 >
                   Limpar Tudo
                 </Button>
-                <div className="flex flex-col-reverse sm:flex-row gap-2 w-full sm:w-auto">
+                <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
                   <Button
                     variant="outline"
                     onClick={handleCloseModalWithReset}
-                    className="cursor-pointer w-full sm:w-auto text-sm"
+                    className="h-9 w-full cursor-pointer rounded-[9px] border-[#E9EAEE] bg-white text-sm font-bold text-[#3D4149] shadow-none hover:bg-[#F7F8FA] sm:w-auto"
                   >
                     Cancelar
                   </Button>
@@ -536,22 +775,15 @@ function MenuManagementContent() {
                       handleSaveProduct(selectedImage || undefined)
                     }
                     disabled={isSaving}
-                    className="cursor-pointer relative bg-gradient-to-r from-orange-500 to-orange-500 
-                            font-semibold text-white shadow-xl hover:shadow-2xl overflow-hidden transition-all group transform w-full sm:w-auto text-sm sm:text-base"
+                    className="h-9 w-full cursor-pointer rounded-[9px] bg-[#FF6B00] text-sm font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,0.25)] transition-colors hover:bg-[#E05A00] sm:w-auto"
                   >
                     {isSaving ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         {editingProduct ? "Atualizando..." : "Criando..."}
                       </>
                     ) : (
-                      <>
-                        <span
-                          className="absolute inset-0 bg-white opacity-30 rotate-45 -translate-x-full group-hover:translate-x-full
-                                  blur-sm transition-transform duration-500"
-                        />
-                        {editingProduct ? "Atualizar" : "Criar"} Prato
-                      </>
+                      <>{editingProduct ? "Atualizar" : "Criar"} Prato</>
                     )}
                   </Button>
                 </div>
@@ -559,7 +791,6 @@ function MenuManagementContent() {
             </DialogContent>
           </Dialog>
 
-          {/* Delete confirmation dialog */}
           <AlertDialog
             open={!!deleteTarget}
             onOpenChange={(open) => {
@@ -568,46 +799,46 @@ function MenuManagementContent() {
               }
             }}
           >
-            <AlertDialogContent className="rounded-2xl flex flex-col items-center w-fit text-center sm:max-w-sm bg-white shadow-2xl">
-              <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mt-6">
-                <TriangleAlert className="w-6 h-6 text-yellow-600" />
+            <AlertDialogContent className="flex w-[calc(100vw-32px)] max-w-sm flex-col items-center rounded-[14px] border-[#E9EAEE] bg-white text-center shadow-[0_24px_70px_rgba(20,22,26,0.18)]">
+              <div className="mt-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF4DE]">
+                <TriangleAlert className="h-6 w-6 text-[#B7791F]" />
               </div>
 
-              <AlertDialogHeader className="space-y-3 px-4">
-                <AlertDialogTitle className="text-xl font-bold text-center text-gray-900">
+              <AlertDialogHeader className="space-y-3 px-2">
+                <AlertDialogTitle className="text-center text-lg font-extrabold text-[#14161A]">
                   Atenção!
                 </AlertDialogTitle>
-                <AlertDialogDescription className="space-y-2 text-sm text-gray-600">
+                <AlertDialogDescription className="space-y-2 text-sm font-medium text-[#5F6673]">
                   <p>
                     Você está prestes a remover{" "}
-                    <strong className="text-gray-900">
+                    <strong className="text-[#14161A]">
                       &quot;{deleteTarget?.name}&quot;
                     </strong>{" "}
                     do seu cardápio.
                   </p>
-                  <p className="text-red-600 font-medium">
+                  <p className="font-bold text-[#D64545]">
                     Esta ação não poderá ser desfeita.
                   </p>
                 </AlertDialogDescription>
               </AlertDialogHeader>
 
-              <div className="w-full px-4 pb-4 pt-2 flex flex-row gap-3">
+              <div className="flex w-full flex-row gap-3 pt-2">
                 <Button
                   variant="outline"
                   onClick={handleCancelDelete}
                   disabled={isDeleting}
-                  className="rounded-xl cursor-pointer flex-1 border-2 border-gray-200 hover:bg-gray-50 text-gray-700 font-medium h-11"
+                  className="h-10 flex-1 cursor-pointer rounded-[9px] border-[#E9EAEE] bg-white font-bold text-[#3D4149] shadow-none hover:bg-[#F7F8FA]"
                 >
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleConfirmDelete}
                   disabled={isDeleting}
-                  className="rounded-xl cursor-pointer flex-1 bg-red-600 hover:bg-red-700 text-white font-medium h-11 transition-colors"
+                  className="h-10 flex-1 cursor-pointer rounded-[9px] bg-[#D64545] font-bold text-white transition-colors hover:bg-[#B83232]"
                 >
                   {isDeleting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       Removendo...
                     </>
                   ) : (
@@ -617,9 +848,7 @@ function MenuManagementContent() {
               </div>
             </AlertDialogContent>
           </AlertDialog>
-        </div>
-      </div>
-    </>
+    </AdminPageLayout>
   );
 }
 

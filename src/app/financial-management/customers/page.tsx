@@ -1,6 +1,6 @@
 "use client";
 
-import { Sidebar } from "@/components/sidebar";
+import { AdminPageLayout } from "@/components/admin-page-layout";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiService, Order } from "@/services/api";
@@ -79,18 +79,17 @@ export default function CustomersPage() {
   }, [customers, search]);
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
-      <Sidebar selectedLabel="Clientes" />
-      <main className="flex-1 p-6">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Clientes</h1>
-            <span className="text-sm text-gray-500">
-              {customers.length} cliente{customers.length !== 1 ? "s" : ""}{" "}
-              únicos
-            </span>
-          </div>
-
+    <AdminPageLayout
+      title="Clientes"
+      icon={Users}
+      mainClassName="p-4 pb-10 sm:p-6 lg:pl-64 lg:pr-8"
+      actions={
+        <span className="rounded-[8px] border border-[#E9EAEE] bg-white px-2.5 py-1 text-[11.5px] font-bold text-[#3D4149]">
+          {customers.length} cliente{customers.length !== 1 ? "s" : ""} únicos
+        </span>
+      }
+    >
+      <div className="max-w-6xl mx-auto space-y-6">
           {/* Summary */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {isLoading ? (
@@ -216,7 +215,6 @@ export default function CustomersPage() {
             )}
           </div>
         </div>
-      </main>
-    </div>
+    </AdminPageLayout>
   );
 }

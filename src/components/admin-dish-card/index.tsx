@@ -1,6 +1,4 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/format-currency";
 import { Edit, Trash2 } from "lucide-react";
 import Image from "next/image";
@@ -30,97 +28,120 @@ export function AdminDishCard({
   dish,
   onEdit,
   onDelete,
-  onToggleAvailability
+  onToggleAvailability,
 }: AdminDishCardProps) {
+  const isAvailable = dish.available !== false;
+
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      <div className="relative">
+    <article
+      className={cn(
+        "group flex h-full min-w-0 gap-3 rounded-[13px] border border-[#E9EAEE] bg-white p-2.5 text-[#14161A] transition-all",
+        "hover:-translate-y-0.5 hover:border-[#FFD3B0] hover:shadow-[0_8px_20px_rgba(20,22,26,0.06)]",
+        !isAvailable && "bg-white/80",
+      )}
+    >
+      <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[10px] bg-[#EDEEF1]">
         <Image
           src={dish.image}
           alt={dish.name}
-          width={400}
-          height={200}
-          className="w-full h-48 object-cover"
+          fill
+          sizes="72px"
+          className={cn(
+            "object-cover transition-transform duration-300 group-hover:scale-105",
+            !isAvailable && "grayscale opacity-70",
+          )}
         />
         {dish.isPopular && (
-          <Badge className="absolute top-2 right-2 bg-red-500">
+          <span className="absolute right-1 top-1 rounded-md bg-[#FF6B00] px-1.5 py-0.5 text-[9px] font-extrabold text-white">
             Popular
-          </Badge>
+          </span>
         )}
         {dish.discount && (
-          <Badge className="absolute top-2 left-2 bg-green-500">
+          <span className="absolute left-1 top-1 rounded-md bg-[#1B7F4C] px-1.5 py-0.5 text-[9px] font-extrabold text-white">
             -{dish.discount}%
-          </Badge>
-        )}
-        {dish.available === false && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <Badge variant="secondary">Indisponível</Badge>
-          </div>
+          </span>
         )}
       </div>
 
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-semibold text-lg line-clamp-1">{dish.name}</h3>
-          <div className="text-right">
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <h3 className="min-w-0 truncate text-sm font-bold tracking-normal">
+            {dish.name}
+          </h3>
+          <div className="shrink-0 text-right">
             {dish.originalPrice && (
-              <p className="text-sm text-muted-foreground line-through">
+              <p className="text-[11px] font-semibold text-[#8A8F99] line-through">
                 {formatCurrency(dish.originalPrice)}
               </p>
             )}
-            <p className="font-bold text-lg text-primary">
+            <p className="text-sm font-extrabold text-[#14161A]">
               {formatCurrency(dish.price)}
             </p>
           </div>
         </div>
 
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+        <p className="truncate text-[11.5px] font-medium text-[#8A8F99]">
           {dish.description}
         </p>
 
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex gap-1 flex-wrap">
-            {dish.tags.slice(0, 2).map((tag, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-          <Badge variant={dish.available !== false ? "default" : "secondary"}>
-            {dish.available !== false ? "Disponível" : "Indisponível"}
-          </Badge>
-        </div>
+        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+          <span className="max-w-full truncate rounded-md bg-[#F4F5F7] px-2 py-0.5 text-[10.5px] font-bold text-[#3D4149]">
+            {dish.category}
+          </span>
 
-        <div className="flex gap-2">
-          <Button
-            onClick={() => onEdit?.(dish)}
-            size="sm"
-            variant="outline"
-            className="flex-1 cursor-pointer"
-          >
-            <Edit className="h-4 w-4 mr-1" />
-            Editar
-          </Button>
+          {dish.tags.slice(0, 2).map((tag, index) => (
+            <span
+              key={index}
+              className="rounded-md border border-[#E9EAEE] px-2 py-0.5 text-[10.5px] font-bold text-[#3D4149]"
+            >
+              {tag}
+            </span>
+          ))}
 
-          <Button
+          <button
+            type="button"
             onClick={() => onToggleAvailability?.(dish)}
-            size="sm"
-            variant={dish.available !== false ? "secondary" : "default"}
-            className="cursor-pointer"
+            disabled={!onToggleAvailability}
+            title={
+              isAvailable
+                ? "Clique para desativar este prato"
+                : "Clique para ativar este prato"
+            }
+            className={cn(
+              "rounded-md px-2 py-0.5 text-[10.5px] font-extrabold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+              isAvailable
+                ? "bg-[#E9F7EF] text-[#1B7F4C] hover:bg-[#DDF1E7]"
+                : "bg-[#F4F5F7] text-[#8A8F99] hover:bg-[#EBECF0]",
+            )}
           >
-            {dish.available !== false ? "Desativar" : "Ativar"}
-          </Button>
-
-          <Button
-            onClick={() => onDelete?.(dish)}
-            size="sm"
-            variant="destructive"
-            className="cursor-pointer text-white"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+            {isAvailable ? "Disponível" : "Indisponível"}
+          </button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="flex shrink-0 flex-col justify-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onEdit?.(dish)}
+          disabled={!onEdit}
+          aria-label={`Editar ${dish.name}`}
+          title="Editar prato"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F4F5F7] text-[#3D4149] transition-colors hover:bg-[#E9EAEE] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Edit className="h-3.5 w-3.5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onDelete?.(dish)}
+          disabled={!onDelete}
+          aria-label={`Remover ${dish.name}`}
+          title="Remover prato"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FDEEEE] text-[#D64545] transition-colors hover:bg-[#F9DCDC] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </article>
   );
 }
