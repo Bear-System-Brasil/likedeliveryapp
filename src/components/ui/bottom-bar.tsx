@@ -73,8 +73,8 @@ export function BottomBar({ activeTab }: BottomBarProps) {
   const gridCols = tabs.length === 4 ? "grid-cols-4" : "grid-cols-3";
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white md:hidden">
-      <div className={`grid h-16 ${gridCols}`}>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white md:hidden ">
+      <div className={`grid h-15 ${gridCols}`}>
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

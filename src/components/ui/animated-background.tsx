@@ -108,7 +108,7 @@ export const AnimatedBackground = React.memo<AnimatedBackgroundProps>(
     return (
       <div
         className={cn(
-          "relative min-h-screen overflow-hidden py-16",
+          "relative min-h-screen overflow-hidden pt-16",
           background,
           className,
         )}

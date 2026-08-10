@@ -13,13 +13,13 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-300">
+    <footer className="bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 py-12 border-b border-gray-700">
           {/* Company Info */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent">
+            <h3 className="text-2xl font-bold bg-linear-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent">
               Like Delivery
             </h3>
             <p className="text-sm text-gray-400 leading-relaxed">
