@@ -14,6 +14,7 @@ import { TrendingRestaurantsSection } from "@/components/home-page/trending-rest
 
 import { CouponBanner } from "@/components/home-page/coupon-banner";
 import { MainHeader } from "@/components/main-header";
+import { MobileSearchTrigger } from "@/components/main-header/mobile-search-trigger";
 import { Footer } from "@/components/footer";
 
 import { Coords } from "@/types/restaurant";
@@ -90,6 +91,10 @@ export function LikeDeliveryAppPage({
       />
 
       <main className="flex-1 flex flex-col pt-24">
+        <div className="px-3 pt-1 sm:hidden">
+          <MobileSearchTrigger className="w-full" />
+        </div>
+
         <BannerCarousel />
 
         <TrendingRestaurantsSection

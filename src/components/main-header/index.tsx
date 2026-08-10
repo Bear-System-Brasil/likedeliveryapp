@@ -414,15 +414,13 @@ export function MainHeader({
 
           {/* Actions */}
           <div className="flex items-center space-x-3">
-            {/* Search */}
+            {/* Search (desktop/tablet: icone que expande ao lado) */}
             {showSearch && (
-              <div className="flex items-center">
+              <div className="hidden items-center sm:flex">
                 <div
                   className={clsx(
                     "overflow-hidden transition-all duration-200 ease-out",
-                    searchOpen
-                      ? "mr-2 w-36 opacity-100 sm:w-56"
-                      : "w-0 opacity-0",
+                    searchOpen ? "mr-2 w-56 opacity-100" : "w-0 opacity-0",
                   )}
                 >
                   <Input
@@ -433,7 +431,7 @@ export function MainHeader({
                     onKeyDown={(e) => {
                       if (e.key === "Escape") setSearchOpen(false);
                     }}
-                    className="h-9 rounded-xl border-0 bg-gray-50/50 sm:h-10"
+                    className="h-10 rounded-xl border-0 bg-gray-50/50"
                   />
                 </div>
 
@@ -441,7 +439,7 @@ export function MainHeader({
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 shrink-0 rounded-xl border-0 bg-gray-50/50 sm:h-10 sm:w-10"
+                  className="h-10 w-10 shrink-0 rounded-xl border-0 bg-gray-50/50"
                   onClick={() => setSearchOpen((open) => !open)}
                   aria-label={searchOpen ? "Fechar busca" : "Buscar"}
                 >
