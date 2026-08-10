@@ -3,40 +3,32 @@
 import { AdminPageLayout } from "@/components/admin-page-layout";
 import { CompanyCoverUpload } from "@/components/company-cover-upload";
 import { CompanyLogoUpload } from "@/components/company-logo-upload";
-import { DataCard } from "@/components/data-card";
-import { FormField } from "@/components/form-field";
 import ProtectedRoute from "@/components/protected-route";
-import { ErrorState } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { GradientButton } from "@/components/ui/custom";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RESTAURANT_CATEGORIES } from "@/constants";
 import { useCompanyProfileManagement, useSpecialities } from "@/hooks";
+import { cn } from "@/lib/utils";
 import { formatCnpj, formatPhoneDisplay } from "@/utils";
 import {
   Building2,
-  Edit3,
-  IdCard,
+  CreditCard,
+  ExternalLink,
   Lock,
   Mail,
   MapPin,
-  Package,
+  Pencil,
   Phone,
   Plus,
   Save,
   Star,
+  Trash2,
   User,
   X,
 } from "lucide-react";
+import Link from "next/link";
+import { type ReactNode } from "react";
 
 export default function CompanyProfilePage() {
   return (
@@ -46,19 +38,102 @@ export default function CompanyProfilePage() {
   );
 }
 
+function SectionCard({
+  title,
+  subtitle,
+  actions,
+  children,
+  className,
+}: {
+  title: string;
+  subtitle: string;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-[13px] border border-[#E9EAEE] bg-white p-4",
+        className,
+      )}
+    >
+      <div className="mb-3.5 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[13px] font-extrabold text-[#14161A]">
+            {title}
+          </div>
+          <div className="mt-0.5 text-[11px] font-semibold text-[#A2A7B0]">
+            {subtitle}
+          </div>
+        </div>
+        {actions}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function IconInput({
+  label,
+  icon: Icon,
+  ...inputProps
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+} & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div>
+      <div className="mb-[5px] text-[11px] font-bold text-[#3D4149]">
+        {label}
+      </div>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-[11px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-[#A0A6B0]" />
+        <input
+          {...inputProps}
+          className="h-[37px] w-full rounded-[9px] border border-[#E9EAEE] bg-white pl-[33px] pr-3 text-[12.5px] text-[#14161A] outline-none disabled:cursor-default disabled:text-[#3D4149]"
+        />
+      </div>
+    </div>
+  );
+}
+
+function CompactButton({
+  children,
+  variant = "ghost",
+  ...props
+}: {
+  children: ReactNode;
+  variant?: "ghost" | "outline";
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className={cn(
+        "h-8 shrink-0 rounded-[9px] px-3.5 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        variant === "ghost" && "bg-[#F4F5F7] text-[#3D4149] hover:bg-[#E9EAEE]",
+        variant === "outline" &&
+          "border border-[#E9EAEE] bg-white text-[#3D4149] hover:bg-[#F4F5F7]",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 function CompanyProfileContent() {
   const {
-    // Auth & Loading
     user,
     isMounted,
     isLoadingProfile,
     isLoadingAddresses,
     profileError,
 
-    // Company Profile
     formData,
     isEditing,
     isSaving,
+    isOpen,
     selectedCategory,
     isSavingSpeciality,
     handleSaveProfile,
@@ -68,7 +143,6 @@ function CompanyProfileContent() {
     updateFormField,
     setSelectedCategory,
 
-    // Addresses
     addresses,
     newAddress,
     isAddingAddress,
@@ -80,10 +154,8 @@ function CompanyProfileContent() {
     handleDeleteAddress,
     handleSearchZipCode,
     updateAddressField,
-    resetAddressForm,
     formatZipCode,
 
-    // Password
     passwordData,
     passwordErrors,
     isChangingPassword,
@@ -93,17 +165,20 @@ function CompanyProfileContent() {
     resetPasswordForm,
   } = useCompanyProfileManagement();
 
-  // Fetch specialities from backend, fallback to RESTAURANT_CATEGORIES
   const { data: specialities } = useSpecialities();
   const specialityOptions =
     specialities && specialities.length > 0
       ? specialities.map((s) => ({ id: s.id, name: s.name }))
       : RESTAURANT_CATEGORIES.map((c) => ({ id: c.id, name: c.name }));
+  const selectedSpecialityName = specialityOptions.find(
+    (s) => s.id === selectedCategory,
+  )?.name;
 
   if (!isMounted || !user) {
     return null;
   }
 
+  const companyId = user.companyId || user.id;
   const userRoleLabel =
     user.role === "owner"
       ? "Proprietário"
@@ -115,572 +190,552 @@ function CompanyProfileContent() {
     <AdminPageLayout
       title="Perfil da Empresa"
       icon={Building2}
-      mainClassName="px-4 py-8 lg:pl-64 lg:pr-8"
+      mainClassName="p-4 pb-10 sm:p-6 lg:pl-64 lg:pr-8"
       actions={
         <Badge className="border-0 bg-linear-to-br from-orange-100 to-orange-100 text-orange-700">
           {userRoleLabel}
         </Badge>
       }
     >
-      {/* Error State */}
-      {profileError && !isLoadingProfile && (
-        <div className="max-w-4xl mx-auto">
-          <ErrorState message={profileError} />
-        </div>
-      )}
+      <div className="mx-auto max-w-[920px]">
+        {profileError && !isLoadingProfile ? (
+          <div className="rounded-[13px] border border-[#E9EAEE] bg-white p-6 text-center text-sm text-[#3D4149]">
+            {profileError}
+          </div>
+        ) : (
+          <>
+            {/* Header row */}
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <p className="text-[12.5px] font-medium text-[#8A8F99]">
+                A identidade que aparece para o cliente no app
+              </p>
+              <Link href={`/restaurant/${companyId}`} target="_blank">
+                <CompactButton variant="outline">
+                  <span className="flex items-center gap-1.5">
+                    Ver página pública
+                    <ExternalLink className="h-3 w-3" />
+                  </span>
+                </CompactButton>
+              </Link>
+            </div>
 
-      {/* Content */}
-      {!profileError && (
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* Logo Section */}
-          <DataCard
-            title="Logo do Restaurante"
-            icon={<Building2 className="h-5 w-5" />}
-          >
-            {isLoadingProfile ? (
-              <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                <Skeleton className="w-48 h-48 rounded-full" />
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-24" />
-              </div>
-            ) : (
-              <CompanyLogoUpload
-                value={formData.logo_url}
-                onChange={(url) => updateFormField("logo_url", url)}
-                companyId={user?.companyId || user?.id || ""}
-                companyData={{
-                  tradeName: formData.tradeName,
-                  legalName: formData.legalName,
-                  cnpj: formData.cnpj,
-                  email: formData.email,
-                  phone: formData.phone,
-                }}
-                label="Alterar Logo"
-              />
-            )}
-          </DataCard>
+            {/* Hero card: cover + logo + summary */}
+            <div className="mb-3 overflow-hidden rounded-[14px] border border-[#E9EAEE] bg-white">
+              {isLoadingProfile ? (
+                <Skeleton className="h-[150px] w-full rounded-none" />
+              ) : (
+                <CompanyCoverUpload
+                  value={formData.cover_url}
+                  onChange={(url) => updateFormField("cover_url", url)}
+                  companyId={companyId}
+                  companyData={{
+                    tradeName: formData.tradeName,
+                    legalName: formData.legalName,
+                    cnpj: formData.cnpj,
+                    email: formData.email,
+                    phone: formData.phone,
+                  }}
+                />
+              )}
 
-          {/* Cover Section */}
-          <DataCard
-            title="Imagem de Capa"
-            icon={<Building2 className="h-5 w-5" />}
-          >
-            {isLoadingProfile ? (
-              <Skeleton className="w-full h-64 rounded-2xl" />
-            ) : (
-              <CompanyCoverUpload
-                value={formData.cover_url}
-                onChange={(url) => updateFormField("cover_url", url)}
-                companyId={user?.companyId || user?.id || ""}
-                companyData={{
-                  tradeName: formData.tradeName,
-                  legalName: formData.legalName,
-                  cnpj: formData.cnpj,
-                  email: formData.email,
-                  phone: formData.phone,
-                }}
-                label="Alterar Capa"
-              />
-            )}
-          </DataCard>
+              <div className="flex items-start gap-3.5 px-[18px] pb-4">
+                {isLoadingProfile ? (
+                  <Skeleton className="-mt-[30px] h-[76px] w-[76px] shrink-0 rounded-full border-[3px] border-white" />
+                ) : (
+                  <CompanyLogoUpload
+                    value={formData.logo_url}
+                    onChange={(url) => updateFormField("logo_url", url)}
+                    companyId={companyId}
+                    companyData={{
+                      tradeName: formData.tradeName,
+                      legalName: formData.legalName,
+                      cnpj: formData.cnpj,
+                      email: formData.email,
+                      phone: formData.phone,
+                    }}
+                  />
+                )}
 
-          {/* Company Information */}
-          <DataCard
-            title="Informações da Empresa"
-            icon={<Building2 className="h-5 w-5" />}
-            actions={
-              !isLoadingProfile && !isEditing ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  className="rounded-xl border-gray-200"
-                >
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  Editar
-                </Button>
-              ) : !isLoadingProfile ? (
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCancelEdit}
-                    className="rounded-xl border-gray-200"
-                    disabled={isSaving}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancelar
-                  </Button>
-                  <GradientButton
-                    size="sm"
-                    onClick={handleSaveProfile}
-                    isLoading={isSaving}
-                    loadingText="Salvando..."
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Salvar
-                  </GradientButton>
+                <div className="min-w-0 flex-1 pt-3">
+                  {isLoadingProfile ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-3.5 w-56" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[17px] font-extrabold tracking-tight text-[#14161A]">
+                          {formData.tradeName || "Sua Empresa"}
+                        </span>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-md px-2 py-0.5 text-[10.5px] font-extrabold",
+                            isOpen
+                              ? "bg-[#E9F7EF] text-[#1B7F4C]"
+                              : "bg-[#FDEEEE] text-[#D64545]",
+                          )}
+                        >
+                          {isOpen ? "Aberto" : "Fechado"}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1.5 text-[11.5px] font-semibold text-[#8A8F99]">
+                        {selectedSpecialityName && (
+                          <span className="whitespace-nowrap">
+                            {selectedSpecialityName}
+                          </span>
+                        )}
+                        <span className="whitespace-nowrap">
+                          CNPJ {formatCnpj(formData.cnpj) || "—"}
+                        </span>
+                        <span className="whitespace-nowrap">
+                          {formatPhoneDisplay(formData.phone) || "—"}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
-              ) : null
-            }
-          >
-            {isLoadingProfile ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-9 w-full rounded-xl" />
-                  </div>
-                ))}
               </div>
-            ) : (
-              <>
-                <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    label="Nome Fantasia"
-                    id="tradeName"
-                    icon={<User className="h-4 w-4" />}
-                    inputProps={{
-                      value: formData.tradeName,
-                      onChange: (e) =>
-                        updateFormField("tradeName", e.target.value),
-                      disabled: !isEditing,
-                      placeholder: "Nome do seu restaurante",
-                      maxLength: 125,
-                    }}
-                  />
 
-                  <FormField
-                    label="Razão Social"
-                    id="legalName"
-                    icon={<Building2 className="h-4 w-4" />}
-                    inputProps={{
-                      value: formData.legalName,
-                      onChange: (e) =>
-                        updateFormField("legalName", e.target.value),
-                      disabled: !isEditing,
-                      placeholder: "Razão social da empresa",
-                      maxLength: 125,
-                    }}
-                  />
+              <div className="border-t border-[#F4F5F7] bg-[#FAFAFB] px-[18px] py-2.5 text-[11px] font-semibold text-[#A2A7B0]">
+                Clique nas imagens para enviar · capa 1200×400, logo quadrada ·
+                até 5MB (JPG, PNG, GIF)
+              </div>
+            </div>
 
-                  <FormField
-                    label="CNPJ"
-                    id="cnpj"
-                    icon={<IdCard className="h-4 w-4" />}
-                    inputProps={{
-                      value: formatCnpj(formData.cnpj),
-                      onChange: (e) =>
-                        updateFormField(
-                          "cnpj",
-                          e.target.value.replace(/\D/g, ""),
-                        ),
-                      disabled: !isEditing,
-                      placeholder: "00.000.000/0000-00",
-                      maxLength: 18,
-                    }}
-                  />
-
-                  <FormField
-                    label="E-mail"
-                    id="email"
-                    icon={<Mail className="h-4 w-4" />}
-                    inputProps={{
-                      type: "email",
-                      value: formData.email,
-                      onChange: (e) => updateFormField("email", e.target.value),
-                      disabled: !isEditing,
-                      placeholder: "contato@restaurante.com",
-                    }}
-                  />
-
-                  <FormField
-                    label="Telefone"
-                    id="phone"
-                    icon={<Phone className="h-4 w-4" />}
-                    inputProps={{
-                      type: "tel",
-                      value: formatPhoneDisplay(formData.phone),
-                      onChange: (e) =>
-                        updateFormField(
-                          "phone",
-                          e.target.value.replace(/\D/g, ""),
-                        ),
-                      disabled: !isEditing,
-                      placeholder: "(00) 00000-0000",
-                      maxLength: 15,
-                    }}
-                  />
-
-                  {/* Tipo de Restaurante - Solução temporária com categorias locais */}
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="mainCategoryId"
-                      className="flex items-center space-x-2"
+            {/* Informações da Empresa */}
+            <SectionCard
+              title="Informações da Empresa"
+              subtitle="Dados fiscais e de contato"
+              className="mb-3"
+              actions={
+                isLoadingProfile ? null : !isEditing ? (
+                  <CompactButton onClick={() => setIsEditing(true)}>
+                    Editar
+                  </CompactButton>
+                ) : (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <CompactButton
+                      variant="outline"
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
                     >
-                      <Package className="h-4 w-4 text-gray-500" />
-                      <span>Tipo de Restaurante</span>
-                    </Label>
-                    <Select
+                      Cancelar
+                    </CompactButton>
+                    <GradientButton
+                      size="sm"
+                      onClick={handleSaveProfile}
+                      isLoading={isSaving}
+                      loadingText="Salvando..."
+                      className="h-8 rounded-[9px] px-3.5 text-xs"
+                    >
+                      <Save className="h-3.5 w-3.5" />
+                      Salvar
+                    </GradientButton>
+                  </div>
+                )
+              }
+            >
+              {isLoadingProfile ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <Skeleton key={i} className="h-[37px] w-full rounded-[9px]" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+                  <IconInput
+                    label="Nome Fantasia"
+                    icon={User}
+                    value={formData.tradeName}
+                    onChange={(e) =>
+                      updateFormField("tradeName", e.target.value)
+                    }
+                    disabled={!isEditing}
+                    placeholder="Nome do seu restaurante"
+                    maxLength={125}
+                  />
+                  <IconInput
+                    label="Razão Social"
+                    icon={Building2}
+                    value={formData.legalName}
+                    onChange={(e) =>
+                      updateFormField("legalName", e.target.value)
+                    }
+                    disabled={!isEditing}
+                    placeholder="Razão social da empresa"
+                    maxLength={125}
+                  />
+                  <IconInput
+                    label="CNPJ"
+                    icon={CreditCard}
+                    value={formatCnpj(formData.cnpj)}
+                    onChange={(e) =>
+                      updateFormField(
+                        "cnpj",
+                        e.target.value.replace(/\D/g, ""),
+                      )
+                    }
+                    disabled={!isEditing}
+                    placeholder="00.000.000/0000-00"
+                    maxLength={18}
+                  />
+                  <IconInput
+                    label="E-mail"
+                    icon={Mail}
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => updateFormField("email", e.target.value)}
+                    disabled={!isEditing}
+                    placeholder="contato@restaurante.com"
+                  />
+                  <IconInput
+                    label="Telefone"
+                    icon={Phone}
+                    type="tel"
+                    value={formatPhoneDisplay(formData.phone)}
+                    onChange={(e) =>
+                      updateFormField(
+                        "phone",
+                        e.target.value.replace(/\D/g, ""),
+                      )
+                    }
+                    disabled={!isEditing}
+                    placeholder="(00) 00000-0000"
+                    maxLength={15}
+                  />
+                  <div>
+                    <div className="mb-[5px] text-[11px] font-bold text-[#3D4149]">
+                      Tipo de Restaurante
+                    </div>
+                    <select
                       value={selectedCategory}
-                      onValueChange={(value) => {
-                        setSelectedCategory(value);
+                      onChange={(e) => {
+                        setSelectedCategory(e.target.value);
                         if (specialities && specialities.length > 0) {
-                          handleSaveSpeciality(value);
+                          handleSaveSpeciality(e.target.value);
                         }
                       }}
                       disabled={!isEditing || isSavingSpeciality}
+                      className="h-[37px] w-full rounded-[9px] border border-[#E9EAEE] bg-white px-2.5 text-[12.5px] font-semibold text-[#14161A] outline-none disabled:cursor-default"
                     >
-                      <SelectTrigger className="rounded-xl border-2 border-gray-200 focus:border-orange-400">
-                        <SelectValue placeholder="Selecione o tipo de restaurante" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
-                        {specialityOptions.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <option value="">Selecione o tipo de restaurante</option>
+                      {specialityOptions.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
                     {(!specialities || specialities.length === 0) && (
-                      <p className="text-xs text-amber-600 font-medium">
+                      <p className="mt-1 text-[11px] font-medium text-amber-600">
                         ⚠️ Especialidades não encontradas no servidor - usando
                         lista local
                       </p>
                     )}
                   </div>
-                </form>
-              </>
-            )}
-          </DataCard>
+                </div>
+              )}
+            </SectionCard>
 
-          {/* Company Address */}
-          <DataCard
-            title="Endereço da Empresa"
-            icon={<MapPin className="h-5 w-5" />}
-            actions={
-              !isLoadingAddresses && !isAddingAddress ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsAddingAddress(true)}
-                  className="rounded-xl border-gray-200"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar
-                </Button>
-              ) : null
-            }
-          >
-            {isLoadingAddresses ? (
-              <div className="space-y-4">
-                <Skeleton className="h-24 w-full rounded-xl" />
-              </div>
-            ) : (!Array.isArray(addresses) || addresses.length === 0) &&
-              !isAddingAddress ? (
-              <div className="text-center py-8">
-                <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 mb-4">Nenhum endereço cadastrado</p>
-                <GradientButton onClick={() => setIsAddingAddress(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Endereço
-                </GradientButton>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Existing Addresses */}
-                {Array.isArray(addresses) &&
-                  addresses.map((address) => (
-                    <div
-                      key={address.id}
-                      className="border border-gray-200 rounded-xl p-4"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-gray-900">
+            {/* Endereço da Empresa */}
+            <SectionCard
+              title="Endereço da Empresa"
+              subtitle="O endereço padrão define o raio de entrega"
+              className="mb-3"
+              actions={
+                !isLoadingAddresses && !isAddingAddress ? (
+                  <CompactButton onClick={() => setIsAddingAddress(true)}>
+                    <span className="flex items-center gap-1">
+                      <Plus className="h-3.5 w-3.5" />
+                      Adicionar
+                    </span>
+                  </CompactButton>
+                ) : null
+              }
+            >
+              {isLoadingAddresses ? (
+                <Skeleton className="h-[62px] w-full rounded-[10px]" />
+              ) : (!Array.isArray(addresses) || addresses.length === 0) &&
+                !isAddingAddress ? (
+                <div className="py-6 text-center">
+                  <MapPin className="mx-auto mb-2 h-8 w-8 text-[#D8DBE0]" />
+                  <p className="mb-3 text-[12.5px] text-[#8A8F99]">
+                    Nenhum endereço cadastrado
+                  </p>
+                  <CompactButton onClick={() => setIsAddingAddress(true)}>
+                    <span className="flex items-center gap-1">
+                      <Plus className="h-3.5 w-3.5" />
+                      Adicionar Endereço
+                    </span>
+                  </CompactButton>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {Array.isArray(addresses) &&
+                    addresses.map((address) => (
+                      <div
+                        key={address.id}
+                        className="flex items-center gap-3 rounded-[10px] border border-[#E9EAEE] px-3 py-[11px]"
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[#FFF1E7] text-[#E05A00]">
+                          <MapPin className="h-[15px] w-[15px]" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[13px] font-bold text-[#14161A]">
                               {address.street}, {address.number}
-                            </p>
+                            </span>
                             {address.isDefault && (
-                              <Badge className="bg-linear-to-r from-orange-500 to-orange-500 text-white border-0 text-xs flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-current" />
+                              <span className="flex shrink-0 items-center gap-1 rounded-md bg-[#FFF1E7] px-2 py-0.5 text-[10px] font-extrabold text-[#E05A00]">
+                                <Star className="h-2.5 w-2.5 fill-current" />
                                 Padrão
-                              </Badge>
+                              </span>
                             )}
                           </div>
-                          {address.complement && (
-                            <p className="text-sm text-gray-600">
-                              {address.complement}
-                            </p>
-                          )}
-                          <p className="text-sm text-gray-600">
+                          <div className="mt-0.5 truncate text-[11.5px] font-medium text-[#8A8F99]">
                             {address.neighborhood} - {address.city}/
-                            {address.state}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            CEP: {formatZipCode(address.zipCode)}
-                          </p>
-                          {address.reference && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Referência: {address.reference}
-                            </p>
-                          )}
+                            {address.state} · CEP{" "}
+                            {formatZipCode(address.zipCode)}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditAddress(address)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteAddress(address.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleEditAddress(address)}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F4F5F7] text-[#3D4149] hover:bg-[#E9EAEE]"
+                        >
+                          <Pencil className="h-[13px] w-[13px]" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAddress(address.id)}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FDEEEE] text-[#D64545] hover:bg-[#FBDEDE]"
+                        >
+                          <Trash2 className="h-[13px] w-[13px]" />
+                        </button>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                {/* Add/Edit Address Form */}
-                {isAddingAddress && (
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50">
-                    <h3 className="font-semibold text-gray-900 mb-4">
-                      {editingAddressId ? "Editar Endereço" : "Novo Endereço"}
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                        <FormField
-                          label="CEP"
-                          id="zipCode"
-                          icon={<MapPin className="h-4 w-4" />}
-                          inputProps={{
-                            value: formatZipCode(newAddress.zipCode),
-                            onChange: (e) => {
+                  {isAddingAddress && (
+                    <div className="rounded-[10px] border border-dashed border-[#D8DBE0] bg-[#FAFAFB] p-4">
+                      <h3 className="mb-3 text-[13px] font-extrabold text-[#14161A]">
+                        {editingAddressId ? "Editar Endereço" : "Novo Endereço"}
+                      </h3>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="sm:col-span-2">
+                          <IconInput
+                            label="CEP"
+                            icon={MapPin}
+                            value={formatZipCode(newAddress.zipCode)}
+                            onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, "");
                               updateAddressField("zipCode", value);
                               if (value.length === 8)
                                 handleSearchZipCode(value);
-                            },
-                            placeholder: "00000-000",
-                            maxLength: 9,
-                          }}
+                            }}
+                            placeholder="00000-000"
+                            maxLength={9}
+                          />
+                        </div>
+                        <IconInput
+                          label="Rua"
+                          icon={MapPin}
+                          value={newAddress.street}
+                          onChange={(e) =>
+                            updateAddressField("street", e.target.value)
+                          }
+                          placeholder="Nome da rua"
                         />
-                      </div>
-                      <FormField
-                        label="Rua"
-                        id="street"
-                        inputProps={{
-                          value: newAddress.street,
-                          onChange: (e) =>
-                            updateAddressField("street", e.target.value),
-                          placeholder: "Nome da rua",
-                        }}
-                      />
-                      <FormField
-                        label="Número"
-                        id="number"
-                        inputProps={{
-                          value: newAddress.number,
-                          onChange: (e) =>
-                            updateAddressField("number", e.target.value),
-                          placeholder: "123",
-                        }}
-                      />
-                      <FormField
-                        label="Bairro"
-                        id="neighborhood"
-                        inputProps={{
-                          value: newAddress.neighborhood,
-                          onChange: (e) =>
-                            updateAddressField("neighborhood", e.target.value),
-                          placeholder: "Nome do bairro",
-                        }}
-                      />
-                      <FormField
-                        label="Cidade"
-                        id="city"
-                        inputProps={{
-                          value: newAddress.city,
-                          onChange: (e) =>
-                            updateAddressField("city", e.target.value),
-                          placeholder: "Nome da cidade",
-                        }}
-                      />
-                      <FormField
-                        label="Estado"
-                        id="state"
-                        inputProps={{
-                          value: newAddress.state,
-                          onChange: (e) =>
-                            updateAddressField("state", e.target.value),
-                          placeholder: "UF",
-                          maxLength: 2,
-                        }}
-                      />
-                      <FormField
-                        label="Complemento"
-                        id="complement"
-                        inputProps={{
-                          value: newAddress.complement,
-                          onChange: (e) =>
-                            updateAddressField("complement", e.target.value),
-                          placeholder: "Apto, sala, etc (opcional)",
-                        }}
-                      />
-                      <div className="md:col-span-2">
-                        <FormField
-                          label="Referência"
-                          id="reference"
-                          inputProps={{
-                            value: newAddress.reference,
-                            onChange: (e) =>
-                              updateAddressField("reference", e.target.value),
-                            placeholder: "Ponto de referência (opcional)",
-                          }}
+                        <IconInput
+                          label="Número"
+                          icon={MapPin}
+                          value={newAddress.number}
+                          onChange={(e) =>
+                            updateAddressField("number", e.target.value)
+                          }
+                          placeholder="123"
                         />
-                      </div>
-                      <div className="md:col-span-2">
-                        <div className="flex items-center space-x-2">
+                        <IconInput
+                          label="Bairro"
+                          icon={MapPin}
+                          value={newAddress.neighborhood}
+                          onChange={(e) =>
+                            updateAddressField("neighborhood", e.target.value)
+                          }
+                          placeholder="Nome do bairro"
+                        />
+                        <IconInput
+                          label="Cidade"
+                          icon={MapPin}
+                          value={newAddress.city}
+                          onChange={(e) =>
+                            updateAddressField("city", e.target.value)
+                          }
+                          placeholder="Nome da cidade"
+                        />
+                        <IconInput
+                          label="Estado"
+                          icon={MapPin}
+                          value={newAddress.state}
+                          onChange={(e) =>
+                            updateAddressField("state", e.target.value)
+                          }
+                          placeholder="UF"
+                          maxLength={2}
+                        />
+                        <IconInput
+                          label="Complemento"
+                          icon={MapPin}
+                          value={newAddress.complement}
+                          onChange={(e) =>
+                            updateAddressField("complement", e.target.value)
+                          }
+                          placeholder="Apto, sala, etc (opcional)"
+                        />
+                        <div className="sm:col-span-2">
+                          <IconInput
+                            label="Referência"
+                            icon={MapPin}
+                            value={newAddress.reference}
+                            onChange={(e) =>
+                              updateAddressField("reference", e.target.value)
+                            }
+                            placeholder="Ponto de referência (opcional)"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 sm:col-span-2">
                           <input
                             type="checkbox"
                             id="isDefault"
                             checked={newAddress.isDefault}
                             onChange={(e) =>
-                              updateAddressField("isDefault", e.target.checked)
+                              updateAddressField(
+                                "isDefault",
+                                e.target.checked,
+                              )
                             }
-                            className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                            className="h-4 w-4 rounded border-[#E9EAEE] text-orange-500 focus:ring-orange-500"
                           />
                           <label
                             htmlFor="isDefault"
-                            className="text-sm font-medium text-gray-700 cursor-pointer"
+                            className="cursor-pointer text-[12.5px] font-semibold text-[#3D4149]"
                           >
                             Definir como endereço padrão
                           </label>
                         </div>
                       </div>
+                      <div className="mt-4 flex gap-2">
+                        <CompactButton
+                          variant="outline"
+                          onClick={handleCancelAddressEdit}
+                          className="flex-1"
+                        >
+                          <span className="flex items-center justify-center gap-1.5">
+                            <X className="h-3.5 w-3.5" />
+                            Cancelar
+                          </span>
+                        </CompactButton>
+                        <GradientButton
+                          onClick={handleSaveAddress}
+                          size="sm"
+                          className="h-8 flex-1 rounded-[9px] text-xs"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          {editingAddressId
+                            ? "Atualizar Endereço"
+                            : "Salvar Endereço"}
+                        </GradientButton>
+                      </div>
                     </div>
-                    <div className="flex space-x-2 mt-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCancelAddressEdit}
-                        className="flex-1 rounded-xl"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Cancelar
-                      </Button>
-                      <GradientButton
-                        onClick={handleSaveAddress}
-                        size="sm"
-                        className="flex-1"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        {editingAddressId
-                          ? "Atualizar Endereço"
-                          : "Salvar Endereço"}
-                      </GradientButton>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </DataCard>
-
-          {/* Security - Change Password */}
-          <DataCard title="Segurança" icon={<Lock className="h-5 w-5" />}>
-            {!isChangingPassword ? (
-              <Button
-                variant="outline"
-                onClick={() => setIsChangingPassword(true)}
-                className="w-full justify-start rounded-xl border-gray-200 cursor-pointer"
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                Alterar Senha
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900">Alterar Senha</h3>
-                <FormField
-                  label="Senha Atual"
-                  id="currentPassword"
-                  icon={<Lock className="h-4 w-4" />}
-                  inputProps={{
-                    type: "password",
-                    value: passwordData.currentPassword,
-                    onChange: (e) =>
-                      updatePasswordField("currentPassword", e.target.value),
-                    placeholder: "Digite sua senha atual",
-                  }}
-                />
-                <FormField
-                  label="Nova Senha"
-                  id="newPassword"
-                  icon={<Lock className="h-4 w-4" />}
-                  inputProps={{
-                    type: "password",
-                    value: passwordData.newPassword,
-                    onChange: (e) =>
-                      updatePasswordField("newPassword", e.target.value),
-                    placeholder: "Digite a nova senha",
-                  }}
-                />
-                {passwordErrors.length > 0 && (
-                  <div className="text-xs text-red-600 space-y-1">
-                    <p className="font-medium">Requisitos não atendidos:</p>
-                    <ul className="list-disc list-inside">
-                      {passwordErrors.map((error: string, i: number) => (
-                        <li key={i}>{error}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <FormField
-                  label="Confirmar Nova Senha"
-                  id="confirmPassword"
-                  icon={<Lock className="h-4 w-4" />}
-                  inputProps={{
-                    type: "password",
-                    value: passwordData.confirmPassword,
-                    onChange: (e) =>
-                      updatePasswordField("confirmPassword", e.target.value),
-                    placeholder: "Digite a nova senha novamente",
-                  }}
-                />
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsChangingPassword(false);
-                      resetPasswordForm();
-                    }}
-                    className="flex-1 rounded-xl"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancelar
-                  </Button>
-                  <GradientButton
-                    onClick={handleChangePassword}
-                    size="sm"
-                    disabled={passwordErrors.length > 0}
-                    className="flex-1"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Alterar Senha
-                  </GradientButton>
+                  )}
                 </div>
-              </div>
-            )}
-          </DataCard>
-        </div>
-      )}
+              )}
+            </SectionCard>
+
+            {/* Segurança */}
+            <SectionCard title="Segurança" subtitle="Alterar sua senha de acesso">
+              {!isChangingPassword ? (
+                <CompactButton
+                  variant="outline"
+                  onClick={() => setIsChangingPassword(true)}
+                  className="w-full"
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    <Lock className="h-3.5 w-3.5" />
+                    Alterar Senha
+                  </span>
+                </CompactButton>
+              ) : (
+                <div className="space-y-3">
+                  <IconInput
+                    label="Senha Atual"
+                    icon={Lock}
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                      updatePasswordField("currentPassword", e.target.value)
+                    }
+                    placeholder="Digite sua senha atual"
+                  />
+                  <IconInput
+                    label="Nova Senha"
+                    icon={Lock}
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                      updatePasswordField("newPassword", e.target.value)
+                    }
+                    placeholder="Digite a nova senha"
+                  />
+                  {passwordErrors.length > 0 && (
+                    <div className="space-y-1 text-[11.5px] text-red-600">
+                      <p className="font-bold">Requisitos não atendidos:</p>
+                      <ul className="list-inside list-disc">
+                        {passwordErrors.map((error: string, i: number) => (
+                          <li key={i}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <IconInput
+                    label="Confirmar Nova Senha"
+                    icon={Lock}
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      updatePasswordField("confirmPassword", e.target.value)
+                    }
+                    placeholder="Digite a nova senha novamente"
+                  />
+                  <div className="flex gap-2">
+                    <CompactButton
+                      variant="outline"
+                      onClick={() => {
+                        setIsChangingPassword(false);
+                        resetPasswordForm();
+                      }}
+                      className="flex-1"
+                    >
+                      <span className="flex items-center justify-center gap-1.5">
+                        <X className="h-3.5 w-3.5" />
+                        Cancelar
+                      </span>
+                    </CompactButton>
+                    <GradientButton
+                      onClick={handleChangePassword}
+                      size="sm"
+                      disabled={passwordErrors.length > 0}
+                      className="h-8 flex-1 rounded-[9px] text-xs"
+                    >
+                      <Save className="h-3.5 w-3.5" />
+                      Alterar Senha
+                    </GradientButton>
+                  </div>
+                </div>
+              )}
+            </SectionCard>
+          </>
+        )}
+      </div>
     </AdminPageLayout>
   );
 }

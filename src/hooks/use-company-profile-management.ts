@@ -46,6 +46,7 @@ export const useCompanyProfileManagement = () => {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [companySpecialities, setCompanySpecialities] = useState<Speciality[]>([]);
   const [isSavingSpeciality, setIsSavingSpeciality] = useState(false);
@@ -140,6 +141,7 @@ export const useCompanyProfileManagement = () => {
 
           setFormData(companyData);
           setOriginalFormData(companyData);
+          setIsOpen((company as any).isOpen ?? true);
           // Populate speciality from real company data
           const specs = (company as any).speciality || [];
           setCompanySpecialities(specs);
@@ -735,6 +737,7 @@ export const useCompanyProfileManagement = () => {
     profileError,
     isEditing,
     isSaving,
+    isOpen,
     selectedCategory,
     companySpecialities,
     isSavingSpeciality,
