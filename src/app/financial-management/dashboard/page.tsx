@@ -153,7 +153,7 @@ export default function CashRegisterPage() {
     <AdminPageLayout
       title="Controle de Caixa"
       icon={Banknote}
-      mainClassName="p-4 pb-10 sm:p-6 lg:pl-64 lg:pr-8"
+      mainClassName="p-4 pb-20 sm:p-6 md:pb-10 lg:pl-64 lg:pr-8"
       actions={
         <Button
           variant="outline"

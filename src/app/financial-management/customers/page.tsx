@@ -82,7 +82,7 @@ export default function CustomersPage() {
     <AdminPageLayout
       title="Clientes"
       icon={Users}
-      mainClassName="p-4 pb-10 sm:p-6 lg:pl-64 lg:pr-8"
+      mainClassName="p-4 pb-20 sm:p-6 md:pb-10 lg:pl-64 lg:pr-8"
       actions={
         <span className="rounded-[8px] border border-[#E9EAEE] bg-white px-2.5 py-1 text-[11.5px] font-bold text-[#3D4149]">
           {customers.length} cliente{customers.length !== 1 ? "s" : ""} únicos

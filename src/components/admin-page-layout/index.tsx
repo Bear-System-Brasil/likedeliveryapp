@@ -61,7 +61,7 @@ export function AdminPageLayout({
           </div>
         </header>
 
-        <main className={cn("flex-1 lg:pl-64", mainClassName)}>
+        <main className={cn("flex-1 pb-20 md:pb-10 lg:pl-64", mainClassName)}>
           {children}
         </main>
       </div>
