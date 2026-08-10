@@ -4,7 +4,7 @@ import { AuthProvider } from "@/contexts/auth-provider";
 import { Providers } from "@/providers";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type React from "react";
 import { Suspense } from "react";
 // @ts-ignore: Cannot find module or type declarations for side-effect import of './globals.css'
@@ -13,6 +13,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Like Delivery App",
   description: "Sistema completo de delivery",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

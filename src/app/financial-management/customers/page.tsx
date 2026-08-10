@@ -123,7 +123,7 @@ export default function CustomersPage() {
           </div>
 
           {/* Search */}
-          <div className="relative w-64">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Buscar por ID do cliente"
@@ -147,71 +147,122 @@ export default function CustomersPage() {
                 <p className="font-medium">Nenhum cliente encontrado</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        ID do Cliente
-                      </th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Pedidos
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Total Gasto
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Ticket Médio
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Último Pedido
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Último Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filtered.map((customer) => (
-                      <tr
-                        key={customer.customerId}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-4 py-3 font-mono text-xs text-gray-500">
+              <>
+                {/* Mobile: lista em cards */}
+                <div className="divide-y divide-gray-100 md:hidden">
+                  {filtered.map((customer) => (
+                    <div key={customer.customerId} className="p-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 truncate font-mono text-xs text-gray-500">
                           {customer.customerId.slice(0, 12)}…
-                        </td>
-                        <td className="px-4 py-3 text-center font-semibold">
-                          {customer.orderCount}
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold text-green-700">
-                          {formatCurrency(customer.totalSpent)}
-                        </td>
-                        <td className="px-4 py-3 text-right text-gray-600">
-                          {formatCurrency(
-                            customer.totalSpent / customer.orderCount,
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">
-                          {new Date(customer.lastOrderDate).toLocaleString(
-                            "pt-BR",
-                            {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            },
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">
-                          {STATUS_LABELS[customer.lastStatus] ??
-                            customer.lastStatus}
-                        </td>
+                        </p>
+                        <span className="shrink-0 text-xs text-gray-500">
+                          {customer.orderCount} pedido
+                          {customer.orderCount !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-green-700">
+                            {formatCurrency(customer.totalSpent)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Ticket médio{" "}
+                            {formatCurrency(
+                              customer.totalSpent / customer.orderCount,
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">
+                            {new Date(customer.lastOrderDate).toLocaleString(
+                              "pt-BR",
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {STATUS_LABELS[customer.lastStatus] ??
+                              customer.lastStatus}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop/tablet: tabela */}
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          ID do Cliente
+                        </th>
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Pedidos
+                        </th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Total Gasto
+                        </th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Ticket Médio
+                        </th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Último Pedido
+                        </th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Último Status
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filtered.map((customer) => (
+                        <tr
+                          key={customer.customerId}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                            {customer.customerId.slice(0, 12)}…
+                          </td>
+                          <td className="px-4 py-3 text-center font-semibold">
+                            {customer.orderCount}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold text-green-700">
+                            {formatCurrency(customer.totalSpent)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-gray-600">
+                            {formatCurrency(
+                              customer.totalSpent / customer.orderCount,
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">
+                            {new Date(customer.lastOrderDate).toLocaleString(
+                              "pt-BR",
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 text-xs">
+                            {STATUS_LABELS[customer.lastStatus] ??
+                              customer.lastStatus}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>

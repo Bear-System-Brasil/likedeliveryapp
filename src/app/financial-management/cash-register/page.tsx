@@ -339,10 +339,10 @@ export default function CashRegisterPage() {
               </div>
             </div>
 
-            <div className="grid items-start gap-3 [grid-template-columns:repeat(auto-fit,minmax(440px,1fr))]">
+            <div className="grid grid-cols-1 items-start gap-3 lg:[grid-template-columns:repeat(auto-fit,minmax(440px,1fr))]">
               {/* Coluna principal */}
               <div className="flex min-w-0 flex-col gap-3">
-                <div className="grid grid-cols-1 gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
+                <div className="grid grid-cols-1 gap-2.5 sm:[grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
                   {summaryLoading ? (
                     <>
                       <Skeleton className="h-[74px] rounded-[12px]" />
@@ -646,7 +646,7 @@ export default function CashRegisterPage() {
           <ModalTitle onClose={closeDialog}>Registrar movimento</ModalTitle>
 
           <FieldLabel>Tipo</FieldLabel>
-          <div className="mb-3 grid grid-cols-4 gap-1.5">
+          <div className="mb-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
             {MOVEMENT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}

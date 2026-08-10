@@ -192,6 +192,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       onOpenChange={(open) => !open && onClose()}
     >
       <SheetPrimitive.Portal>
+        <SheetPrimitive.Overlay
+          className={cn(
+            "fixed inset-0 z-40 bg-black/50",
+            "data-[state=open]:animate-in data-[state=open]:fade-in-0",
+            "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
+          )}
+        />
         <SheetPrimitive.Content
           className={cn(
             "fixed left-0 top-0 z-50 h-full w-[220px] border-r border-[#E9EAEE] bg-white shadow-lg",

@@ -358,7 +358,7 @@ function CategoryManagementContent() {
               }
             }}
           >
-            <AlertDialogContent className="w-fit rounded-[8px] bg-white text-center shadow-2xl sm:max-w-sm">
+            <AlertDialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-[8px] bg-white text-center shadow-2xl sm:w-fit">
               <div className="mx-auto mt-2 flex h-12 w-12 items-center justify-center rounded-[8px] bg-yellow-100">
                 <TriangleAlert className="h-6 w-6 text-yellow-600" />
               </div>

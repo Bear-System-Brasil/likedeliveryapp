@@ -387,7 +387,95 @@ export default function FinancePage() {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* Mobile: lista em cards */}
+              <div className="divide-y divide-[#F4F5F7] md:hidden">
+                {filteredPayments.map((payment) => (
+                  <div key={payment.id} className="p-3.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-[12.5px] font-extrabold text-[#14161A]">
+                          #{payment.orderId.slice(0, 8)}
+                        </div>
+                        <div className="truncate text-[10.5px] font-semibold text-[#A2A7B0]">
+                          {payment.transaction || "—"}
+                        </div>
+                      </div>
+                      <span
+                        className={cn(
+                          "w-fit shrink-0 rounded-md px-2 py-0.5 text-[10.5px] font-extrabold",
+                          STATUS_BADGE[payment.status],
+                        )}
+                      >
+                        {getPaymentStatusLabel(payment.status)}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between gap-2 text-[11.5px] font-semibold text-[#5B6472]">
+                      <span className="truncate">
+                        {getPaymentMethodLabel(payment.paymentMethod)}
+                      </span>
+                      <span className="shrink-0 text-[#A2A7B0]">
+                        {formatDateShort(payment.date || payment.created_at)}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span
+                        className="truncate text-[11.5px] font-semibold text-[#8A8F99]"
+                        title={payment.customerId}
+                      >
+                        Cliente {payment.customerId.slice(0, 8)}...
+                      </span>
+                      <span className="shrink-0 text-[13px] font-extrabold text-[#14161A]">
+                        {formatCurrency(payment.amount)}
+                      </span>
+                    </div>
+
+                    {(isPending(payment) ||
+                      isFailed(payment) ||
+                      isCompleted(payment)) && (
+                      <div className="mt-2.5 flex gap-1.5">
+                        {isPending(payment) && (
+                          <>
+                            <RowActionButton
+                              onClick={() => handleApprove(payment)}
+                              className="flex-1 bg-[#F4F5F7] text-[#3D4149] hover:bg-[#E9EAEE]"
+                            >
+                              Confirmar
+                            </RowActionButton>
+                            <RowActionButton
+                              onClick={() => handleReject(payment)}
+                              className="flex-1 bg-[#FDEEEE] text-[#C0392B] hover:bg-[#FBDEDE]"
+                            >
+                              Rejeitar
+                            </RowActionButton>
+                          </>
+                        )}
+                        {isFailed(payment) && (
+                          <RowActionButton
+                            onClick={() => handleApprove(payment)}
+                            className="flex-1 bg-[#14161A] text-white hover:bg-[#2A2D33]"
+                          >
+                            Reprocessar
+                          </RowActionButton>
+                        )}
+                        {isCompleted(payment) && (
+                          <RowActionButton
+                            onClick={() => handleRefund(payment)}
+                            className="flex-1 border border-[#E9EAEE] bg-white text-[#3D4149] hover:bg-[#F4F5F7]"
+                          >
+                            Reembolsar
+                          </RowActionButton>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop/tablet: tabela */}
+              <div className="hidden overflow-x-auto md:block">
               <div className="min-w-[900px]">
                 <div
                   className="grid items-center gap-2.5 border-b border-[#E9EAEE] bg-[#FAFAFB] px-4 py-2.5"
@@ -493,7 +581,8 @@ export default function FinancePage() {
                   </div>
                 ))}
               </div>
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>

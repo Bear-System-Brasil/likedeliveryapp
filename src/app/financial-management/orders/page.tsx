@@ -112,12 +112,12 @@ export default function OrdersPage() {
           </div>
 
           {/* Filter */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Select
               value={filterStatus}
               onValueChange={(v) => setFilterStatus(v as FilterStatus)}
             >
-              <SelectTrigger className="w-52 rounded-xl">
+              <SelectTrigger className="w-full rounded-xl sm:w-52">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -148,59 +148,98 @@ export default function OrdersPage() {
                 <p className="text-sm mt-1">Ajuste o filtro para ver outros pedidos</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        ID
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Data
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Cliente
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Total
-                      </th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filtered.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                          {order.id.slice(0, 8)}…
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">
+              <>
+                {/* Mobile: lista em cards */}
+                <div className="divide-y divide-gray-100 md:hidden">
+                  {filtered.map((order) => (
+                    <div key={order.id} className="p-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-mono text-xs text-gray-500">
+                            {order.id.slice(0, 8)}…
+                          </p>
+                          <p className="mt-1 font-mono text-xs text-gray-500">
+                            Cliente {order.customerId.slice(0, 8)}…
+                          </p>
+                        </div>
+                        <Badge
+                          className={`shrink-0 text-xs ${STATUS_COLORS[order.status] ?? "bg-gray-100 text-gray-700"}`}
+                        >
+                          {STATUS_LABELS[order.status] ?? order.status}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-xs text-gray-500">
                           {new Date(order.created_at).toLocaleString("pt-BR", {
                             day: "2-digit",
                             month: "2-digit",
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                          {order.customerId.slice(0, 8)}…
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold">
+                        </span>
+                        <span className="text-sm font-semibold">
                           {formatCurrency(order.totalValue)}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <Badge
-                            className={`text-xs ${STATUS_COLORS[order.status] ?? "bg-gray-100 text-gray-700"}`}
-                          >
-                            {STATUS_LABELS[order.status] ?? order.status}
-                          </Badge>
-                        </td>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop/tablet: tabela */}
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          ID
+                        </th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Data
+                        </th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Cliente
+                        </th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Total
+                        </th>
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Status
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filtered.map((order) => (
+                        <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                            {order.id.slice(0, 8)}…
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {new Date(order.created_at).toLocaleString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                            {order.customerId.slice(0, 8)}…
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold">
+                            {formatCurrency(order.totalValue)}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge
+                              className={`text-xs ${STATUS_COLORS[order.status] ?? "bg-gray-100 text-gray-700"}`}
+                            >
+                              {STATUS_LABELS[order.status] ?? order.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
