@@ -14,7 +14,7 @@ export function RestaurantsPageHeader({ displayedRestaurants }: Props) {
   const router = useRouter();
 
   const countWithinRadius = displayedRestaurants.filter(
-    (restaurant) => restaurant.isWithinRadius,
+    (restaurant) => restaurant.isWithinRadius !== false,
   );
 
   return (

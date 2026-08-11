@@ -1,0 +1,113 @@
+import { Coords } from "@/types/restaurant";
+
+const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
+
+export type GeocodableAddress = {
+  city?: string | null;
+  neighborhood?: string | null;
+  number?: string | null;
+  state?: string | null;
+  street?: string | null;
+  zipCode?: string | null;
+};
+
+export function normalizeText(value?: string | null) {
+  return (value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
+}
+
+/**
+ * Converte latitude/longitude vindas da API (string, number ou null) em Coords.
+ * Retorna null quando o endereco nao tem coordenada utilizavel.
+ */
+export function parseCoords(lat: unknown, lng: unknown): Coords | null {
+  if (lat === null || lat === undefined || lat === "") return null;
+  if (lng === null || lng === undefined || lng === "") return null;
+
+  const parsedLat = Number(lat);
+  const parsedLng = Number(lng);
+
+  if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) return null;
+  if (parsedLat === 0 && parsedLng === 0) return null;
+
+  return { lat: parsedLat, lng: parsedLng };
+}
+
+/**
+ * Compara a cidade do cliente com a cidade de um endereco.
+ * O valor do cliente pode vir como "Castelo" ou "Castelo, ES", entao usamos
+ * apenas o primeiro trecho e aceitamos correspondencia parcial em nomes longos.
+ */
+export function isSameCity(cityA?: string | null, cityB?: string | null) {
+  const a = normalizeText(cityA?.split(",")[0]);
+  const b = normalizeText(cityB?.split(",")[0]);
+
+  if (!a || !b) return false;
+  if (a === b) return true;
+
+  const shorter = a.length <= b.length ? a : b;
+  const longer = shorter === a ? b : a;
+
+  return shorter.length >= 4 && longer.includes(shorter);
+}
+
+async function searchNominatim(query: string): Promise<Coords | null> {
+  if (!query.trim()) return null;
+
+  try {
+    const response = await fetch(
+      `${NOMINATIM_SEARCH_URL}?q=${encodeURIComponent(
+        query,
+      )}&format=jsonv2&limit=1&addressdetails=1`,
+    );
+
+    if (!response.ok) return null;
+
+    const results = await response.json();
+    const result = Array.isArray(results) ? results[0] : null;
+
+    if (!result) return null;
+
+    return parseCoords(result.lat, result.lon);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Geocodifica um endereco. Tenta o endereco completo e, se nao encontrar,
+ * cai para bairro/cidade/estado - o suficiente para o filtro por raio.
+ */
+export async function geocodeAddress(
+  address: GeocodableAddress,
+): Promise<Coords | null> {
+  const fullQuery = [
+    address.street,
+    address.number,
+    address.neighborhood,
+    address.city,
+    address.state,
+    address.zipCode,
+    "Brasil",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const cityQuery = [
+    address.neighborhood,
+    address.city,
+    address.state,
+    "Brasil",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const fullQueryResult = await searchNominatim(fullQuery);
+
+  if (fullQueryResult || cityQuery === fullQuery) return fullQueryResult;
+
+  return searchNominatim(cityQuery);
+}

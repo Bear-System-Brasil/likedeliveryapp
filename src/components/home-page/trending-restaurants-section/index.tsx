@@ -212,18 +212,21 @@ export function TrendingRestaurantsSection({
     [],
   );
 
+  // A API ja filtra por raio quando recebe lat/lng. Aqui so descartamos o que
+  // vier marcado explicitamente como fora do raio - `undefined` significa
+  // "resposta sem calculo de distancia" e nao pode esconder a loja.
   const restaurantsNearUser = useMemo(
     () =>
-      restaurants.filter((restaurant) => !location || restaurant.isWithinRadius),
-    [location, restaurants],
+      restaurants.filter((restaurant) => restaurant.isWithinRadius !== false),
+    [restaurants],
   );
 
   const newsRestaurants = useMemo(
     () =>
       trendingRestaurants.filter(
-        (restaurant) => !location || restaurant.isWithinRadius,
+        (restaurant) => restaurant.isWithinRadius !== false,
       ),
-    [location, trendingRestaurants],
+    [trendingRestaurants],
   );
 
   const selectedCategory = storeCategories.find(

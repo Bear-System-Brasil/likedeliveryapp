@@ -2,12 +2,12 @@ import { useFavoritesStore } from "@/stores";
 import { useMemo, useState } from "react";
 import { useRestaurants } from "./use-restaurants";
 import { useSearchParams } from "next/navigation";
-import { Coords, Restaurant } from "@/types/restaurant";
+import { Restaurant, UserLocation } from "@/types/restaurant";
 
 /**
  * Hook para gerenciar filtros e listagem de restaurantes
  */
-export const useRestaurantFilters = (userLocation?: Coords) => {
+export const useRestaurantFilters = (userLocation?: UserLocation) => {
   const { data: restaurants = [], isLoading } = useRestaurants(userLocation);
   const { favorites, toggleFavorite, isFavorite } = useFavoritesStore();
 

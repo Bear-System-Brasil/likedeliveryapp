@@ -1,9 +1,31 @@
 import { apiService, type Address, type Speciality } from "@/services/api";
+import { geocodeAddress } from "@/lib/geocode";
 import { useAuthStore } from "@/stores";
 import { onlyNumbers } from "@/utils";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+
+/**
+ * A busca por proximidade do catalogo descarta qualquer loja sem
+ * latitude/longitude cadastrada. Por isso geocodificamos o endereco antes de
+ * salvar - sem isso a loja fica invisivel para todo cliente com localizacao.
+ */
+async function withStoreCoordinates<T extends AddressFormData>(address: T) {
+  const coords = await geocodeAddress(address);
+
+  if (!coords) {
+    toast.warning("Nao localizamos esse endereco no mapa", {
+      description:
+        "Confira CEP, rua e numero. Sem isso a loja nao aparece nas buscas por proximidade.",
+      duration: 6000,
+    });
+
+    return address;
+  }
+
+  return { ...address, latitude: coords.lat, longitude: coords.lng };
+}
 
 interface CompanyFormData {
   tradeName: string;
@@ -378,11 +400,11 @@ export const useCompanyProfileManagement = () => {
     }
 
     try {
-      const addressData = {
+      const addressData = await withStoreCoordinates({
         ...newAddress,
         zipCode: newAddress.zipCode.replace(/\D/g, ""),
         isDefault: newAddress.isDefault ?? false,
-      };
+      });
 
       // Se o novo endereço for padrão, desmarcar todos os outros no backend
       if (addressData.isDefault) {
@@ -544,11 +566,11 @@ export const useCompanyProfileManagement = () => {
     }
 
     try {
-      const addressData = {
+      const addressData = await withStoreCoordinates({
         ...newAddress,
         zipCode: newAddress.zipCode.replace(/\D/g, ""),
         isDefault: newAddress.isDefault ?? false,
-      };
+      });
 
       // Se o endereço editado virar padrão, desmarcar todos os outros
       if (addressData.isDefault) {

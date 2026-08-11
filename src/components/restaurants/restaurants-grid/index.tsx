@@ -25,11 +25,11 @@ export function RestaurantsGrid({
 }: Props) {
   const [location, setLocation] = useState("");
 
-  const hasAnyWithinRadius = displayedRestaurants.some(
-    (restaurant) => restaurant.isWithinRadius,
+  // A API ja aplica o raio quando recebe lat/lng. So escondemos o que vier
+  // marcado explicitamente como fora do raio.
+  const visibleRestaurants = displayedRestaurants.filter(
+    (restaurant) => restaurant.isWithinRadius !== false,
   );
-  const shouldShowRestaurants =
-    displayedRestaurants.length > 0 && (!location || hasAnyWithinRadius);
 
   useEffect(() => {
     const handler = () => {
@@ -74,50 +74,30 @@ export function RestaurantsGrid({
 
         {isLoading ? (
           <RestaurantGridSkeleton count={9} />
-        ) : shouldShowRestaurants ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {displayedRestaurants.map((restaurant, index) => (
-                <Restaurant
-                  key={restaurant.id}
-                  restaurant={restaurant}
-                  index={index}
-                />
-              ))}
-            </div>
-            {/* Empty State */}
-            {displayedRestaurants.length === 0 && (
-              <div className="text-center py-16">
-                <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Search className="w-12 h-12 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Nenhum restaurante encontrado
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Tente ajustar os filtros ou buscar por outro termo
-                </p>
-                <GradientButton
-                  onClick={() => handleCategoryFilter(null)}
-                  size="lg"
-                >
-                  Ver Todos os Restaurantes
-                </GradientButton>
-              </div>
-            )}
-          </>
+        ) : visibleRestaurants.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {visibleRestaurants.map((restaurant, index) => (
+              <Restaurant
+                key={restaurant.id}
+                restaurant={restaurant}
+                index={index}
+              />
+            ))}
+          </div>
         ) : (
-          location && (
-            <div className="text-center py-16">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
-                <Search className="w-12 h-12 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Nenhum restaurante encontrado
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Ainda não há restaurantes perto de você.
-              </p>
+          <div className="text-center py-16">
+            <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+              <Search className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Nenhum restaurante encontrado
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {location
+                ? "Ainda não há restaurantes perto de você."
+                : "Tente ajustar os filtros ou buscar por outro termo"}
+            </p>
+            {location ? (
               <Button
                 type="button"
                 variant="outline"
@@ -126,8 +106,12 @@ export function RestaurantsGrid({
                 <Store className="h-4 w-4 text-orange-500" />
                 Indique um restaurante
               </Button>
-            </div>
-          )
+            ) : (
+              <GradientButton onClick={() => handleCategoryFilter(null)} size="lg">
+                Ver Todos os Restaurantes
+              </GradientButton>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -4,13 +4,13 @@ import { toast } from "sonner";
 
 import { getRestaurant } from "@/services/restaurant";
 import { getActiveRestaurants } from "@/services/restaurants";
-import { Coords } from "@/types/restaurant";
+import { UserLocation } from "@/types/restaurant";
 
 /**
  * Hook para buscar todos os restaurantes ativos
  * Otimizado com cache agressivo + placeholderData para feedback instantâneo
  */
-export const useRestaurants = (userLocation?: Coords) => {
+export const useRestaurants = (userLocation?: UserLocation) => {
   return useQuery({
     queryKey: ["restaurants", "active", userLocation],
     queryFn: () => getActiveRestaurants(userLocation),

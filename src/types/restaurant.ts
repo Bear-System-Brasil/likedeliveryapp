@@ -7,6 +7,11 @@ export interface Coords {
   lat: number;
 }
 
+/** Localizacao escolhida pelo cliente (cookie `userLocation`). */
+export interface UserLocation extends Coords {
+  city?: string;
+}
+
 export interface Specialty {
   id: string;
   name: string;
@@ -44,9 +49,10 @@ export interface Address {
   state: string;
   street: string;
   number: string;
-  latitude: string;
-  longitude: string;
+  latitude: string | null;
+  longitude: string | null;
   neighborhood: string;
+  isDefault?: boolean;
 }
 
 export interface Restaurant {
@@ -63,18 +69,23 @@ export interface Restaurant {
 
   rating: number;
   discount: number;
-  distanceKm: number;
   actionRadius: number;
   totalReviews: number;
-  actionRadiusKm: number;
+
+  // Enviados pela API apenas quando a busca inclui lat/lng do cliente.
+  distanceKm?: number;
+  actionRadiusKm?: number;
+  isWithinRadius?: boolean;
 
   isOpen: boolean;
   trending: boolean;
-  isWithinRadius: boolean;
 
   status: "active" | "inactive";
 
   openingHours: unknown[];
   categories: Category[];
   specialty?: Specialty[];
+
+  /** Enderecos da loja (a API retorna a chave com "A" maiusculo). */
+  Address?: Address[];
 }
