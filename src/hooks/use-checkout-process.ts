@@ -33,6 +33,58 @@ interface CardInfo {
   cvv: string;
 }
 
+/** Chave do carrinho no Redis: `cart:<customerId>`. Nao e um id de pedido. */
+const CART_KEY_PREFIX = "cart:";
+
+function isPersistedOrderId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    !value.startsWith(CART_KEY_PREFIX)
+  );
+}
+
+/**
+ * Descobre o id do pedido gravado no banco depois do finishOrder.
+ *
+ * O carrinho vive no Redis sob `cart:<customerId>` e o pedido concluido ganha
+ * UUID proprio. Pagamento e entrega validam UUID, entao mandar a chave do
+ * carrinho faz o backend responder 400/403. Quando a resposta do finishOrder
+ * vem com a chave do carrinho, buscamos o pedido recem-gravado na listagem
+ * do cliente.
+ */
+async function resolveFinalOrderId(
+  finishedOrder: any,
+  companyId: string,
+): Promise<string | null> {
+  const fromResponse = [
+    finishedOrder?.id,
+    finishedOrder?.orderId,
+    finishedOrder?.order?.id,
+  ].find(isPersistedOrderId);
+
+  if (fromResponse) return fromResponse;
+
+  const response = await apiService.orders.getCustomerOrders();
+
+  if (!response.success || !Array.isArray(response.data)) return null;
+
+  const [mostRecent] = response.data
+    .filter(
+      (order) =>
+        isPersistedOrderId(order?.id) &&
+        order?.status !== "CART" &&
+        (!companyId || !order?.companyId || order.companyId === companyId),
+    )
+    .sort(
+      (first, second) =>
+        new Date(second.created_at).getTime() -
+        new Date(first.created_at).getTime(),
+    );
+
+  return mostRecent?.id ?? null;
+}
+
 /**
  * Hook completo para gerenciar todo o processo de checkout
  * Incluindo: endereços, formulário, pagamento e criação de pedido
@@ -354,52 +406,75 @@ export const useCheckoutProcess = () => {
       }
 
       const finalizedOrder = finishOrderResponse.data as any;
-      const finalOrderId = finalizedOrder.id;
+      const finalOrderId = await resolveFinalOrderId(
+        finalizedOrder,
+        restaurant.id,
+      );
 
+      // Chegando aqui o pedido ja esta gravado no banco. Sem o UUID nao da para
+      // registrar pagamento e entrega, mas cancelar o fluxo seria mentira - o
+      // pedido existe e precisa aparecer em "Meus pedidos".
       if (!finalOrderId) {
-        throw new Error("Erro ao finalizar pedido - ID não encontrado");
+        toast.warning(
+          "Pedido registrado, mas nao conseguimos identificar o numero dele. Confira em Meus pedidos.",
+        );
       }
 
       // --------------------------------------------------
       // 3️⃣ PAGAMENTO
       // --------------------------------------------------
 
-      try {
-        const paymentData = {
-          orderId: finalOrderId,
-          customerId: user.id,
-          paymentMethod:
-            paymentMethod === "credit"
-              ? PaymentMethod.CREDIT_CARD
-              : paymentMethod === "debit"
-                ? PaymentMethod.DEBIT_CARD
-                : paymentMethod === "card_machine"
+      if (finalOrderId) {
+        try {
+          const paymentData = {
+            orderId: finalOrderId,
+            customerId: user.id,
+            paymentMethod:
+              paymentMethod === "credit"
+                ? PaymentMethod.CREDIT_CARD
+                : paymentMethod === "debit"
                   ? PaymentMethod.DEBIT_CARD
-                  : paymentMethod === "pix"
-                    ? PaymentMethod.PIX
-                    : paymentMethod === "pix_on_delivery"
+                  : paymentMethod === "card_machine"
+                    ? PaymentMethod.DEBIT_CARD
+                    : paymentMethod === "pix"
                       ? PaymentMethod.PIX
-                      : paymentMethod === "cash"
-                        ? PaymentMethod.CASH
-                        : PaymentMethod.BANK_TRANSFER,
-          amount: total,
-          status: PaymentStatus.PENDING,
-        };
+                      : paymentMethod === "pix_on_delivery"
+                        ? PaymentMethod.PIX
+                        : paymentMethod === "cash"
+                          ? PaymentMethod.CASH
+                          : PaymentMethod.BANK_TRANSFER,
+            amount: total,
+            status: PaymentStatus.PENDING,
+          };
 
-        const paymentResponse = await apiService.payments.create(paymentData);
+          const paymentResponse = await apiService.payments.create(paymentData);
 
-        if (paymentResponse.data && (paymentResponse.data as any).gatewayUrl) {
-          setPaymentGatewayUrl((paymentResponse.data as any).gatewayUrl);
+          // `apiRequest` nao lanca excecao em 4xx - sem checar `success` a falha
+          // de pagamento passava batida e o cliente via "pedido realizado".
+          if (!paymentResponse.success) {
+            toast.error(
+              paymentResponse.message ||
+                "Pedido criado, mas falhou ao registrar o pagamento.",
+            );
+          }
+
+          if (
+            paymentResponse.data &&
+            (paymentResponse.data as any).gatewayUrl
+          ) {
+            setPaymentGatewayUrl((paymentResponse.data as any).gatewayUrl);
+          }
+        } catch (error) {
+          console.error("Erro no pagamento:", error);
+          toast.error("Pedido criado, mas falhou ao registrar o pagamento.");
         }
-      } catch (error) {
-        console.error("Erro no pagamento:", error);
       }
 
       // --------------------------------------------------
       // 4️⃣ DELIVERY (USANDO O MESMO ADDRESS) — pulado quando é retirada no local
       // --------------------------------------------------
 
-      if (orderType === "delivery" && deliveryAddressId) {
+      if (finalOrderId && orderType === "delivery" && deliveryAddressId) {
         try {
           const deliveryData = {
             orderId: finalOrderId,
@@ -411,9 +486,8 @@ export const useCheckoutProcess = () => {
           const deliveryResponse =
             await apiService.deliveries.create(deliveryData);
 
-          // "Meus pedidos" e alimentado por /delivery/customer/me. Sem o registro
-          // de entrega o pedido existe mas fica invisivel para o cliente, entao a
-          // falha precisa aparecer em vez de ficar so no console.
+          // O pedido ja existe em "Meus pedidos" mesmo sem entrega registrada,
+          // mas sem ela nao ha rastreio - a falha precisa aparecer.
           if (!deliveryResponse.success) {
             toast.error(
               deliveryResponse.message ||

@@ -1,27 +1,64 @@
-import { apiService } from '@/services/api'
+import { apiService, type Order } from '@/services/api'
+import { isListableOrder } from '@/lib/order-status'
 import { useAuthStore } from '@/stores'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 /**
- * Hook para buscar pedidos do usuário/cliente
+ * Normaliza o payload da listagem: a API pode devolver o array direto, um
+ * envelope (`{ data: [] }` / `{ orders: [] }`) ou corpo vazio quando o cliente
+ * ainda não tem pedidos. Nenhum desses casos é erro.
+ */
+function toOrderList(payload: unknown): Order[] {
+  if (Array.isArray(payload)) return payload as Order[]
+
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>
+    const wrapped = record.data ?? record.orders
+
+    if (Array.isArray(wrapped)) return wrapped as Order[]
+
+    // Um único pedido devolvido fora de array.
+    if (typeof record.id === 'string' && typeof record.status === 'string') {
+      return [payload as Order]
+    }
+  }
+
+  return []
+}
+
+/**
+ * Hook para buscar pedidos do cliente logado (`GET /order/customer/me`).
+ * O endpoint devolve todos os pedidos sem filtro de status, então carrinho
+ * aberto e pedido abandonado são descartados aqui.
  */
 export const useUserOrders = () => {
-  const { user } = useAuthStore()
+  const { user, token } = useAuthStore()
 
   return useQuery({
     queryKey: ['orders', 'user', user?.id],
     queryFn: async () => {
-      if (!user?.id) throw new Error('User ID is required')
+      const response = await apiService.orders.getCustomerOrders()
 
-      // Usando listAbandonedOrders como alternativa temporária
-      const response = await apiService.orders.listAbandonedOrders(user.id)
-      if (!response?.success || !response?.data) {
-        return [] // Retorna array vazio se falhar
+      // Só é erro quando a chamada de fato falhou. Lista vazia é resposta
+      // válida e precisa cair no estado "você ainda não fez pedidos".
+      if (!response?.success) {
+        const status = response?.status ? ` (HTTP ${response.status})` : ''
+
+        throw new Error(
+          `${response?.message || 'Não foi possível carregar seus pedidos'}${status}`,
+        )
       }
-      return response.data
+
+      return toOrderList(response.data)
+        .filter(isListableOrder)
+        .sort(
+          (first, second) =>
+            new Date(second.created_at).getTime() -
+            new Date(first.created_at).getTime(),
+        )
     },
-    enabled: !!user?.id,
+    enabled: !!token,
     staleTime: 1000 * 30, // 30 segundos - pedidos são mais dinâmicos
   })
 }

@@ -20,98 +20,46 @@ import ProtectedRoute from "@/components/protected-route";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AnimatedBackground } from "@/components/ui/animated-background";
-import { useCartActions, useOrderHistory } from "@/hooks";
+import { useCartActions, useOrderHistory, useRestaurants } from "@/hooks";
 import { useAuthStore } from "@/stores/auth-store";
 import { apiService } from "@/services/api";
+import {
+  ORDER_STEPS,
+  getOrderStatusBadgeClass,
+  getOrderStatusLabel,
+  getOrderStep,
+  isActiveOrder,
+  isCanceledOrder,
+} from "@/lib/order-status";
 import { formatCurrency } from "@/utils/format-currency";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const STEPS = ["Confirmado", "Preparando", "A caminho", "Entregue"];
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pedido confirmado",
-  CONFIRMED: "Pedido confirmado",
-  ACCEPTED: "Pedido confirmado",
-  PREPARING: "Em preparo",
-  IN_PRODUCTION: "Em preparo",
-  READY: "A caminho",
-  READY_FOR_PICKUP: "A caminho",
-  PICKED_UP: "A caminho",
-  IN_TRANSIT: "A caminho",
-  OUT_FOR_DELIVERY: "A caminho",
-  DELIVERED: "Entregue",
-  COMPLETED: "Entregue",
-  CANCELLED: "Cancelado",
-  CANCELED: "Cancelado",
-};
-
-function getOrderStatus(order: any) {
-  return String(order.status || order.order?.status || "PENDING").toUpperCase();
+function getCompanyId(order: any) {
+  return order.companyId || order.company?.id || null;
 }
 
-function getStatusStep(status: string) {
-  if (["PREPARING", "IN_PRODUCTION"].includes(status)) return 1;
-  if (
-    [
-      "READY",
-      "READY_FOR_PICKUP",
-      "PICKED_UP",
-      "IN_TRANSIT",
-      "OUT_FOR_DELIVERY",
-    ].includes(status)
-  ) {
-    return 2;
-  }
-  if (["DELIVERED", "COMPLETED"].includes(status)) return 3;
-  return 0;
-}
+function getRestaurantName(order: any, namesByCompanyId: Map<string, string>) {
+  const companyId = getCompanyId(order);
 
-function isActiveStatus(status: string) {
-  return !["DELIVERED", "COMPLETED", "CANCELLED", "CANCELED"].includes(
-    status,
-  );
-}
-
-function getStatusBadgeLabel(status: string) {
   return (
-    STATUS_LABELS[status] ||
-    (isActiveStatus(status) ? "Em andamento" : "Finalizado")
-  );
-}
-
-function getStatusBadgeClass(status: string) {
-  if (["CANCELLED", "CANCELED"].includes(status)) {
-    return "bg-red-50 text-red-600";
-  }
-
-  if (["DELIVERED", "COMPLETED"].includes(status)) {
-    return "bg-green-50 text-green-600";
-  }
-
-  return "bg-orange-50 text-orange-600";
-}
-
-function getRestaurantName(order: any) {
-  return (
-    order.order?.company?.tradeName ||
-    order.order?.company?.name ||
     order.company?.tradeName ||
     order.company?.name ||
+    (companyId ? namesByCompanyId.get(companyId) : null) ||
     "Restaurante"
   );
 }
 
 function getOrderId(order: any) {
-  return order.orderId || order.order?.id || order.id;
+  return order.id;
 }
 
 function getOrderTotal(order: any) {
-  return Number(order.order?.totalValue ?? order.totalValue ?? 0);
+  return Number(order.totalValue ?? 0);
 }
 
 function getItemCount(order: any) {
-  const items = order.order?.orderedItems || order.orderedItems || [];
+  const items = order.orderedItems || [];
   const quantity = items.reduce(
     (total: number, item: any) => total + Number(item.quantity || 0),
     0,
@@ -121,7 +69,7 @@ function getItemCount(order: any) {
 }
 
 function getOrderDate(order: any) {
-  const value = order.created_at || order.order?.created_at;
+  const value = order.created_at;
   if (!value) return "Data não disponível";
 
   try {
@@ -129,11 +77,6 @@ function getOrderDate(order: any) {
   } catch {
     return "Data não disponível";
   }
-}
-
-function getOrderTimestamp(order: any) {
-  const value = order.created_at || order.order?.created_at;
-  return value ? new Date(value).getTime() || 0 : 0;
 }
 
 export default function OrderHistoryPage() {
@@ -147,16 +90,21 @@ export default function OrderHistoryPage() {
 function OrderHistoryContent() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { orders, allOrders, loading, error, refreshHistory } = useOrderHistory();
+  const { orders, loading, error, refreshHistory } = useOrderHistory();
   const { totalItems, handleAddToCart } = useCartActions();
   const [repeatingOrderId, setRepeatingOrderId] = useState<string | null>(null);
 
-  const sourceOrders = useMemo(() => {
-    const orderList = allOrders?.length ? allOrders : orders;
-    return [...orderList].sort(
-      (first, second) => getOrderTimestamp(second) - getOrderTimestamp(first),
-    );
-  }, [allOrders, orders]);
+  // O pedido nem sempre traz a empresa aninhada; o catálogo de lojas já está
+  // em cache e resolve o nome pelo companyId.
+  const { data: restaurants = [] } = useRestaurants();
+
+  const restaurantNamesById = useMemo(
+    () =>
+      new Map(
+        restaurants.map((restaurant) => [restaurant.id, restaurant.tradeName]),
+      ),
+    [restaurants],
+  );
 
   const handleRepeatOrder = async (order: any) => {
     const orderId = getOrderId(order);
@@ -173,9 +121,8 @@ function OrderHistoryContent() {
         user.id,
       );
       const orderItems = (itemsResponse.data as any[]) || [];
-      const companyId =
-        order.order?.companyId || order.companyId || order.order?.company?.id;
-      const restaurantName = getRestaurantName(order);
+      const companyId = getCompanyId(order);
+      const restaurantName = getRestaurantName(order, restaurantNamesById);
 
       if (!companyId || orderItems.length === 0) {
         throw new Error("Itens indisponíveis para repetir");
@@ -282,30 +229,33 @@ function OrderHistoryContent() {
             </Button>
           </div>
 
-          {sourceOrders.length === 0 ? (
+          {orders.length === 0 ? (
             <EmptyOrdersState onExplore={() => router.push("/")} />
           ) : (
             <div className="space-y-3">
-              {sourceOrders.map((order) => {
-                const status = getOrderStatus(order);
-                const active = isActiveStatus(status);
-
-                return active ? (
+              {orders.map((order) =>
+                isActiveOrder(order) ? (
                   <ActiveOrderCard
                     key={getOrderId(order)}
                     order={order}
-                    onTrack={() => router.push(`/order-status?orderId=${getOrderId(order)}`)}
+                    restaurantName={getRestaurantName(order, restaurantNamesById)}
+                    onTrack={() =>
+                      router.push(`/order-status?orderId=${getOrderId(order)}`)
+                    }
                   />
                 ) : (
                   <CompletedOrderCard
                     key={getOrderId(order)}
                     order={order}
+                    restaurantName={getRestaurantName(order, restaurantNamesById)}
                     isRepeating={repeatingOrderId === getOrderId(order)}
-                    onView={() => router.push(`/order-status?orderId=${getOrderId(order)}`)}
+                    onView={() =>
+                      router.push(`/order-status?orderId=${getOrderId(order)}`)
+                    }
                     onRepeat={() => handleRepeatOrder(order)}
                   />
-                );
-              })}
+                ),
+              )}
             </div>
           )}
         </div>
@@ -338,15 +288,16 @@ function OrdersShell({
 
 function ActiveOrderCard({
   order,
+  restaurantName,
   onTrack,
 }: {
   order: any;
+  restaurantName: string;
   onTrack: () => void;
 }) {
-  const status = getOrderStatus(order);
-  const step = getStatusStep(status);
+  const step = getOrderStep(order);
   const itemCount = getItemCount(order);
-  const eta = order.estimatedTime || order.order?.estimatedTime || "Acompanhe a entrega";
+  const eta = order.delivery?.estimatedTime || "Acompanhe seu pedido";
 
   return (
     <Card className="border-[#e9eaee] bg-white p-4 shadow-sm sm:p-5">
@@ -357,7 +308,7 @@ function ActiveOrderCard({
           </div>
           <div className="min-w-0">
             <h2 className="truncate text-sm font-extrabold text-[#14161a] sm:text-[15px]">
-              {getRestaurantName(order)}
+              {restaurantName}
             </h2>
             <p className="mt-1 text-xs font-medium text-[#8a8f99]">
               Pedido #{String(getOrderId(order)).slice(0, 8)}
@@ -367,21 +318,21 @@ function ActiveOrderCard({
         </div>
 
         <span
-          className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold sm:shrink-0 sm:text-xs ${getStatusBadgeClass(status)}`}
+          className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold sm:shrink-0 sm:text-xs ${getOrderStatusBadgeClass(order)}`}
         >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
-          {getStatusBadgeLabel(status)}
+          {getOrderStatusLabel(order)}
         </span>
       </div>
 
       <div className="mt-5 grid grid-cols-4 gap-1">
-        {STEPS.map((label, index) => {
+        {ORDER_STEPS.map((label, index) => {
           const done = index <= step;
           const current = index === step;
 
           return (
             <div key={label} className="relative text-center">
-              {index < STEPS.length - 1 && (
+              {index < ORDER_STEPS.length - 1 && (
                 <span
                   className={`absolute left-1/2 top-2.5 h-px w-full ${
                     index < step ? "bg-orange-500" : "bg-[#e9eaee]"
@@ -434,17 +385,18 @@ function ActiveOrderCard({
 
 function CompletedOrderCard({
   order,
+  restaurantName,
   isRepeating,
   onView,
   onRepeat,
 }: {
   order: any;
+  restaurantName: string;
   isRepeating: boolean;
   onView: () => void;
   onRepeat: () => void;
 }) {
-  const status = getOrderStatus(order);
-  const isCancelled = ["CANCELLED", "CANCELED"].includes(status);
+  const isCancelled = isCanceledOrder(order);
   const itemCount = getItemCount(order);
 
   return (
@@ -466,7 +418,7 @@ function CompletedOrderCard({
           </div>
           <div className="min-w-0">
             <h2 className="truncate text-sm font-extrabold text-[#14161a] sm:text-[15px]">
-              {getRestaurantName(order)}
+              {restaurantName}
             </h2>
             <p className="mt-1 text-xs font-medium text-[#8a8f99]">
               Pedido #{String(getOrderId(order)).slice(0, 8)} · {getOrderDate(order)}
@@ -481,10 +433,10 @@ function CompletedOrderCard({
 
         <div className="flex items-center justify-between gap-3 sm:shrink-0 sm:flex-col sm:items-end">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold ${getStatusBadgeClass(status)}`}
+            className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold ${getOrderStatusBadgeClass(order)}`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            {getStatusBadgeLabel(status)}
+            {getOrderStatusLabel(order)}
           </span>
           <span className="text-base font-extrabold text-[#14161a]">
             {formatCurrency(getOrderTotal(order))}
