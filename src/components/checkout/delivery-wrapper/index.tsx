@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -27,6 +27,7 @@ export function DeliveryWrapper() {
   const { isAuthenticated, showAuthModal } = useAuth();
   const { syncCartFromBackend } = useCartActions();
   const [isSyncing, setIsSyncing] = useState(false);
+  const syncAttemptedRef = useRef(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -97,17 +98,17 @@ export function DeliveryWrapper() {
     await handleSubmitOrder();
   };
 
+  // Tenta sincronizar o carrinho apenas UMA vez por montagem.
+  // Sem a trava, um 404 (carrinho inexistente no Redis) nunca preenche
+  // restaurant.id e o efeito se redispara em loop infinito.
   useEffect(() => {
-    if (
-      isAuthenticated &&
-      cartItems.length > 0 &&
-      !restaurant?.id &&
-      !isSyncing
-    ) {
-      setIsSyncing(true);
-      syncCartFromBackend().finally(() => setIsSyncing(false));
-    }
-  }, [isAuthenticated, cartItems.length, restaurant?.id, isSyncing]);
+    if (!isAuthenticated || cartItems.length === 0 || restaurant?.id) return;
+    if (syncAttemptedRef.current) return;
+
+    syncAttemptedRef.current = true;
+    setIsSyncing(true);
+    syncCartFromBackend().finally(() => setIsSyncing(false));
+  }, [isAuthenticated, cartItems.length, restaurant?.id]);
 
   useEffect(() => {
     if (!isAuthenticated) {

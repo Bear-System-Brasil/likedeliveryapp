@@ -31,6 +31,10 @@ const managementRoutes = [
   "/financial-management",
 ];
 
+// Fluxos focados que ja possuem barra de acao fixa no rodape.
+// Sem isso a nav fica por cima do botao de confirmar do checkout.
+const hiddenRoutes = ["/checkout"];
+
 function getActiveTab(pathname: string): BottomTabId {
   if (pathname === "/cart" || pathname.startsWith("/checkout")) return "cart";
 
@@ -66,6 +70,10 @@ export function BottomBar({ activeTab }: BottomBarProps) {
   }, []);
 
   if (!isMounted) {
+    return null;
+  }
+
+  if (hiddenRoutes.some((route) => pathname.startsWith(route))) {
     return null;
   }
 

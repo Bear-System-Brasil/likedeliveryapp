@@ -49,7 +49,12 @@ export const useCartActions = () => {
 
       // Usar viewOrder para APENAS BUSCAR o carrinho existente
       // Não usar openCart aqui porque isso pode sobrescrever o companyId com string vazia
-      // A chave cart:${user.id} agora é tratada corretamente pelo encodeOrderId no api.ts
+      //
+      // `cart:${user.id}` e exatamente a chave que o backend usa no Redis
+      // (order.repository: `const redisKey = cart:${customerId}`), entao ela e
+      // sempre a referencia correta do carrinho ativo. Nao usar o orderId local
+      // aqui de proposito: apos finalizar um pedido ele vira um UUID de pedido
+      // concluido, e buscar por ele traria itens ja comprados de volta.
       const cartKey = `cart:${user.id}`;
       const response = await apiService.orders.viewOrder(user.id, cartKey);
 
@@ -235,8 +240,42 @@ export const useCartActions = () => {
         toast.error(message || "Erro ao adicionar item. Tente novamente.");
       };
 
-      apiService.orderItems
-        .addProductToCart(currentOrderId, item.id, user.id, item.quantity || 1)
+      const addItemToBackend = async () => {
+        let response = await apiService.orderItems.addProductToCart(
+          currentOrderId,
+          item.id,
+          user.id,
+          item.quantity || 1,
+        );
+
+        // 404 aqui significa que o orderId guardado no localStorage nao existe
+        // mais no backend (pedido ja finalizado ou carrinho expirado no Redis).
+        // Nesse caso abrimos um carrinho novo e tentamos de novo, em vez de
+        // insistir num id morto e falhar toda adicao de item.
+        if (!response.success && response.status === 404) {
+          const recreated = await apiService.orders.openCart(user.id, {
+            companyId: item.restaurantId,
+            discount: 0,
+            totalShipping: 0,
+            totalValue: 0,
+            status: "CART",
+          });
+
+          if (recreated.success && recreated.data?.id) {
+            setOrderId(recreated.data.id);
+            response = await apiService.orderItems.addProductToCart(
+              recreated.data.id,
+              item.id,
+              user.id,
+              item.quantity || 1,
+            );
+          }
+        }
+
+        return response;
+      };
+
+      addItemToBackend()
         .then((response) => {
           clearTimeout(timeoutId);
           pendingRequests.current.delete(item.id);

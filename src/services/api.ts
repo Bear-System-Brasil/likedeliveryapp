@@ -124,6 +124,8 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
+  /** Status HTTP da resposta, quando houve resposta do servidor. */
+  status?: number;
 }
 
 export interface User {
@@ -235,6 +237,7 @@ async function apiRequest<T>(
       return {
         success: false,
         message: "Sessão expirada. Faça login novamente.",
+        status: response.status,
       };
     }
 
@@ -313,10 +316,10 @@ async function apiRequest<T>(
         errorMessage = `Erro ${response.status}: ${response.statusText}`;
       }
 
-      return { success: false, message: errorMessage };
+      return { success: false, message: errorMessage, status: response.status };
     }
 
-    return { success: true, data: result };
+    return { success: true, data: result, status: response.status };
   } catch (error) {
     return {
       success: false,

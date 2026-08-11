@@ -461,7 +461,9 @@ export function MainHeader({
               aria-label="Carrinho"
             >
               <ShoppingCart className="h-4 w-4" />
-              {cartItems > 0 && (
+              {/* Só após montar: o total vem do store persistido e no SSR é 0,
+                  o que quebraria a hidratação. */}
+              {isMounted && cartItems > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
                   {cartItems}
                 </span>

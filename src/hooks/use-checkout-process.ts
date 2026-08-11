@@ -408,16 +408,28 @@ export const useCheckoutProcess = () => {
             estimatedTime: "30-40 min",
           };
 
-          await apiService.deliveries.create(deliveryData);
+          const deliveryResponse =
+            await apiService.deliveries.create(deliveryData);
+
+          // "Meus pedidos" e alimentado por /delivery/customer/me. Sem o registro
+          // de entrega o pedido existe mas fica invisivel para o cliente, entao a
+          // falha precisa aparecer em vez de ficar so no console.
+          if (!deliveryResponse.success) {
+            toast.error(
+              deliveryResponse.message ||
+                "Pedido criado, mas falhou ao registrar a entrega.",
+            );
+          }
         } catch (error) {
           console.error("Erro no delivery:", error);
+          toast.error("Pedido criado, mas falhou ao registrar a entrega.");
         }
       }
 
       toast.success("Pedido realizado com sucesso!");
 
       setIsNavigating(true);
-      router.push(`/order-status?orderId=${finalOrderId}`);
+      router.push("/orders");
 
       setTimeout(() => {
         clearCart();
