@@ -104,11 +104,37 @@ export const COLUMNS: ColumnConfig[] = [
 // Ações por coluna
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const COLUMN_ACTIONS: Record<ColumnId, { label: string; nextStatus: string } | null> = {
+export interface ColumnAction {
+  label: string
+  nextStatus: string
+}
+
+export const COLUMN_ACTIONS: Record<ColumnId, ColumnAction | null> = {
   new: { label: 'Iniciar Preparo', nextStatus: 'IN_PRODUCTION' },
   preparing: { label: 'Marcar como Pronto', nextStatus: 'READY_FOR_PICKUP' },
-  ready: null,
+  ready: { label: 'Marcar como Entregue', nextStatus: 'COMPLETED' },
   completed: null,
+}
+
+/**
+ * Ação disponível para um pedido específico.
+ *
+ * O rótulo do último passo depende de haver entrega: pedido de retirada no
+ * balcão nunca é "entregue", quem leva é o próprio cliente.
+ */
+export function getOrderAction(
+  order: CompanyOrder,
+  columnId: ColumnId,
+): ColumnAction | null {
+  const action = COLUMN_ACTIONS[columnId]
+
+  if (!action) return null
+
+  if (columnId === 'ready' && !order.delivery) {
+    return { ...action, label: 'Marcar como Retirado' }
+  }
+
+  return action
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

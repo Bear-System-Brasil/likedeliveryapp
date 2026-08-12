@@ -1,4 +1,5 @@
 import { apiService, type Order } from '@/services/api'
+import { isActiveOrder } from '@/lib/order-status'
 import { useAuthStore } from '@/stores'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -26,10 +27,13 @@ function toOrderList(payload: unknown): Order[] {
   return []
 }
 
+/** Intervalo de atualização enquanto houver pedido em andamento. */
+const ACTIVE_ORDERS_POLL_MS = 30 * 1000
+
 /**
  * Hook para buscar pedidos do cliente logado (`GET /order/customer/me`).
- * O endpoint devolve todos os pedidos sem filtro de status, então carrinho
- * aberto e pedido abandonado são descartados aqui.
+ * O endpoint devolve todos os pedidos sem filtro de status - o rótulo de cada
+ * status cuida de diferenciá-los na tela.
  */
 export const useUserOrders = () => {
   const { user, token } = useAuthStore()
@@ -59,7 +63,20 @@ export const useUserOrders = () => {
       )
     },
     enabled: !!token,
-    staleTime: 1000 * 30, // 30 segundos - pedidos são mais dinâmicos
+    // O padrao global do app e cache agressivo com `refetchOnMount: false`.
+    // Para pedidos isso congela a tela: a loja avanca o status e o cliente
+    // continua vendo o anterior mesmo entrando de novo em "Meus pedidos".
+    staleTime: 15 * 1000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    // So fica consultando enquanto houver pedido em andamento.
+    refetchInterval: (query) => {
+      const orders = query.state.data
+
+      return Array.isArray(orders) && orders.some(isActiveOrder)
+        ? ACTIVE_ORDERS_POLL_MS
+        : false
+    },
   })
 }
 
