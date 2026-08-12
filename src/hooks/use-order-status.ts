@@ -1,14 +1,17 @@
 import { apiService } from "@/services/api";
+import {
+  getOrderTrackingStatus,
+  isCanceledOrder,
+  type OrderTrackingStatus,
+} from "@/lib/order-status";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-export type OrderStatus =
-  | "confirmed"
-  | "preparing"
-  | "ready"
-  | "delivering"
-  | "delivered";
+export type OrderStatus = OrderTrackingStatus;
+
+/** Intervalo do polling, tambem usado na contagem regressiva exibida na tela. */
+const POLL_INTERVAL_SECONDS = 30;
 
 export interface OrderInfo {
   id: string;
@@ -27,6 +30,9 @@ export interface OrderInfo {
     phone: string;
   };
   delivery?: any;
+  /** Status cru do pedido, como veio da API (ex.: `IN_PRODUCTION`). */
+  rawStatus: string;
+  isCanceled: boolean;
 }
 
 /**
@@ -40,27 +46,12 @@ export const useOrderStatus = () => {
   const { user } = useAuthStore();
 
   const [order, setOrder] = useState<OrderInfo | null>(null);
-  const orderStatusRef = useRef<OrderStatus | null>(null);
+  const orderIsFinishedRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false); // Para atualização silenciosa
-
-  /**
-   * Mapeia status do backend para frontend
-   */
-  const mapStatus = (backendStatus: string): OrderStatus => {
-    const statusMap: Record<string, OrderStatus> = {
-      confirmed: "confirmed",
-      pending: "confirmed",
-      preparing: "preparing",
-      ready: "ready",
-      out_for_delivery: "delivering",
-      in_transit: "delivering",
-      delivered: "delivered",
-      completed: "delivered",
-    };
-    return statusMap[backendStatus.toLowerCase()] || "confirmed";
-  };
+  const [secondsUntilRefresh, setSecondsUntilRefresh] =
+    useState(POLL_INTERVAL_SECONDS);
 
   /**
    * Retorna mensagem descritiva para cada status
@@ -100,6 +91,15 @@ export const useOrderStatus = () => {
       setError(null);
 
       const orderData = await apiService.orders.viewOrder(user.id, orderId);
+
+      // `apiRequest` nao lanca em 4xx: sem checar `success` o pedido vinha
+      // undefined e a tela quebrava no acesso a `order.id`.
+      if (!orderData.success || !orderData.data) {
+        throw new Error(
+          orderData.message || "Nao foi possivel carregar o pedido",
+        );
+      }
+
       const orderItemsData = await apiService.orderItems.listByOrder(
         orderId,
         user.id,
@@ -148,10 +148,16 @@ export const useOrderStatus = () => {
         fullAddress = delivery.deliveryAddress;
       }
 
+      // O status do rastreio vem do pedido; a entrega so refina o passo entre
+      // "pronto" e "a caminho".
+      const trackedOrder = { status: order.status, delivery };
+
       setOrder({
         id: order.id,
         orderNumber: order.orderNumber,
-        status: mapStatus(order.status || "confirmed"),
+        status: getOrderTrackingStatus(trackedOrder),
+        rawStatus: String(order.status ?? ""),
+        isCanceled: isCanceledOrder(trackedOrder),
         estimatedTime:
           delivery?.estimatedDeliveryTime ||
           delivery?.estimatedTime ||
@@ -187,18 +193,21 @@ export const useOrderStatus = () => {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      setSecondsUntilRefresh(POLL_INTERVAL_SECONDS);
     }
   };
 
   useEffect(() => {
-    orderStatusRef.current = order?.status ?? null;
-  }, [order?.status]);
+    // Pedido entregue ou cancelado nao muda mais - o polling pode parar.
+    orderIsFinishedRef.current =
+      order?.status === "delivered" || Boolean(order?.isCanceled);
+  }, [order?.status, order?.isCanceled]);
 
   /**
    * Auto-fetch e polling
    * - Primeira busca: exibe loading completo
    * - Polling: atualização silenciosa (isRefreshing)
-   * - Para de fazer polling quando pedido for entregue
+   * - Para de fazer polling em estado final (entregue ou cancelado)
    */
   useEffect(() => {
     // Primeira busca (não silenciosa)
@@ -206,15 +215,25 @@ export const useOrderStatus = () => {
 
     // Poll for updates every 30 seconds (silencioso)
     const pollInterval = setInterval(() => {
-      // Parar polling se pedido já foi entregue
-      if (orderStatusRef.current === "delivered") {
+      if (orderIsFinishedRef.current) {
         clearInterval(pollInterval);
         return;
       }
       fetchOrderStatus(true); // Silent refresh
-    }, 30000);
+    }, POLL_INTERVAL_SECONDS * 1000);
 
-    return () => clearInterval(pollInterval);
+    // Contagem regressiva ate o proximo refresh, exibida na tela.
+    const countdown = setInterval(() => {
+      if (orderIsFinishedRef.current) return;
+      setSecondsUntilRefresh((remaining) =>
+        remaining <= 1 ? POLL_INTERVAL_SECONDS : remaining - 1,
+      );
+    }, 1000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearInterval(countdown);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId, user?.id]);
 
@@ -223,6 +242,9 @@ export const useOrderStatus = () => {
     loading,
     error,
     isRefreshing,
+    secondsUntilRefresh,
+    /** Forca uma atualizacao sem esperar o proximo ciclo do polling. */
+    refresh: () => fetchOrderStatus(true),
     router,
     getStatusMessage,
   };

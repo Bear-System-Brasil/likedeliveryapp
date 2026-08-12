@@ -1,5 +1,4 @@
 import { apiService, type Order } from '@/services/api'
-import { isListableOrder } from '@/lib/order-status'
 import { useAuthStore } from '@/stores'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -50,13 +49,14 @@ export const useUserOrders = () => {
         )
       }
 
-      return toOrderList(response.data)
-        .filter(isListableOrder)
-        .sort(
-          (first, second) =>
-            new Date(second.created_at).getTime() -
-            new Date(first.created_at).getTime(),
-        )
+      // `/order/customer/me` ja devolve exatamente os pedidos do cliente.
+      // Nao filtramos por status aqui: qualquer descarte no cliente some com
+      // pedido que existe de verdade. O rotulo de cada status cuida do resto.
+      return toOrderList(response.data).sort(
+        (first, second) =>
+          new Date(second.created_at).getTime() -
+          new Date(first.created_at).getTime(),
+      )
     },
     enabled: !!token,
     staleTime: 1000 * 30, // 30 segundos - pedidos são mais dinâmicos

@@ -11,10 +11,21 @@ export const ORDER_STEPS = [
   "Concluído",
 ] as const;
 
-/** Carrinho aberto e pedido abandonado não são compras - não entram na lista. */
-const HIDDEN_STATUSES = ["CART", "ABANDONED"];
+/**
+ * Pedido em andamento na cozinha. Só estes ganham linha do tempo ao vivo -
+ * carrinho, abandonado, concluído e cancelado são estáticos. Status
+ * desconhecido também cai fora daqui: melhor um card parado do que uma barra
+ * de progresso animada para algo que ninguém está preparando.
+ */
+const ACTIVE_STATUSES = [
+  "AWAITING_PAYMENT",
+  "ORDERED",
+  "IN_PRODUCTION",
+  "READY_FOR_PICKUP",
+];
 
-const FINISHED_STATUSES = ["COMPLETED", "CANCELED"];
+/** Nunca chegou a virar pedido de fato. */
+const INERT_STATUSES = ["CART", "ABANDONED"];
 
 const STEP_BY_STATUS: Record<string, number> = {
   AWAITING_PAYMENT: 0,
@@ -25,10 +36,12 @@ const STEP_BY_STATUS: Record<string, number> = {
   CANCELED: 3,
 };
 
+// Rotulos curtos: a tag fica na mesma linha do nome da loja, entao cada
+// palavra a mais rouba espaco do nome.
 const ORDER_STATUS_LABELS: Record<string, string> = {
   CART: "Carrinho",
   AWAITING_PAYMENT: "Aguardando pagamento",
-  ORDERED: "Pedido confirmado",
+  ORDERED: "Confirmado",
   IN_PRODUCTION: "Em preparo",
   READY_FOR_PICKUP: "Pronto",
   COMPLETED: "Concluído",
@@ -54,16 +67,17 @@ function getDeliveryStatus(order: OrderLike) {
   return String(order?.delivery?.status ?? "").toUpperCase();
 }
 
-export function isListableOrder(order: OrderLike) {
-  return !HIDDEN_STATUSES.includes(getOrderStatus(order));
-}
-
 export function isCanceledOrder(order: OrderLike) {
   return getOrderStatus(order) === "CANCELED";
 }
 
 export function isActiveOrder(order: OrderLike) {
-  return !FINISHED_STATUSES.includes(getOrderStatus(order));
+  return ACTIVE_STATUSES.includes(getOrderStatus(order));
+}
+
+/** Carrinho ou pedido abandonado: aparece na lista, mas sem acompanhamento. */
+export function isInertOrder(order: OrderLike) {
+  return INERT_STATUSES.includes(getOrderStatus(order));
 }
 
 export function getOrderStep(order: OrderLike) {
@@ -95,7 +109,43 @@ export function getOrderStatusLabel(order: OrderLike) {
 
 export function getOrderStatusBadgeClass(order: OrderLike) {
   if (isCanceledOrder(order)) return "bg-red-50 text-red-600";
-  if (!isActiveOrder(order)) return "bg-green-50 text-green-600";
+  if (isInertOrder(order)) return "bg-gray-100 text-gray-500";
+  if (isActiveOrder(order)) return "bg-orange-50 text-orange-600";
 
-  return "bg-orange-50 text-orange-600";
+  return "bg-green-50 text-green-600";
+}
+
+/** Estados da tela "Acompanhe seu pedido". */
+export type OrderTrackingStatus =
+  | "confirmed"
+  | "preparing"
+  | "ready"
+  | "delivering"
+  | "delivered";
+
+/**
+ * Traduz status do pedido (+ entrega, quando existe) para o passo do rastreio.
+ *
+ * O mapa antigo desta tela só conhecia `preparing`, `ready`, `in_transit` e
+ * afins - nenhum deles existe nos enums do backend. Com isso `IN_PRODUCTION` e
+ * `READY_FOR_PICKUP` caíam no fallback e o rastreio ficava travado em
+ * "Pedido confirmado" até o pedido ser concluído.
+ */
+export function getOrderTrackingStatus(order: OrderLike): OrderTrackingStatus {
+  const deliveryStatus = getDeliveryStatus(order);
+
+  if (DELIVERY_DELIVERED.includes(deliveryStatus)) return "delivered";
+
+  switch (getOrderStatus(order)) {
+    case "COMPLETED":
+      return "delivered";
+    case "READY_FOR_PICKUP":
+      return DELIVERY_IN_TRANSIT.includes(deliveryStatus)
+        ? "delivering"
+        : "ready";
+    case "IN_PRODUCTION":
+      return "preparing";
+    default:
+      return "confirmed";
+  }
 }
