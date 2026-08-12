@@ -4,9 +4,9 @@ import {
   getColumnForOrder,
   ORDER_POLL_INTERVAL,
 } from '@/constants/order-management'
+import { useSound } from '@/hooks/use-sound'
 import { apiService } from '@/services/api'
 import { useAuthStore } from '@/stores'
-import { orderSoundManager } from '@/utils/order-sounds'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -53,9 +53,13 @@ export const useOrderManagement = () => {
   const { token } = useAuthStore()
   const queryClient = useQueryClient()
 
+  // Identidade sonora. O mute vive no localStorage: antes ele era estado local
+  // e voltava a apitar a cada F5, mesmo depois de o restaurante desligar.
+  const { play, loop, stopLoop, muted, toggleMuted } = useSound('restaurant')
+  const soundEnabled = !muted
+
   // UI state
   const [activeTab, setActiveTab] = useState<ColumnId>('new')
-  const [soundEnabled, setSoundEnabled] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<CompanyOrder | null>(null)
   const [cancelTarget, setCancelTarget] = useState<CompanyOrder | null>(null)
   const [actionTarget, setActionTarget] = useState<CompanyOrder | null>(null)
@@ -63,7 +67,6 @@ export const useOrderManagement = () => {
 
   // Tracking para detecção de novos pedidos
   const prevNewOrderIdsRef = useRef<Set<string>>(new Set())
-  const soundAlertActiveRef = useRef(false)
   const initialLoadRef = useRef(true)
 
   // Timer tick para atualizar tempo decorrido nos cards
@@ -154,34 +157,24 @@ export const useOrderManagement = () => {
     const hasNewOrders = [...currentNewIds].some((id) => !prevIds.has(id))
 
     if (hasNewOrders && columns.new.length > 0 && soundEnabled) {
-      orderSoundManager.playNewOrderAlert()
-      soundAlertActiveRef.current = true
+      loop('new-order')
     }
 
-    if (columns.new.length === 0 && soundAlertActiveRef.current) {
-      orderSoundManager.stop()
-      soundAlertActiveRef.current = false
+    if (columns.new.length === 0) {
+      stopLoop('new-order')
     }
 
     prevNewOrderIdsRef.current = currentNewIds
-  }, [columns.new, soundEnabled])
+  }, [columns.new, soundEnabled, loop, stopLoop])
 
   // ─── Controle de som ──────────────────────────────────────────────────────
 
-  const toggleSound = useCallback(() => {
-    const newState = !soundEnabled
-    setSoundEnabled(newState)
-    orderSoundManager.setEnabled(newState)
-    if (!newState) {
-      orderSoundManager.stop()
-      soundAlertActiveRef.current = false
-    }
-  }, [soundEnabled])
+  // Silenciar já para qualquer alerta em curso e persiste a preferência.
+  const toggleSound = toggleMuted
 
   const stopAlert = useCallback(() => {
-    orderSoundManager.stop()
-    soundAlertActiveRef.current = false
-  }, [])
+    stopLoop('new-order')
+  }, [stopLoop])
 
   // ─── Mutation: Avançar status do pedido ───────────────────────────────────
 
@@ -191,7 +184,7 @@ export const useOrderManagement = () => {
     onSuccess: (response) => {
       if (response.success) {
         queryClient.invalidateQueries({ queryKey: ['company-orders'] })
-        orderSoundManager.playSuccessSound()
+        play('success')
         toast.success('Status atualizado com sucesso')
       } else {
         toast.error(response.message || 'Erro ao atualizar status')
@@ -210,7 +203,7 @@ export const useOrderManagement = () => {
     onSuccess: (response) => {
       if (response.success) {
         queryClient.invalidateQueries({ queryKey: ['company-orders'] })
-        orderSoundManager.playCancelAlert()
+        play('error')
         toast.success('Pedido cancelado')
         setCancelTarget(null)
       } else {
@@ -240,19 +233,14 @@ export const useOrderManagement = () => {
     [cancelMutation],
   )
 
-  // ─── Audio context resume (política do browser) ────────────────────────────
-
-  useEffect(() => {
-    const handler = () => orderSoundManager.resumeContext()
-    document.addEventListener('click', handler, { once: true })
-    return () => document.removeEventListener('click', handler)
-  }, [])
+  // O destravamento do áudio (política de autoplay do browser) é cuidado pelo
+  // próprio soundManager, no primeiro toque em qualquer lugar do app.
 
   useEffect(() => {
     return () => {
-      orderSoundManager.stop()
+      stopLoop('new-order')
     }
-  }, [])
+  }, [stopLoop])
 
   // ─── Retorno ───────────────────────────────────────────────────────────────
 

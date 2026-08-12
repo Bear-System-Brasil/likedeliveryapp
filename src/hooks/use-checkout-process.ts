@@ -1,3 +1,4 @@
+import { useSound } from "@/hooks/use-sound";
 import {
   apiService,
   PaymentMethod,
@@ -91,6 +92,7 @@ async function resolveFinalOrderId(
  */
 export const useCheckoutProcess = () => {
   const router = useRouter();
+  const { play, unlock } = useSound("customer");
   const { user } = useAuthStore();
   const cartStore = useCartStore();
   const {
@@ -305,6 +307,12 @@ export const useCheckoutProcess = () => {
    * 6. Limpa carrinho local (após delay para evitar redirect indesejado)
    */
   const handleSubmitOrder = async () => {
+    // Este clique é o único gesto garantido antes de a tela de acompanhamento
+    // começar a tocar sozinha, no polling. Destravar o áudio aqui é o que faz
+    // "em preparo" e "chegou" saírem depois — sem isso o navegador bloqueia
+    // tudo em silêncio, porque quem espera o pedido não toca mais na tela.
+    unlock();
+
     if (cartItems.length === 0) {
       toast.error("Seu carrinho está vazio!");
       router.push("/#lojas");
@@ -500,6 +508,9 @@ export const useCheckoutProcess = () => {
         }
       }
 
+      // O motivo da marca por inteiro, terminando aberto: pico de alívio do
+      // cliente e o momento mais raro e mais carregado da jornada dele.
+      play("order-confirmed");
       toast.success("Pedido realizado com sucesso!");
 
       setIsNavigating(true);

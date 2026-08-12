@@ -1,9 +1,11 @@
+import { useSound } from "@/hooks/use-sound";
 import { apiService } from "@/services/api";
 import {
   getOrderTrackingStatus,
   isCanceledOrder,
   type OrderTrackingStatus,
 } from "@/lib/order-status";
+import type { SoundName } from "@/lib/sound";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -12,6 +14,21 @@ export type OrderStatus = OrderTrackingStatus;
 
 /** Intervalo do polling, tambem usado na contagem regressiva exibida na tela. */
 const POLL_INTERVAL_SECONDS = 30;
+
+/**
+ * Som de cada avanço do pedido. Cada um é um pedaço do motivo da marca, e a
+ * frase só fecha em `order-arrived` — o cliente ouve a jornada inteira sendo
+ * montada e só ganha a resolução quando a comida chega.
+ *
+ * `confirmed` não está aqui de propósito: esse som toca no checkout, no clique
+ * que finaliza o pedido. Repetir aqui seria tocar duas vezes.
+ */
+const STATUS_SOUNDS: Partial<Record<OrderStatus, SoundName>> = {
+  preparing: "step-preparing",
+  ready: "step-ready",
+  delivering: "step-on-the-way",
+  delivered: "order-arrived",
+};
 
 export interface OrderInfo {
   id: string;
@@ -45,8 +62,13 @@ export const useOrderStatus = () => {
   const orderId = searchParams?.get("orderId");
   const { user } = useAuthStore();
 
+  const { play } = useSound("customer");
+
   const [order, setOrder] = useState<OrderInfo | null>(null);
   const orderIsFinishedRef = useRef(false);
+  /** Ultimo status ja anunciado. `null` = ainda nao vimos o pedido. */
+  const announcedStatusRef = useRef<OrderStatus | null>(null);
+  const canceledAnnouncedRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false); // Para atualização silenciosa
@@ -202,6 +224,44 @@ export const useOrderStatus = () => {
     orderIsFinishedRef.current =
       order?.status === "delivered" || Boolean(order?.isCanceled);
   }, [order?.status, order?.isCanceled]);
+
+  /**
+   * Avisa por som quando o pedido anda.
+   *
+   * So toca em transicao de verdade: a primeira leitura apenas registra o
+   * estado. Abrir a tela de um pedido que ja estava em preparo nao e um avanco,
+   * e tocar ali ensinaria o cliente a ignorar o som.
+   */
+  useEffect(() => {
+    const status = order?.status;
+    if (!status) return;
+
+    const isCanceled = Boolean(order?.isCanceled);
+    const previous = announcedStatusRef.current;
+
+    // Primeira leitura: so registra o estado.
+    if (previous === null) {
+      announcedStatusRef.current = status;
+      canceledAnnouncedRef.current = isCanceled;
+      return;
+    }
+
+    // Cancelamento tem trilha propria porque nao aparece como avanco de status:
+    // um pedido cancelado ainda em "confirmed" nao muda `status` nenhum.
+    if (isCanceled) {
+      if (!canceledAnnouncedRef.current) {
+        canceledAnnouncedRef.current = true;
+        play("error");
+      }
+      return;
+    }
+
+    if (previous === status) return;
+    announcedStatusRef.current = status;
+
+    const sound = STATUS_SOUNDS[status];
+    if (sound) play(sound);
+  }, [order?.status, order?.isCanceled, play]);
 
   /**
    * Auto-fetch e polling
