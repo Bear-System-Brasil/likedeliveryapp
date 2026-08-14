@@ -31,7 +31,7 @@ import { STORAGE_KEYS, storageManager } from "@/utils/storage-manager";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://like-delivery-backend.onrender.com";
+  "https://bearsystem.tech";
 
 /**
  * Helper para obter token de autenticação
@@ -264,13 +264,8 @@ async function apiRequest<T>(
     }
 
     if (!response.ok) {
-      // Skip 404 logging on viewOrder - expected when no cart exists
-      const is404OnViewOrder =
-        response.status === 404 &&
-        endpoint.includes("/order/") &&
-        method === "GET";
-
-      if (!is404OnViewOrder) {
+      // Se não tem resultado (204 ou sem conteúdo), usar mensagem padrão
+      if (!result) {
         if (process.env.NODE_ENV !== "production") {
           console.error("API Error:", {
             status: response.status,
@@ -279,10 +274,7 @@ async function apiRequest<T>(
             method,
           });
         }
-      }
 
-      // Se não tem resultado (204 ou sem conteúdo), usar mensagem padrão
-      if (!result) {
         return {
           success: false,
           message: `Erro ${response.status}: ${response.statusText}`,
@@ -314,6 +306,24 @@ async function apiRequest<T>(
         }
       } else {
         errorMessage = `Erro ${response.status}: ${response.statusText}`;
+      }
+
+      // Skip 404 logging on viewOrder - expected when no cart exists
+      const is404OnViewOrder =
+        response.status === 404 &&
+        endpoint.includes("/order/") &&
+        method === "GET";
+
+      if (!is404OnViewOrder && process.env.NODE_ENV !== "production") {
+        // `serverMessage` e o corpo bruto do erro: sem eles o log so diz "400"
+        // e a validacao que falhou fica invisivel.
+        console.error("API Error:", {
+          status: response.status,
+          endpoint,
+          method,
+          serverMessage: errorMessage,
+          body: result,
+        });
       }
 
       return { success: false, message: errorMessage, status: response.status };
@@ -1285,6 +1295,21 @@ export const apiService = {
         true,
       ),
 
+    // Pedidos do cliente logado. Role `client` - o backend resolve o
+    // customerId pelo JWT.
+    getCustomerOrders: () =>
+      apiRequest<Order[]>("GET", "/order/customer/me", undefined, true),
+
+    getCustomerOrder: (orderId: string) =>
+      apiRequest<Order>(
+        "GET",
+        `/order/customer/me/${encodeOrderId(orderId)}`,
+        undefined,
+        true,
+      ),
+
+    // Atencao: `/order/abandoned` exige role admin/owner/manager.
+    // Nao use para listar pedidos de um cliente - ele recebe 403.
     listAbandonedOrders: (customerId?: string) =>
       apiRequest<Order[]>(
         "GET",
@@ -1295,6 +1320,14 @@ export const apiService = {
 
     getCompanyOrders: () =>
       apiRequest<Order[]>("GET", "/order/company", undefined, true),
+
+    getCompanyOrdersByStatus: (status: string) =>
+      apiRequest<Order[]>(
+        "GET",
+        `/order/company/status/${status}`,
+        undefined,
+        true,
+      ),
 
     updateOrderStatus: (
       orderId: string,

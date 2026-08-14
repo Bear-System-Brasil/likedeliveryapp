@@ -1,28 +1,82 @@
-import { apiService } from '@/services/api'
+import { apiService, type Order } from '@/services/api'
+import { isActiveOrder } from '@/lib/order-status'
 import { useAuthStore } from '@/stores'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 /**
- * Hook para buscar pedidos do usuário/cliente
+ * Normaliza o payload da listagem: a API pode devolver o array direto, um
+ * envelope (`{ data: [] }` / `{ orders: [] }`) ou corpo vazio quando o cliente
+ * ainda não tem pedidos. Nenhum desses casos é erro.
+ */
+function toOrderList(payload: unknown): Order[] {
+  if (Array.isArray(payload)) return payload as Order[]
+
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>
+    const wrapped = record.data ?? record.orders
+
+    if (Array.isArray(wrapped)) return wrapped as Order[]
+
+    // Um único pedido devolvido fora de array.
+    if (typeof record.id === 'string' && typeof record.status === 'string') {
+      return [payload as Order]
+    }
+  }
+
+  return []
+}
+
+/** Intervalo de atualização enquanto houver pedido em andamento. */
+const ACTIVE_ORDERS_POLL_MS = 30 * 1000
+
+/**
+ * Hook para buscar pedidos do cliente logado (`GET /order/customer/me`).
+ * O endpoint devolve todos os pedidos sem filtro de status - o rótulo de cada
+ * status cuida de diferenciá-los na tela.
  */
 export const useUserOrders = () => {
-  const { user } = useAuthStore()
+  const { user, token } = useAuthStore()
 
   return useQuery({
     queryKey: ['orders', 'user', user?.id],
     queryFn: async () => {
-      if (!user?.id) throw new Error('User ID is required')
+      const response = await apiService.orders.getCustomerOrders()
 
-      // Usando listAbandonedOrders como alternativa temporária
-      const response = await apiService.orders.listAbandonedOrders(user.id)
-      if (!response?.success || !response?.data) {
-        return [] // Retorna array vazio se falhar
+      // Só é erro quando a chamada de fato falhou. Lista vazia é resposta
+      // válida e precisa cair no estado "você ainda não fez pedidos".
+      if (!response?.success) {
+        const status = response?.status ? ` (HTTP ${response.status})` : ''
+
+        throw new Error(
+          `${response?.message || 'Não foi possível carregar seus pedidos'}${status}`,
+        )
       }
-      return response.data
+
+      // `/order/customer/me` ja devolve exatamente os pedidos do cliente.
+      // Nao filtramos por status aqui: qualquer descarte no cliente some com
+      // pedido que existe de verdade. O rotulo de cada status cuida do resto.
+      return toOrderList(response.data).sort(
+        (first, second) =>
+          new Date(second.created_at).getTime() -
+          new Date(first.created_at).getTime(),
+      )
     },
-    enabled: !!user?.id,
-    staleTime: 1000 * 30, // 30 segundos - pedidos são mais dinâmicos
+    enabled: !!token,
+    // O padrao global do app e cache agressivo com `refetchOnMount: false`.
+    // Para pedidos isso congela a tela: a loja avanca o status e o cliente
+    // continua vendo o anterior mesmo entrando de novo em "Meus pedidos".
+    staleTime: 15 * 1000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    // So fica consultando enquanto houver pedido em andamento.
+    refetchInterval: (query) => {
+      const orders = query.state.data
+
+      return Array.isArray(orders) && orders.some(isActiveOrder)
+        ? ACTIVE_ORDERS_POLL_MS
+        : false
+    },
   })
 }
 

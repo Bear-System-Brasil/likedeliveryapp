@@ -1,30 +1,37 @@
 import { LoadingPage } from "@/components/order-status/loading";
 import { OrderInfo, OrderStatus as OrderStatusType } from "@/hooks";
 import { formatCurrency, formatPhoneDisplay } from "@/utils";
-import {
-  Clock,
-  Loader2,
-  MapPin,
-  Package,
-  Phone,
-  Star,
-  Truck,
-} from "lucide-react";
-import Link from "next/link";
+import { Loader2, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { OrderStatusTracker } from "../order-status-tracker";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { GradientButton } from "../ui/gradient-button";
 
 type Props = {
   data: {
     order: OrderInfo | null;
     isRefreshing: boolean;
+    secondsUntilRefresh: number;
+    refresh: () => void;
     getStatusMessage: (status: OrderStatusType) => string;
   };
   token: string | null;
 };
+
+const CARD = "rounded-[13px] border border-[#e9eaee] bg-white";
+const CARD_TITLE =
+  "flex items-center gap-[7px] text-[13px] font-extrabold text-[#14161a]";
+
+function summarizeItems(items: OrderInfo["items"]) {
+  const totalQuantity = items.reduce(
+    (total, item) => total + Number(item.quantity || 0),
+    0,
+  );
+
+  if (!items.length) return "Itens do pedido";
+
+  const names = items.map((item) => item.name).join(", ");
+
+  return `${totalQuantity} ${totalQuantity === 1 ? "item" : "itens"} · ${names}`;
+}
 
 export function OrderStatus({ data, token }: Props) {
   const router = useRouter();
@@ -35,165 +42,161 @@ export function OrderStatus({ data, token }: Props) {
     return <LoadingPage />;
   }
 
+  const { order } = data;
+
   return (
     <div>
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold bg-linear-to-r from-orange-500 to-orange-500 bg-clip-text text-transparent mb-2">
+      <div className="mb-4 text-center">
+        <h1 className="text-[19px] font-extrabold tracking-[-0.02em] text-[#14161a]">
           Acompanhe seu Pedido
         </h1>
-        <p className="text-muted-foreground">
-          Pedido #{data.order.orderNumber}
+        <p className="mt-[3px] text-xs font-semibold text-[#8a8f99]">
+          Pedido #{order.orderNumber}
         </p>
         {data.isRefreshing && (
-          <div className="flex items-center justify-center gap-1 mt-2">
-            <Loader2 className="h-3 w-3 animate-spin text-orange-600" />
-            <span className="text-xs text-orange-600 font-medium">
+          <div className="mt-2 flex items-center justify-center gap-1">
+            <Loader2 className="h-3 w-3 animate-spin text-[#ff6b00]" />
+            <span className="text-xs font-medium text-[#ff6b00]">
               Atualizando...
             </span>
           </div>
         )}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Status do Pedido e Delivery */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Status Tracker */}
-          <Card
-            className={`border-t-4 border-t-orange-500 transition-all duration-500 ${data.isRefreshing ? "ring-2 ring-orange-200 ring-opacity-50" : ""}`}
+      <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="flex min-w-0 flex-col gap-3">
+          <section
+            className={`${CARD} border-t-[3px] p-4 ${
+              order.isCanceled ? "border-t-red-500" : "border-t-[#ff6b00]"
+            }`}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-orange-500" />
-                Status do Pedido
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="transition-all duration-500 ">
+            <h2 className={CARD_TITLE}>
+              <span aria-hidden className="text-[#ff6b00]">
+                {order.isCanceled ? "✕" : "⏱"}
+              </span>
+              Status do Pedido
+            </h2>
+
+            {/* Pedido cancelado nao tem progresso: a linha do tempo daria a
+                entender que ele ainda esta em andamento. */}
+            {order.isCanceled ? (
+              <div className="mt-4 rounded-[10px] bg-red-50 px-[13px] py-[11px]">
+                <p className="text-[12.5px] font-bold text-red-700">
+                  Pedido cancelado
+                </p>
+                <p className="mt-[5px] text-[11.5px] font-semibold text-red-600">
+                  Este pedido foi cancelado e nao sera preparado.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4">
                 <OrderStatusTracker data={data} token={token} />
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </section>
 
-          {/* Informações de Entrega */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-orange-500" />
-                Informações de Entrega
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-orange-500 mt-1 shrink-0" />
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {data.order.customerInfo.name}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {data.order.customerInfo.address}
-                  </p>
-                </div>
+          <section className={`${CARD} p-4`}>
+            <h2 className={`${CARD_TITLE} mb-[11px]`}>
+              <span aria-hidden>🛵</span>
+              Informações de Entrega
+            </h2>
+
+            <div className="flex items-start gap-[9px]">
+              <span aria-hidden className="mt-px shrink-0">
+                📍
+              </span>
+              <div className="min-w-0">
+                <p className="text-[12.5px] font-bold text-[#14161a]">
+                  {order.customerInfo.name}
+                </p>
+                <p className="mt-px text-xs font-medium text-[#8a8f99]">
+                  {order.customerInfo.address}
+                </p>
               </div>
+            </div>
 
-              <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-orange-500 shrink-0" />
-                <span className="text-sm text-gray-900">
-                  {formatPhoneDisplay(data.order.customerInfo.phone)}
-                </span>
+            <div className="mt-[9px] flex items-center gap-[9px]">
+              <span aria-hidden className="shrink-0">
+                📞
+              </span>
+              <span className="text-[12.5px] font-semibold text-[#3d4149]">
+                {formatPhoneDisplay(order.customerInfo.phone)}
+              </span>
+            </div>
+
+            {order.delivery?.observations && (
+              <div className="mt-[11px] border-t border-[#f0f1f4] pt-[9px]">
+                <p className="text-[11.5px] font-bold text-[#3d4149]">
+                  Observações
+                </p>
+                <p className="mt-px text-xs font-medium text-[#8a8f99]">
+                  {order.delivery.observations}
+                </p>
               </div>
-
-              {data.order.delivery && data.order.delivery.observations && (
-                <div className="pt-3 border-t">
-                  <p className="text-sm font-medium text-gray-700 mb-1">
-                    Observações:
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {data.order.delivery.observations}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </section>
         </div>
 
-        {/* Resumo do Pedido */}
-        <div className="space-y-6">
-          {/* Itens do Pedido */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-orange-500" />
-                Resumo do Pedido
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                {data.order.items.map((item, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <div className="flex-1">
-                      <span className="font-medium text-gray-900">
-                        {item.quantity}x {item.name}
-                      </span>
-                    </div>
-                    <span className="font-semibold text-gray-900">
-                      {formatCurrency(item.price * item.quantity)}
-                    </span>
-                  </div>
-                ))}
-              </div>
+        <div className="flex min-w-0 flex-col gap-3">
+          <section className={`${CARD} p-[14px]`}>
+            <h2 className={`${CARD_TITLE} mb-2.5`}>
+              <span aria-hidden>📦</span>
+              Resumo do Pedido
+            </h2>
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold text-gray-900">Total</span>
-                  <span className="text-lg font-bold">
-                    {formatCurrency(data.order.total)}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            <p className="truncate text-[12.5px] font-semibold text-[#3d4149]">
+              {summarizeItems(order.items)}
+            </p>
 
-          {/* Ações */}
-          <Card className="bg-linear-to-br from-orange-50 to-orange-50 border-orange-100">
-            <CardContent className="pt-6 space-y-3">
-              <Link href="/#lojas" className="block cursor-pointer">
-                <Button
-                  variant="default"
-                  className="w-full bg-linear-to-r from-orange-500 to-orange-500 hover:from-orange-600 hover:to-orange-600 text-white shadow-lg cursor-pointer"
-                >
-                  Fazer Novo Pedido
-                </Button>
-              </Link>
+            <div className="my-2.5 h-px bg-[#f0f1f4]" />
 
-              {data.order.status === "delivered" && (
-                <Button
-                  variant="outline"
-                  className="w-full border-orange-300 hover:bg-orange-50 cursor-pointer"
-                >
-                  <Star className="h-4 w-4 text-yellow-600 mr-2" />
-                  Avaliar Pedido
-                </Button>
-              )}
+            <div className="flex items-baseline justify-between">
+              <span className="text-[13px] font-extrabold text-[#14161a]">
+                Total
+              </span>
+              <span className="text-base font-extrabold tracking-[-0.02em] text-[#14161a]">
+                {formatCurrency(order.total)}
+              </span>
+            </div>
+          </section>
 
-              <GradientButton onClick={() => router.push("/profile")}>
-                Ver Meus Pedidos
-              </GradientButton>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-2 rounded-[13px] bg-[#fff7ed] p-3">
+            <button
+              type="button"
+              onClick={() => router.push("/#lojas")}
+              className="h-[38px] rounded-[10px] bg-[#ff6b00] text-[12.5px] font-extrabold text-white transition-colors hover:bg-[#e05a00]"
+            >
+              Fazer Novo Pedido
+            </button>
 
-          {/* Informação de Atualização */}
-          <div className="text-center text-xs text-gray-500">
-            {data.order.status === "delivered" ? (
-              <p>✅ Pedido entregue - Atualização automática desativada</p>
-            ) : (
-              <p>
-                🔄{" "}
-                {data.isRefreshing
-                  ? "Atualizando..."
-                  : "Próxima atualização em 30 segundos"}
-              </p>
-            )}
+            <button
+              type="button"
+              onClick={() => router.push("/orders")}
+              className="h-[38px] rounded-[10px] border border-[#ffd9b3] bg-white text-[12.5px] font-extrabold text-[#e05a00] transition-colors hover:bg-[#fff7ed]"
+            >
+              Ver Meus Pedidos
+            </button>
           </div>
+
+          {order.status === "delivered" || order.isCanceled ? (
+            <p className="text-center text-[11px] font-semibold text-[#a2a7b0]">
+              Pedido finalizado - atualização automática desativada
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={data.refresh}
+              disabled={data.isRefreshing}
+              className="flex items-center justify-center gap-1.5 text-center text-[11px] font-semibold text-[#a2a7b0] transition-colors hover:text-[#3d4149] disabled:opacity-60"
+            >
+              <RefreshCw
+                className={`h-3 w-3 ${data.isRefreshing ? "animate-spin" : ""}`}
+              />
+              {data.isRefreshing
+                ? "Atualizando..."
+                : `Próxima atualização em ${data.secondsUntilRefresh}s`}
+            </button>
+          )}
         </div>
       </div>
     </div>

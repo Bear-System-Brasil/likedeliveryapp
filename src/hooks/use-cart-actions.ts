@@ -1,4 +1,5 @@
 import { useConfirm } from "@/contexts/confirm-provider";
+import { useSound } from "@/hooks/use-sound";
 import { apiService } from "@/services/api";
 import { useCartStore } from "@/stores";
 import { useAuthStore } from "@/stores/auth-store";
@@ -15,6 +16,7 @@ export const useCartActions = () => {
   const router = useRouter();
   const { user } = useAuthStore();
   const { confirm } = useConfirm();
+  const { play } = useSound("customer");
   const {
     items,
     restaurant,
@@ -216,6 +218,10 @@ export const useCartActions = () => {
 
       // Atualizar estado local imediatamente
       setItems(newItems);
+      // Primeira nota do motivo, curtinha e baixa. É a única micro-interação
+      // com som no app: se cada toque apitasse, o som deixaria de significar
+      // qualquer coisa.
+      play("cart-add");
       toast.success(`${item.name} adicionado ao carrinho!`);
 
       // ===== API CALL EM BACKGROUND =====
