@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://like-delivery-backend.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bearsystem.tech';
 
 export async function POST(request: NextRequest) {
   try {

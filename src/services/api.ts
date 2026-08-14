@@ -31,7 +31,7 @@ import { STORAGE_KEYS, storageManager } from "@/utils/storage-manager";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://like-delivery-backend.onrender.com";
+  "https://bearsystem.tech";
 
 /**
  * Helper para obter token de autenticação

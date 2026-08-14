@@ -34,7 +34,7 @@ cp .env.example .env.local
 
 Your `.env.local` should look like:
 ```env
-NEXT_PUBLIC_API_URL=https://like-delivery-backend.onrender.com/
+NEXT_PUBLIC_API_URL=https://bearsystem.tech
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
