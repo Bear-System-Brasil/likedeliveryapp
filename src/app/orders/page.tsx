@@ -468,7 +468,19 @@ function CompletedOrderCard({
       : "bg-green-50 text-green-600";
 
   return (
-    <Card className="border-[#e9eaee] bg-white p-4 shadow-sm sm:p-5">
+    // O card inteiro abre o pedido - o botao "Ver pedido" saiu para compactar.
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={onView}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onView();
+        }
+      }}
+      className="cursor-pointer border-[#e9eaee] bg-white p-3 shadow-sm transition-colors hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 sm:p-4"
+    >
       <div className="flex items-start gap-3">
         <RestaurantLogo brand={brand} fallbackTone={fallbackTone} />
         <div className="min-w-0 flex-1">
@@ -478,46 +490,37 @@ function CompletedOrderCard({
             </h2>
             <OrderStatusBadge order={order} />
           </div>
-          <p className="mt-1 text-xs font-medium text-[#8a8f99]">
+          <p className="mt-0.5 text-xs font-medium text-[#8a8f99]">
             Pedido #{String(getOrderId(order)).slice(0, 8)} · {getOrderDate(order)}
+            {itemCount
+              ? ` · ${itemCount} ${itemCount === 1 ? "item" : "itens"}`
+              : ""}
           </p>
-          <div className="mt-1 flex items-center justify-between gap-3">
-            <span className="text-xs font-medium text-[#8a8f99]">
-              {itemCount
-                ? `${itemCount} ${itemCount === 1 ? "item" : "itens"}`
-                : "Itens do pedido"}
-            </span>
-            <span className="shrink-0 text-base font-extrabold text-[#14161a]">
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <span className="text-base font-extrabold text-[#14161a]">
               {formatCurrency(getOrderTotal(order))}
             </span>
+            {!isCancelled && (
+              <Button
+                type="button"
+                onClick={(event) => {
+                  // Sem isso o clique subiria para o card e abriria o pedido.
+                  event.stopPropagation();
+                  onRepeat();
+                }}
+                disabled={isRepeating}
+                className="h-8 shrink-0 rounded-lg bg-orange-500 px-3 text-xs font-bold hover:bg-orange-600"
+              >
+                {isRepeating ? (
+                  <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Pedir novamente
+              </Button>
+            )}
           </div>
         </div>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-2 border-t border-[#e9eaee] pt-3 sm:flex-row sm:justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onView}
-          className="h-9 rounded-lg border-[#e9eaee] text-xs font-bold text-[#3d4149]"
-        >
-          Ver pedido
-        </Button>
-        {!isCancelled && (
-          <Button
-            type="button"
-            onClick={onRepeat}
-            disabled={isRepeating}
-            className="h-9 rounded-lg bg-orange-500 text-xs font-bold hover:bg-orange-600"
-          >
-            {isRepeating ? (
-              <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            Pedir novamente
-          </Button>
-        )}
       </div>
     </Card>
   );

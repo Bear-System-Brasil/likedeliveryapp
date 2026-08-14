@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import {
   type ColumnId,
   type CompanyOrder,
-  getOrderAction,
+  COLUMN_ACTIONS,
   formatCurrency,
   getElapsedTime,
   getOrderItemDisplayName,
@@ -59,7 +59,7 @@ export function OrderDetailSheet({
   const customerName = order.customer?.name || 'Cliente'
   const customerPhone = order.customer?.phone
   const payment = order.payments?.[0]
-  const action = getOrderAction(order, columnId)
+  const action = COLUMN_ACTIONS[columnId]
   const statusInfo = STATUS_LABELS[order.status] || { label: order.status, variant: 'outline' as const }
   const isCanceled = order.status === 'CANCELED'
   const isCompleted = order.status === 'COMPLETED'

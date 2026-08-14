@@ -116,27 +116,6 @@ export const COLUMN_ACTIONS: Record<ColumnId, ColumnAction | null> = {
   completed: null,
 }
 
-/**
- * Ação disponível para um pedido específico.
- *
- * O rótulo do último passo depende de haver entrega: pedido de retirada no
- * balcão nunca é "entregue", quem leva é o próprio cliente.
- */
-export function getOrderAction(
-  order: CompanyOrder,
-  columnId: ColumnId,
-): ColumnAction | null {
-  const action = COLUMN_ACTIONS[columnId]
-
-  if (!action) return null
-
-  if (columnId === 'ready' && !order.delivery) {
-    return { ...action, label: 'Marcar como Retirado' }
-  }
-
-  return action
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Motivos de cancelamento
 // ─────────────────────────────────────────────────────────────────────────────

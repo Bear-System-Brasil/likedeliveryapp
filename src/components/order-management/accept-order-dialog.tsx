@@ -11,7 +11,7 @@ import {
   type CompanyOrder,
   formatCurrency,
   getColumnForOrder,
-  getOrderAction,
+  COLUMN_ACTIONS,
 } from '@/constants/order-management'
 import { CheckCircle, ChefHat } from 'lucide-react'
 
@@ -35,7 +35,7 @@ export function AcceptOrderDialog({
   // Antes assumia 'preparing' para tudo que nao fosse ORDERED, o que mandava
   // READY_FOR_PICKUP de volta para um pedido que ja estava pronto.
   const columnId = getColumnForOrder(order)
-  const action = columnId === 'canceled' ? null : getOrderAction(order, columnId)
+  const action = columnId === 'canceled' ? null : COLUMN_ACTIONS[columnId]
 
   const handleConfirm = () => {
     if (!action) return

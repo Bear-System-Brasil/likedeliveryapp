@@ -9,7 +9,7 @@ import {
 import {
   type ColumnId,
   type CompanyOrder,
-  getOrderAction,
+  COLUMN_ACTIONS,
   formatCurrency,
   getElapsedTime,
   getOrderItemDisplayName,
@@ -48,7 +48,7 @@ export function OrderCard({
   const [expanded, setExpanded] = useState(false);
 
   const items = order.orderedItems || [];
-  const action = getOrderAction(order, columnId);
+  const action = COLUMN_ACTIONS[columnId];
   const elapsed = getElapsedTime(order.created_at);
   const isCanceled = order.status === "CANCELED";
   const isCompleted = order.status === "COMPLETED";

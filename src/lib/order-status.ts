@@ -8,7 +8,7 @@ export const ORDER_STEPS = [
   "Confirmado",
   "Em preparo",
   "Pronto",
-  "Concluído",
+  "Entregue",
 ] as const;
 
 /**
@@ -44,7 +44,7 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   ORDERED: "Confirmado",
   IN_PRODUCTION: "Em preparo",
   READY_FOR_PICKUP: "Pronto",
-  COMPLETED: "Concluído",
+  COMPLETED: "Entregue",
   CANCELED: "Cancelado",
   ABANDONED: "Abandonado",
 };
