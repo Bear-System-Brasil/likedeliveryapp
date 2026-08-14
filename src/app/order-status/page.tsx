@@ -17,13 +17,22 @@ export default function OrderStatusPage() {
   const { isAuthenticated, user } = useAuth();
   const authStore = useAuthStore();
 
-  const { order, loading, error, isRefreshing, getStatusMessage } =
-    useOrderStatus();
+  const {
+    order,
+    loading,
+    error,
+    isRefreshing,
+    secondsUntilRefresh,
+    refresh,
+    getStatusMessage,
+  } = useOrderStatus();
   const { totalItems } = useCartActions();
 
   const data = {
     order,
     isRefreshing,
+    secondsUntilRefresh,
+    refresh,
     getStatusMessage,
   };
 
@@ -61,8 +70,8 @@ export default function OrderStatusPage() {
         showNav={true}
       />
       <div className="min-h-screen">
-        <main className="pt-32 pb-8">
-          <div className="container mx-auto px-4 max-w-6xl">
+        <main className="pt-28 pb-8">
+          <div className="mx-auto w-full max-w-[800px] px-5">
             <OrderStatus data={data} token={authStore.token} />
           </div>
         </main>

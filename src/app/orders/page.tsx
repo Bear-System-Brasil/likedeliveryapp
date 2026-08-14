@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -10,7 +11,6 @@ import {
   Clock3,
   LoaderCircle,
   Package,
-  PackageCheck,
   RefreshCw,
   RotateCcw,
 } from "lucide-react";
@@ -20,98 +20,105 @@ import ProtectedRoute from "@/components/protected-route";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AnimatedBackground } from "@/components/ui/animated-background";
-import { useCartActions, useOrderHistory } from "@/hooks";
+import { useCartActions, useOrderHistory, useRestaurants } from "@/hooks";
 import { useAuthStore } from "@/stores/auth-store";
 import { apiService } from "@/services/api";
+import {
+  ORDER_STEPS,
+  getOrderStatusBadgeClass,
+  getOrderStatusLabel,
+  getOrderStep,
+  isActiveOrder,
+  isCanceledOrder,
+  isInertOrder,
+} from "@/lib/order-status";
 import { formatCurrency } from "@/utils/format-currency";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const STEPS = ["Confirmado", "Preparando", "A caminho", "Entregue"];
+type RestaurantBrand = { name: string; logo?: string };
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pedido confirmado",
-  CONFIRMED: "Pedido confirmado",
-  ACCEPTED: "Pedido confirmado",
-  PREPARING: "Em preparo",
-  IN_PRODUCTION: "Em preparo",
-  READY: "A caminho",
-  READY_FOR_PICKUP: "A caminho",
-  PICKED_UP: "A caminho",
-  IN_TRANSIT: "A caminho",
-  OUT_FOR_DELIVERY: "A caminho",
-  DELIVERED: "Entregue",
-  COMPLETED: "Entregue",
-  CANCELLED: "Cancelado",
-  CANCELED: "Cancelado",
-};
-
-function getOrderStatus(order: any) {
-  return String(order.status || order.order?.status || "PENDING").toUpperCase();
+function getCompanyId(order: any) {
+  return order.companyId || order.company?.id || null;
 }
 
-function getStatusStep(status: string) {
-  if (["PREPARING", "IN_PRODUCTION"].includes(status)) return 1;
-  if (
-    [
-      "READY",
-      "READY_FOR_PICKUP",
-      "PICKED_UP",
-      "IN_TRANSIT",
-      "OUT_FOR_DELIVERY",
-    ].includes(status)
-  ) {
-    return 2;
-  }
-  if (["DELIVERED", "COMPLETED"].includes(status)) return 3;
-  return 0;
+/**
+ * O pedido nem sempre traz a empresa aninhada; o catalogo de lojas ja esta em
+ * cache e completa nome e logo pelo companyId.
+ */
+function getRestaurantBrand(
+  order: any,
+  brandsByCompanyId: Map<string, RestaurantBrand>,
+): RestaurantBrand {
+  const companyId = getCompanyId(order);
+  const fromCatalog = companyId ? brandsByCompanyId.get(companyId) : undefined;
+
+  return {
+    name:
+      order.company?.tradeName ||
+      order.company?.name ||
+      fromCatalog?.name ||
+      "Restaurante",
+    logo: order.company?.logo_url || fromCatalog?.logo,
+  };
 }
 
-function isActiveStatus(status: string) {
-  return !["DELIVERED", "COMPLETED", "CANCELLED", "CANCELED"].includes(
-    status,
+/**
+ * Tag de status. Fica sempre na mesma linha do nome da loja, encostada a
+ * direita - `shrink-0` impede que ela estique quando o card empilha.
+ */
+function OrderStatusBadge({ order, pulse }: { order: any; pulse?: boolean }) {
+  return (
+    <span
+      className={`ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold sm:text-xs ${getOrderStatusBadgeClass(order)}`}
+    >
+      <span
+        className={`h-1.5 w-1.5 rounded-full bg-current ${pulse ? "animate-pulse" : ""}`}
+      />
+      {getOrderStatusLabel(order)}
+    </span>
   );
 }
 
-function getStatusBadgeLabel(status: string) {
-  return (
-    STATUS_LABELS[status] ||
-    (isActiveStatus(status) ? "Em andamento" : "Finalizado")
-  );
-}
-
-function getStatusBadgeClass(status: string) {
-  if (["CANCELLED", "CANCELED"].includes(status)) {
-    return "bg-red-50 text-red-600";
+/** Logo da loja com fallback para o icone generico. */
+function RestaurantLogo({
+  brand,
+  fallbackTone = "bg-orange-50 text-orange-500",
+}: {
+  brand: RestaurantBrand;
+  fallbackTone?: string;
+}) {
+  if (!brand.logo) {
+    return (
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${fallbackTone}`}
+      >
+        <Package className="h-5 w-5" />
+      </div>
+    );
   }
 
-  if (["DELIVERED", "COMPLETED"].includes(status)) {
-    return "bg-green-50 text-green-600";
-  }
-
-  return "bg-orange-50 text-orange-600";
-}
-
-function getRestaurantName(order: any) {
   return (
-    order.order?.company?.tradeName ||
-    order.order?.company?.name ||
-    order.company?.tradeName ||
-    order.company?.name ||
-    "Restaurante"
+    <Image
+      src={brand.logo}
+      alt={brand.name}
+      width={40}
+      height={40}
+      className="h-10 w-10 shrink-0 rounded-[10px] border border-[#e9eaee] bg-white object-cover"
+    />
   );
 }
 
 function getOrderId(order: any) {
-  return order.orderId || order.order?.id || order.id;
+  return order.id;
 }
 
 function getOrderTotal(order: any) {
-  return Number(order.order?.totalValue ?? order.totalValue ?? 0);
+  return Number(order.totalValue ?? 0);
 }
 
 function getItemCount(order: any) {
-  const items = order.order?.orderedItems || order.orderedItems || [];
+  const items = order.orderedItems || [];
   const quantity = items.reduce(
     (total: number, item: any) => total + Number(item.quantity || 0),
     0,
@@ -121,7 +128,7 @@ function getItemCount(order: any) {
 }
 
 function getOrderDate(order: any) {
-  const value = order.created_at || order.order?.created_at;
+  const value = order.created_at;
   if (!value) return "Data não disponível";
 
   try {
@@ -129,11 +136,6 @@ function getOrderDate(order: any) {
   } catch {
     return "Data não disponível";
   }
-}
-
-function getOrderTimestamp(order: any) {
-  const value = order.created_at || order.order?.created_at;
-  return value ? new Date(value).getTime() || 0 : 0;
 }
 
 export default function OrderHistoryPage() {
@@ -147,16 +149,24 @@ export default function OrderHistoryPage() {
 function OrderHistoryContent() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { orders, allOrders, loading, error, refreshHistory } = useOrderHistory();
+  const { orders, loading, error, refreshHistory } = useOrderHistory();
   const { totalItems, handleAddToCart } = useCartActions();
   const [repeatingOrderId, setRepeatingOrderId] = useState<string | null>(null);
 
-  const sourceOrders = useMemo(() => {
-    const orderList = allOrders?.length ? allOrders : orders;
-    return [...orderList].sort(
-      (first, second) => getOrderTimestamp(second) - getOrderTimestamp(first),
-    );
-  }, [allOrders, orders]);
+  // O pedido nem sempre traz a empresa aninhada; o catálogo de lojas já está
+  // em cache e resolve o nome pelo companyId.
+  const { data: restaurants = [] } = useRestaurants();
+
+  const restaurantBrandsById = useMemo(
+    () =>
+      new Map<string, RestaurantBrand>(
+        restaurants.map((restaurant) => [
+          restaurant.id,
+          { name: restaurant.tradeName, logo: restaurant.logo_url },
+        ]),
+      ),
+    [restaurants],
+  );
 
   const handleRepeatOrder = async (order: any) => {
     const orderId = getOrderId(order);
@@ -173,9 +183,8 @@ function OrderHistoryContent() {
         user.id,
       );
       const orderItems = (itemsResponse.data as any[]) || [];
-      const companyId =
-        order.order?.companyId || order.companyId || order.order?.company?.id;
-      const restaurantName = getRestaurantName(order);
+      const companyId = getCompanyId(order);
+      const restaurantName = getRestaurantBrand(order, restaurantBrandsById).name;
 
       if (!companyId || orderItems.length === 0) {
         throw new Error("Itens indisponíveis para repetir");
@@ -282,30 +291,33 @@ function OrderHistoryContent() {
             </Button>
           </div>
 
-          {sourceOrders.length === 0 ? (
+          {orders.length === 0 ? (
             <EmptyOrdersState onExplore={() => router.push("/")} />
           ) : (
             <div className="space-y-3">
-              {sourceOrders.map((order) => {
-                const status = getOrderStatus(order);
-                const active = isActiveStatus(status);
-
-                return active ? (
+              {orders.map((order) =>
+                isActiveOrder(order) ? (
                   <ActiveOrderCard
                     key={getOrderId(order)}
                     order={order}
-                    onTrack={() => router.push(`/order-status?orderId=${getOrderId(order)}`)}
+                    brand={getRestaurantBrand(order, restaurantBrandsById)}
+                    onTrack={() =>
+                      router.push(`/order-status?orderId=${getOrderId(order)}`)
+                    }
                   />
                 ) : (
                   <CompletedOrderCard
                     key={getOrderId(order)}
                     order={order}
+                    brand={getRestaurantBrand(order, restaurantBrandsById)}
                     isRepeating={repeatingOrderId === getOrderId(order)}
-                    onView={() => router.push(`/order-status?orderId=${getOrderId(order)}`)}
+                    onView={() =>
+                      router.push(`/order-status?orderId=${getOrderId(order)}`)
+                    }
                     onRepeat={() => handleRepeatOrder(order)}
                   />
-                );
-              })}
+                ),
+              )}
             </div>
           )}
         </div>
@@ -338,50 +350,43 @@ function OrdersShell({
 
 function ActiveOrderCard({
   order,
+  brand,
   onTrack,
 }: {
   order: any;
+  brand: RestaurantBrand;
   onTrack: () => void;
 }) {
-  const status = getOrderStatus(order);
-  const step = getStatusStep(status);
+  const step = getOrderStep(order);
   const itemCount = getItemCount(order);
-  const eta = order.estimatedTime || order.order?.estimatedTime || "Acompanhe a entrega";
+  const eta = order.delivery?.estimatedTime;
 
   return (
     <Card className="border-[#e9eaee] bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-orange-50 text-orange-500">
-            <Package className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
+      <div className="flex items-start gap-3">
+        <RestaurantLogo brand={brand} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
             <h2 className="truncate text-sm font-extrabold text-[#14161a] sm:text-[15px]">
-              {getRestaurantName(order)}
+              {brand.name}
             </h2>
-            <p className="mt-1 text-xs font-medium text-[#8a8f99]">
-              Pedido #{String(getOrderId(order)).slice(0, 8)}
-              {itemCount ? ` · ${itemCount} ${itemCount === 1 ? "item" : "itens"}` : ""}
-            </p>
+            <OrderStatusBadge order={order} pulse />
           </div>
+          <p className="mt-1 text-xs font-medium text-[#8a8f99]">
+            Pedido #{String(getOrderId(order)).slice(0, 8)}
+            {itemCount ? ` · ${itemCount} ${itemCount === 1 ? "item" : "itens"}` : ""}
+          </p>
         </div>
-
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold sm:shrink-0 sm:text-xs ${getStatusBadgeClass(status)}`}
-        >
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
-          {getStatusBadgeLabel(status)}
-        </span>
       </div>
 
       <div className="mt-5 grid grid-cols-4 gap-1">
-        {STEPS.map((label, index) => {
+        {ORDER_STEPS.map((label, index) => {
           const done = index <= step;
           const current = index === step;
 
           return (
             <div key={label} className="relative text-center">
-              {index < STEPS.length - 1 && (
+              {index < ORDER_STEPS.length - 1 && (
                 <span
                   className={`absolute left-1/2 top-2.5 h-px w-full ${
                     index < step ? "bg-orange-500" : "bg-[#e9eaee]"
@@ -410,10 +415,16 @@ function ActiveOrderCard({
       </div>
 
       <div className="mt-4 flex flex-col gap-3 border-t border-[#e9eaee] pt-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-xs font-semibold text-[#8a8f99]">
-          <Clock3 className="h-3.5 w-3.5" />
-          {eta}
-        </div>
+        {/* So mostra o prazo quando existe de verdade - o texto generico
+            repetia o botao ao lado. */}
+        {eta ? (
+          <div className="flex items-center gap-2 text-xs font-semibold text-[#8a8f99]">
+            <Clock3 className="h-3.5 w-3.5" />
+            {eta}
+          </div>
+        ) : (
+          <span />
+        )}
         <div className="flex items-center justify-between gap-3 sm:justify-end">
           <span className="text-sm font-extrabold text-[#14161a]">
             {formatCurrency(getOrderTotal(order))}
@@ -434,88 +445,82 @@ function ActiveOrderCard({
 
 function CompletedOrderCard({
   order,
+  brand,
   isRepeating,
   onView,
   onRepeat,
 }: {
   order: any;
+  brand: RestaurantBrand;
   isRepeating: boolean;
   onView: () => void;
   onRepeat: () => void;
 }) {
-  const status = getOrderStatus(order);
-  const isCancelled = ["CANCELLED", "CANCELED"].includes(status);
+  const isCancelled = isCanceledOrder(order);
+  // Carrinho e abandonado nao foram concluidos - o visual verde de "pedido
+  // entregue" daria a entender que a compra aconteceu.
+  const isInert = isInertOrder(order);
   const itemCount = getItemCount(order);
+  const fallbackTone = isCancelled
+    ? "bg-red-50 text-red-500"
+    : isInert
+      ? "bg-gray-100 text-gray-500"
+      : "bg-green-50 text-green-600";
 
   return (
-    <Card className="border-[#e9eaee] bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${
-              isCancelled
-                ? "bg-red-50 text-red-500"
-                : "bg-green-50 text-green-600"
-            }`}
-          >
-            {isCancelled ? (
-              <Package className="h-5 w-5" />
-            ) : (
-              <PackageCheck className="h-5 w-5" />
-            )}
-          </div>
-          <div className="min-w-0">
+    // O card inteiro abre o pedido - o botao "Ver pedido" saiu para compactar.
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={onView}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onView();
+        }
+      }}
+      className="cursor-pointer border-[#e9eaee] bg-white p-3 shadow-sm transition-colors hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 sm:p-4"
+    >
+      <div className="flex items-start gap-3">
+        <RestaurantLogo brand={brand} fallbackTone={fallbackTone} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
             <h2 className="truncate text-sm font-extrabold text-[#14161a] sm:text-[15px]">
-              {getRestaurantName(order)}
+              {brand.name}
             </h2>
-            <p className="mt-1 text-xs font-medium text-[#8a8f99]">
-              Pedido #{String(getOrderId(order)).slice(0, 8)} · {getOrderDate(order)}
-            </p>
-            <p className="mt-1 text-xs font-medium text-[#8a8f99]">
-              {itemCount
-                ? `${itemCount} ${itemCount === 1 ? "item" : "itens"}`
-                : "Itens do pedido"}
-            </p>
+            <OrderStatusBadge order={order} />
+          </div>
+          <p className="mt-0.5 text-xs font-medium text-[#8a8f99]">
+            Pedido #{String(getOrderId(order)).slice(0, 8)} · {getOrderDate(order)}
+            {itemCount
+              ? ` · ${itemCount} ${itemCount === 1 ? "item" : "itens"}`
+              : ""}
+          </p>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <span className="text-base font-extrabold text-[#14161a]">
+              {formatCurrency(getOrderTotal(order))}
+            </span>
+            {!isCancelled && (
+              <Button
+                type="button"
+                onClick={(event) => {
+                  // Sem isso o clique subiria para o card e abriria o pedido.
+                  event.stopPropagation();
+                  onRepeat();
+                }}
+                disabled={isRepeating}
+                className="h-8 shrink-0 rounded-lg bg-orange-500 px-3 text-xs font-bold hover:bg-orange-600"
+              >
+                {isRepeating ? (
+                  <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                Pedir novamente
+              </Button>
+            )}
           </div>
         </div>
-
-        <div className="flex items-center justify-between gap-3 sm:shrink-0 sm:flex-col sm:items-end">
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold ${getStatusBadgeClass(status)}`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            {getStatusBadgeLabel(status)}
-          </span>
-          <span className="text-base font-extrabold text-[#14161a]">
-            {formatCurrency(getOrderTotal(order))}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-2 border-t border-[#e9eaee] pt-3 sm:flex-row sm:justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onView}
-          className="h-9 rounded-lg border-[#e9eaee] text-xs font-bold text-[#3d4149]"
-        >
-          Ver pedido
-        </Button>
-        {!isCancelled && (
-          <Button
-            type="button"
-            onClick={onRepeat}
-            disabled={isRepeating}
-            className="h-9 rounded-lg bg-orange-500 text-xs font-bold hover:bg-orange-600"
-          >
-            {isRepeating ? (
-              <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            Pedir novamente
-          </Button>
-        )}
       </div>
     </Card>
   );

@@ -8,7 +8,7 @@
 # Environment variables for build
 [build.environment]
   NODE_VERSION = "22"
-  NEXT_PUBLIC_API_URL = "https://like-delivery-backend.onrender.com"
+  NEXT_PUBLIC_API_URL = "https://bearsystem.tech"
 
 # Headers for all responses
 [[headers]]

@@ -104,10 +104,15 @@ export const COLUMNS: ColumnConfig[] = [
 // Ações por coluna
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const COLUMN_ACTIONS: Record<ColumnId, { label: string; nextStatus: string } | null> = {
+export interface ColumnAction {
+  label: string
+  nextStatus: string
+}
+
+export const COLUMN_ACTIONS: Record<ColumnId, ColumnAction | null> = {
   new: { label: 'Iniciar Preparo', nextStatus: 'IN_PRODUCTION' },
   preparing: { label: 'Marcar como Pronto', nextStatus: 'READY_FOR_PICKUP' },
-  ready: null,
+  ready: { label: 'Marcar como Entregue', nextStatus: 'COMPLETED' },
   completed: null,
 }
 

@@ -116,7 +116,7 @@ cp .env.example .env.local
 
 Edit `.env.local` and add your configuration:
 ```env
-NEXT_PUBLIC_API_URL=https://like-delivery-backend.onrender.com/
+NEXT_PUBLIC_API_URL=https://bearsystem.tech
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
@@ -279,7 +279,7 @@ const response = await apiService.restaurants.getById(id)
 const products = await apiService.products.getByCompany(companyId)
 ```
 
-**Backend URL:** `https://like-delivery-backend.onrender.com/`
+**Backend URL:** `https://bearsystem.tech`
 
 **Key Endpoints:**
 - `/auth/*` - Authentication
@@ -524,7 +524,7 @@ git push origin main
 
 Set these in your deployment platform:
 ```env
-NEXT_PUBLIC_API_URL=https://like-delivery-backend.onrender.com/
+NEXT_PUBLIC_API_URL=https://bearsystem.tech
 NEXT_PUBLIC_APP_URL=https://your-domain.com
 ```
 
@@ -602,7 +602,7 @@ chore: Build process or auxiliary tool changes
 ### Backend
 - Backend repository: `like-delivery-backend-dev/`
 - API Documentation: Check backend README
-- Endpoints: `https://like-delivery-backend.onrender.com/`
+- Endpoints: `https://bearsystem.tech`
 
 ### External Links
 - [Next.js Documentation](https://nextjs.org/docs)

@@ -7,8 +7,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { type CompanyOrder, COLUMN_ACTIONS, formatCurrency } from '@/constants/order-management'
-import { ChefHat } from 'lucide-react'
+import {
+  type CompanyOrder,
+  formatCurrency,
+  getColumnForOrder,
+  COLUMN_ACTIONS,
+} from '@/constants/order-management'
+import { CheckCircle, ChefHat } from 'lucide-react'
 
 interface ActionOrderDialogProps {
   order: CompanyOrder | null
@@ -27,8 +32,10 @@ export function AcceptOrderDialog({
 }: ActionOrderDialogProps) {
   if (!order) return null
 
-  const columnId = order.status === 'ORDERED' ? 'new' : 'preparing'
-  const action = COLUMN_ACTIONS[columnId]
+  // Antes assumia 'preparing' para tudo que nao fosse ORDERED, o que mandava
+  // READY_FOR_PICKUP de volta para um pedido que ja estava pronto.
+  const columnId = getColumnForOrder(order)
+  const action = columnId === 'canceled' ? null : COLUMN_ACTIONS[columnId]
 
   const handleConfirm = () => {
     if (!action) return
@@ -45,7 +52,11 @@ export function AcceptOrderDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ChefHat className="h-5 w-5 text-blue-600" />
+            {columnId === 'ready' ? (
+              <CheckCircle className="h-5 w-5 text-emerald-600" />
+            ) : (
+              <ChefHat className="h-5 w-5 text-blue-600" />
+            )}
             {action?.label || 'Confirmar ação'} — Pedido #{orderNumber}
           </DialogTitle>
           <DialogDescription>
