@@ -132,7 +132,9 @@ export function MainHeader({
         address: result.display_name || query,
       });
     } catch {
-      setLocationError("Não encontramos esse local. Tente uma cidade ou bairro.");
+      setLocationError(
+        "Não encontramos esse local. Tente uma cidade ou bairro.",
+      );
     } finally {
       setLocationLoading(false);
     }
@@ -277,140 +279,141 @@ export function MainHeader({
       <div className="px-3 py-2 sm:px-6 sm:py-3">
         <div className="flex items-center justify-between gap-1">
           {/* Logo + Endereço */}
-              <div className="flex min-w-0 items-center gap-2">
-                <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
-                <div className="min-w-0 leading-tight">
-                  <Sheet
-                    open={locationOpen}
-                    onOpenChange={(open) => {
-                      setLocationOpen(open);
-                      if (open) {
-                        setIsChangingLocation(!hasSavedLocation);
-                        return;
-                      }
+          <div className="flex min-w-0 items-center gap-2">
+            <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
+            <div className="min-w-0 leading-tight">
+              <Sheet
+                open={locationOpen}
+                onOpenChange={(open) => {
+                  setLocationOpen(open);
+                  if (open) {
+                    setIsChangingLocation(!hasSavedLocation);
+                    return;
+                  }
 
-                      setLocationError("");
-                      setIsChangingLocation(false);
-                    }}
+                  setLocationError("");
+                  setIsChangingLocation(false);
+                }}
+              >
+                <SheetTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex max-w-[120px] cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-200 xs:max-w-[150px] sm:max-w-[260px]"
+                    title="Alterar endereço"
                   >
-                    <SheetTrigger asChild>
-                      <button
-                        type="button"
-                        className="flex max-w-[120px] cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-200 xs:max-w-[150px] sm:max-w-[260px]"
-                        title="Alterar endereço"
-                      >
-                        <MapPin className="h-3.5 w-3.5 shrink-0 fill-pink-500 text-pink-500" />
-                        <span className="truncate" title={locationLabel}>
-                          {locationLabel}
+                    <MapPin className="h-3.5 w-3.5 shrink-0 fill-pink-500 text-pink-500" />
+                    <span className="truncate" title={locationLabel}>
+                      {locationLabel}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent
+                  side="top"
+                  className="border-b border-orange-100 bg-white px-4 py-5 sm:px-6
+             max-h-[85dvh] overflow-y-auto overscroll-contain"
+                >
+                  <div className="mx-auto w-full max-w-xl space-y-4">
+                    <div className="space-y-1 pr-8">
+                      <SheetTitle className="text-lg font-bold text-gray-950">
+                        Endereço de entrega
+                      </SheetTitle>
+                      <p className="text-sm text-gray-500">
+                        Confira onde seu pedido será entregue ou troque para
+                        outro local.
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4 shadow-sm">
+                      <div className="flex gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
+                          <MapPin className="h-5 w-5 fill-pink-500" />
                         </span>
-                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                      </button>
-                    </SheetTrigger>
-                    <SheetContent
-                      side="top"
-                      className="border-b border-orange-100 bg-white px-4 py-5 sm:px-6"
-                    >
-                      <div className="mx-auto w-full max-w-xl space-y-4">
-                        <div className="space-y-1 pr-8">
-                          <SheetTitle className="text-lg font-bold text-gray-950">
-                            Endereço de entrega
-                          </SheetTitle>
-                          <p className="text-sm text-gray-500">
-                            Confira onde seu pedido será entregue ou troque para
-                            outro local.
+
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-orange-600">
+                            Entregando em
+                          </p>
+                          <p className="mt-1 text-sm font-semibold leading-snug text-gray-950">
+                            {currentLocationText}
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                            Esse endereço será usado para encontrar restaurantes
+                            próximos e calcular a entrega.
                           </p>
                         </div>
-
-                        <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4 shadow-sm">
-                          <div className="flex gap-3">
-                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
-                              <MapPin className="h-5 w-5 fill-pink-500" />
-                            </span>
-
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[11px] font-bold uppercase tracking-wide text-orange-600">
-                                Entregando em
-                              </p>
-                              <p className="mt-1 text-sm font-semibold leading-snug text-gray-950">
-                                {currentLocationText}
-                              </p>
-                              <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                                Esse endereço será usado para encontrar
-                                restaurantes próximos e calcular a entrega.
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                setManualLocation("");
-                                setLocationError("");
-                                setIsChangingLocation(true);
-                              }}
-                              className="h-11 justify-center rounded-xl border-orange-200 bg-white text-orange-600 hover:bg-orange-50"
-                            >
-                              <PencilLine className="mr-2 h-4 w-4" />
-                              Trocar endereço
-                            </Button>
-
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={locationLoading}
-                              onClick={handleCurrentLocation}
-                              className="h-11 justify-center rounded-xl border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                            >
-                              <Navigation className="mr-2 h-4 w-4" />
-                              Usar minha localização
-                            </Button>
-                          </div>
-                        </div>
-
-                        {(isChangingLocation || !hasSavedLocation) && (
-                          <form
-                            onSubmit={handleManualLocation}
-                            className="rounded-2xl border border-gray-200 bg-gray-50 p-3"
-                          >
-                            <p className="mb-3 text-sm font-semibold text-gray-950">
-                              {hasSavedLocation
-                                ? "Digite o novo endereço"
-                                : "Adicionar endereço"}
-                            </p>
-
-                            <div className="flex flex-col gap-2 sm:flex-row">
-                              <Input
-                                autoFocus
-                                value={manualLocation}
-                                onChange={(event) =>
-                                  setManualLocation(event.target.value)
-                                }
-                                placeholder="Ex.: Rua Machado de Assis, 334"
-                                className="h-11 rounded-xl bg-white"
-                              />
-                              <Button
-                                type="submit"
-                                disabled={locationLoading}
-                                className="h-11 shrink-0 rounded-xl bg-orange-500 px-5 hover:bg-orange-600"
-                              >
-                                {locationLoading ? "Buscando..." : "Salvar"}
-                              </Button>
-                            </div>
-                          </form>
-                        )}
-
-                        {locationError && (
-                          <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
-                            {locationError}
-                          </p>
-                        )}
                       </div>
-                    </SheetContent>
-                  </Sheet>
-                </div>
-              </div>
+
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setManualLocation("");
+                            setLocationError("");
+                            setIsChangingLocation(true);
+                          }}
+                          className="h-11 justify-center rounded-xl border-orange-200 bg-white text-orange-600 hover:bg-orange-50"
+                        >
+                          <PencilLine className="mr-2 h-4 w-4" />
+                          Trocar endereço
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={locationLoading}
+                          onClick={handleCurrentLocation}
+                          className="h-11 justify-center rounded-xl border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                        >
+                          <Navigation className="mr-2 h-4 w-4" />
+                          Usar minha localização
+                        </Button>
+                      </div>
+                    </div>
+
+                    {(isChangingLocation || !hasSavedLocation) && (
+                      <form
+                        onSubmit={handleManualLocation}
+                        className="rounded-2xl border border-gray-200 bg-gray-50 p-3"
+                      >
+                        <p className="mb-3 text-sm font-semibold text-gray-950">
+                          {hasSavedLocation
+                            ? "Digite o novo endereço"
+                            : "Adicionar endereço"}
+                        </p>
+
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Input
+                            autoFocus
+                            value={manualLocation}
+                            onChange={(event) =>
+                              setManualLocation(event.target.value)
+                            }
+                            placeholder="Ex.: Rua Machado de Assis, 334"
+                            className="h-11 rounded-xl bg-white"
+                          />
+                          <Button
+                            type="submit"
+                            disabled={locationLoading}
+                            className="h-11 shrink-0 rounded-xl bg-orange-500 px-5 hover:bg-orange-600"
+                          >
+                            {locationLoading ? "Buscando..." : "Salvar"}
+                          </Button>
+                        </div>
+                      </form>
+                    )}
+
+                    {locationError && (
+                      <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+                        {locationError}
+                      </p>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
 
           {/* Actions */}
           <div className="flex items-center space-x-3">
