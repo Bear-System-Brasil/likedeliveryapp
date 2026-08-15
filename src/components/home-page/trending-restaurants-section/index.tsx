@@ -10,6 +10,8 @@ import { Restaurant } from "@/components/ui/restaurant";
 import { Restaurant as RestaurantType } from "@/types/restaurant";
 import { NoRestaurantNear } from "@/components/ui/no-restaurant-near";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 type Props = {
   loading: boolean;
@@ -148,13 +150,16 @@ function StoreCategoriesFilter({
         <h3 className="text-sm sm:text-base font-bold text-gray-700">
           Categorias
         </h3>
-        <button
-          type="button"
-          onClick={() => onSelect(null)}
-          className="text-xs sm:text-sm font-semibold text-orange-600 transition-colors hover:text-orange-700"
+        <Link
+          href="/restaurants"
+          className="group flex items-center gap-1 rounded-full bg-orange-600 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white transition-colors hover:bg-orange-400"
         >
-          Ver todas
-        </button>
+          <span className="leading-none">Ver todas</span>
+          <ChevronRight
+            size={16}
+            className="shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
+          />
+        </Link>
       </div>
 
       <div className="flex gap-2 sm:gap-3 overflow-x-auto scroll-smooth scrollbar-hide py-1">
@@ -206,7 +211,8 @@ export function TrendingRestaurantsSection({
         return {
           id: categoryId,
           icon: category?.icon,
-          name: HOME_CATEGORY_LABELS[categoryId] ?? category?.name ?? categoryId,
+          name:
+            HOME_CATEGORY_LABELS[categoryId] ?? category?.name ?? categoryId,
         };
       }),
     [],
@@ -247,15 +253,15 @@ export function TrendingRestaurantsSection({
     return restaurantsNearUser.filter((restaurant) => {
       const restaurantTerms = [
         restaurant.description,
-        ...((restaurant.specialty ?? []).flatMap((specialty) => [
+        ...(restaurant.specialty ?? []).flatMap((specialty) => [
           specialty.id,
           specialty.name,
-        ])),
-        ...((restaurant.categories ?? []).flatMap((category) => [
+        ]),
+        ...(restaurant.categories ?? []).flatMap((category) => [
           category.id,
           category.name,
           category.description,
-        ])),
+        ]),
       ]
         .map(normalizeText)
         .filter(Boolean);
@@ -269,11 +275,7 @@ export function TrendingRestaurantsSection({
         ),
       );
     });
-  }, [
-    restaurantsNearUser,
-    selectedCategory?.name,
-    selectedStoreCategory,
-  ]);
+  }, [restaurantsNearUser, selectedCategory?.name, selectedStoreCategory]);
 
   const visibleStores = filteredStores.slice(0, visibleCount);
   const isInitialLoading = loading && !restaurants.length;
