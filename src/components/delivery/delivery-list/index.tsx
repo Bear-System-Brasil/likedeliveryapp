@@ -79,7 +79,7 @@ export function DeliveryList({ items, token }: Props) {
         setCurrentCoords(newCoords);
       },
       (err) => {
-        console.error("Erro na geolocalização :", err);
+        console.error("Erro na geolocalização:", err);
       },
       {
         enableHighAccuracy: true,
