@@ -86,6 +86,6 @@ export interface Restaurant {
   categories: Category[];
   specialty?: Specialty[];
 
-  /** Endereços da loja (a API retorna a chave com "A" maiusculo). */
+  /** Endereços da loja (a API retorna a chave com "A" maiúsculo). */
   Address?: Address[];
 }
