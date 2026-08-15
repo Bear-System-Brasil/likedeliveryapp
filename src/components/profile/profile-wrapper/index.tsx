@@ -1,18 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-
 import { useRouter } from "next/navigation";
-
 import { useProfileManagement } from "@/hooks";
-
 import { User } from "lucide-react";
-
 import { GradientButton } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import { DataCard } from "@/components/data-card";
-import { Footer } from "@/components/footer";
 import { PageHeader } from "@/components/page-header";
 import { Addresses } from "@/components/profile/addresses";
 import { OrderHistory } from "@/components/profile/order-history";
@@ -29,7 +23,6 @@ export function ProfileWrapper() {
     isAuthenticated,
     isLoadingProfile,
     profileError,
-
     // Profile
     profileForm,
     editingState,
@@ -37,7 +30,6 @@ export function ProfileWrapper() {
     handleSaveProfile,
     handleCancelEdit,
     handleUpdatePhoto,
-
     // Addresses
     addresses,
     isLoadingAddresses,
@@ -47,12 +39,13 @@ export function ProfileWrapper() {
     handleAddAddress,
     handleCloseAddressModal,
     handleDeleteAddress,
-
+    handleEditAddress,
+    editingAddressId,
     // CEP
     isLoadingCep,
   } = useProfileManagement();
 
-  // Redirect if not authenticated (must be before early returns)
+  // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated || !user) {
       router.push("/?openAuth=true");
@@ -77,7 +70,6 @@ export function ProfileWrapper() {
     return null;
   }
 
-  // Mostrar loading enquanto busca perfil
   if (isLoadingProfile) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -94,7 +86,6 @@ export function ProfileWrapper() {
     );
   }
 
-  // Mostrar erro se falhou ao carregar
   if (profileError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -114,83 +105,61 @@ export function ProfileWrapper() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-        <PageHeader
-          title="Meu Perfil"
-          description="Gerencie suas informações pessoais"
-          showBackButton
+      <PageHeader
+        title="Meu Perfil"
+        description="Gerencie suas informações pessoais"
+        showBackButton
+      />
+
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        {/* Profile Picture */}
+        <DataCard title="Foto de Perfil" icon={<User className="h-5 w-5" />}>
+          <UserPhotoUpload
+            value={user.photoUrl || ""}
+            onChange={handleUpdatePhoto}
+            userId={user.id}
+            userData={{
+              name: user.name,
+              email: user.email,
+              cpf: user.cpf,
+              phone: user.phone,
+            }}
+            label="Alterar Foto"
+            maxSizeMB={2}
+          />
+        </DataCard>
+
+        {/* Personal Information */}
+        <PersonalInformation
+          handleSaveProfile={handleSaveProfile}
+          handleCancelEdit={handleCancelEdit}
+          updateProfile={updateProfile}
+          editingState={editingState}
+          profileForm={profileForm}
+          user={user}
         />
 
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-          {/* Profile Picture */}
-          <DataCard title="Foto de Perfil" icon={<User className="h-5 w-5" />}>
-            <UserPhotoUpload
-              value={user.photoUrl || ""}
-              onChange={handleUpdatePhoto}
-              userId={user.id}
-              userData={{
-                name: user.name,
-                email: user.email,
-                cpf: user.cpf,
-                phone: user.phone,
-              }}
-              label="Alterar Foto"
-              maxSizeMB={2}
-            />
-          </DataCard>
+        {/* Order History */}
+        <OrderHistory />
 
-          {/* Personal Information */}
-          <PersonalInformation
-            handleSaveProfile={handleSaveProfile}
-            handleCancelEdit={handleCancelEdit}
-            updateProfile={updateProfile}
-            editingState={editingState}
-            profileForm={profileForm}
-            user={user}
-          />
+        {/* Addresses */}
+        <Addresses
+          handleCloseAddressModal={handleCloseAddressModal}
+          handleDeleteAddress={handleDeleteAddress}
+          handleAddAddress={handleAddAddress}
+          handleEditAddress={handleEditAddress}
+          editingAddressId={editingAddressId}
+          addingAddressState={addingAddressState}
+          isLoadingAddresses={isLoadingAddresses}
+          isSavingAddress={isSavingAddress}
+          isLoadingCep={isLoadingCep}
+          addressForm={addressForm}
+          addresses={addresses}
+        />
 
-          {/* Order History */}
-          <OrderHistory />
-
-          {/* Addresses */}
-          <Addresses
-            handleCloseAddressModal={handleCloseAddressModal}
-            handleDeleteAddress={handleDeleteAddress}
-            handleAddAddress={handleAddAddress}
-            addingAddressState={addingAddressState}
-            isLoadingAddresses={isLoadingAddresses}
-            isSavingAddress={isSavingAddress}
-            isLoadingCep={isLoadingCep}
-            addressForm={addressForm}
-            addresses={addresses}
-          />
-
-          {/* Payment Methods - TODO: Integrar com backend */}
-          {/* <DataCard
-          title="Métodos de Pagamento"
-          icon={<CreditCard className="h-5 w-5" />}
-        >
-          <div className="text-center py-8">
-            <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600">Funcionalidade em desenvolvimento</p>
-            <p className="text-sm text-gray-500 mt-2">Em breve você poderá gerenciar seus métodos de pagamento</p>
-          </div>
-        </DataCard> */}
-
-          {/* Order History - TODO: Integrar com backend */}
-          {/* <DataCard
-          title="Histórico de Pedidos"
-          icon={<MapPin className="h-5 w-5" />}
-        >
-          <div className="text-center py-8">
-            <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600">Nenhum pedido encontrado</p>
-            <p className="text-sm text-gray-500 mt-2">Seus pedidos anteriores aparecerão aqui</p>
-          </div>
-        </DataCard> */}
-
-          {/* Security */}
-          <Security />
-        </div>
+        {/* Security */}
+        <Security />
       </div>
+    </div>
   );
 }

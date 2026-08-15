@@ -37,6 +37,7 @@ export const useProfileManagement = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
   // CEP state
   const [isLoadingCep, setIsLoadingCep] = useState(false);
@@ -50,7 +51,6 @@ export const useProfileManagement = () => {
     phone: user?.phone || "",
     birthDate: user?.birthDate || "",
   });
-
   const addressForm = useAddressForm();
 
   // UI state management with custom hooks
@@ -74,13 +74,11 @@ export const useProfileManagement = () => {
     if (!isMounted) return;
 
     const fetchUserProfile = async () => {
-      // Check authentication
       if (!token || !isAuthenticated) {
         router.push("/?auth=required");
         return;
       }
 
-      // Redirect companies to company-profile page
       if (isCompanyRole(user?.role)) {
         router.push("/company-profile");
         return;
@@ -91,7 +89,6 @@ export const useProfileManagement = () => {
 
       try {
         const response = await apiService.getMe();
-
         if (response.success && response.data) {
           updateUser(response.data);
         } else {
@@ -116,7 +113,7 @@ export const useProfileManagement = () => {
   ]);
 
   /**
-   * Função para buscar endereços do backend (reutil izável)
+   * Função para buscar endereços do backend
    */
   const fetchAddresses = useCallback(async () => {
     if (!isAuthenticated || !user) return;
@@ -124,11 +121,9 @@ export const useProfileManagement = () => {
     setIsLoadingAddresses(true);
     try {
       const response = await apiService.address.getUserAddresses();
-
       if (response.success && response.data) {
         const addressesData = Array.isArray(response.data) ? response.data : [];
 
-        // Filtrar apenas endereços do usuário
         const userAddresses = addressesData.filter((addr) => {
           if (addr.customerId === user.id) return true;
           if (!addr.customerId && !addr.companyId) return true;
@@ -152,11 +147,9 @@ export const useProfileManagement = () => {
           })),
         );
       } else if (!response.success) {
-        // Erro na API - configurar endereços vazio sem mostrar toast
         setAddresses([]);
       }
     } catch (error) {
-      // Erro de rede ou outro - configurar endereços vazio
       setAddresses([]);
     } finally {
       setIsLoadingAddresses(false);
@@ -190,7 +183,6 @@ export const useProfileManagement = () => {
    */
   const fetchCepData = async (cep: string) => {
     const cleanCep = onlyNumbers(cep);
-
     if (cleanCep.length !== 8) return;
 
     setIsLoadingCep(true);
@@ -209,12 +201,10 @@ export const useProfileManagement = () => {
       }
 
       const data = await response.json();
-
       addressForm.setValue("street", data.street || "");
       addressForm.setValue("neighborhood", data.neighborhood || "");
       addressForm.setValue("city", data.city || "");
       addressForm.setValue("state", data.state || "");
-
       toast.success("CEP encontrado! Campos preenchidos automaticamente");
     } catch (error) {
       console.error("Erro ao buscar CEP:", error);
@@ -268,7 +258,30 @@ export const useProfileManagement = () => {
   };
 
   /**
-   * Adicionar novo endereço
+   * Abrir modal para editar endereço
+   */
+  const handleEditAddress = (address: Address) => {
+    addressForm.reset({
+      street: address.street,
+      number: address.number,
+      neighborhood: address.neighborhood,
+      city: address.city,
+      state: address.state,
+      zipCode: address.zipCode,
+      type: address.type,
+      complement: address.complement || "",
+      longitude: address.longitude,
+      latitude: address.latitude,
+      isDefault: address.isDefault ?? false,
+    });
+
+    setEditingAddressId(address.id);
+    setLastFetchedCep(onlyNumbers(address.zipCode));
+    addingAddressState.open();
+  };
+
+  /**
+   * Salvar endereço (cria ou atualiza)
    */
   const handleAddAddress = async (data: AddressFormData) => {
     setIsSavingAddress(true);
@@ -286,18 +299,21 @@ export const useProfileManagement = () => {
         isDefault: data.isDefault ?? false,
       };
 
-      // Se o novo endereço for padrão, desmarcar todos os outros no backend
+      // Se for marcado como padrão, desmarca os outros
       if (payload.isDefault) {
         const currentAddresses = await apiService.address.getUserAddresses();
         if (currentAddresses.success && currentAddresses.data) {
           const backendAddresses = Array.isArray(currentAddresses.data)
             ? currentAddresses.data
             : [];
+
           const backendDefaults = backendAddresses.filter(
             (addr) => (addr as any).isDefault,
           );
 
           for (const addr of backendDefaults) {
+            if (editingAddressId && addr.id === editingAddressId) continue;
+
             try {
               await apiService.address.updateUserAddress(addr.id, {
                 isDefault: false,
@@ -311,19 +327,45 @@ export const useProfileManagement = () => {
         }
       }
 
-      const response = await apiService.address.createUserAddress(payload);
+      let response;
 
-      if (response.success && response.data) {
+      if (editingAddressId) {
+        // UPDATE
+        response = await apiService.address.updateUserAddress(
+          editingAddressId,
+          payload,
+        );
+      } else {
+        // CREATE
+        response = await apiService.address.createUserAddress(payload);
+      }
+
+      if (response.success) {
         await fetchAddresses();
         addressForm.reset();
+        setEditingAddressId(null);
         addingAddressState.close();
         setLastFetchedCep(null);
-        toast.success("Endereço adicionado com sucesso!");
+
+        toast.success(
+          editingAddressId
+            ? "Endereço atualizado com sucesso!"
+            : "Endereço adicionado com sucesso!",
+        );
       } else {
-        toast.error(response.message || "Erro ao adicionar endereço");
+        toast.error(
+          response.message ||
+            (editingAddressId
+              ? "Erro ao atualizar endereço"
+              : "Erro ao adicionar endereço"),
+        );
       }
     } catch (error) {
-      toast.error("Erro ao adicionar endereço");
+      toast.error(
+        editingAddressId
+          ? "Erro ao atualizar endereço"
+          : "Erro ao adicionar endereço",
+      );
     } finally {
       setIsSavingAddress(false);
     }
@@ -335,6 +377,7 @@ export const useProfileManagement = () => {
   const handleCloseAddressModal = () => {
     addressForm.reset();
     setLastFetchedCep(null);
+    setEditingAddressId(null);
     addingAddressState.close();
   };
 
@@ -346,7 +389,6 @@ export const useProfileManagement = () => {
 
     try {
       const response = await apiService.address.deleteUserAddress(addressId);
-
       if (response.success) {
         setAddresses((prev) => prev.filter((addr) => addr.id !== addressId));
         toast.success("Endereço excluído com sucesso!");
@@ -367,7 +409,6 @@ export const useProfileManagement = () => {
     isAuthenticated,
     isLoadingProfile,
     profileError,
-
     // Profile
     profileForm,
     editingState,
@@ -375,7 +416,6 @@ export const useProfileManagement = () => {
     handleSaveProfile,
     handleCancelEdit,
     handleUpdatePhoto,
-
     // Addresses
     addresses,
     isLoadingAddresses,
@@ -385,7 +425,8 @@ export const useProfileManagement = () => {
     handleAddAddress,
     handleCloseAddressModal,
     handleDeleteAddress,
-
+    handleEditAddress,
+    editingAddressId,
     // CEP
     isLoadingCep,
     formatCep,

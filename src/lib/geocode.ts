@@ -21,7 +21,7 @@ export function normalizeText(value?: string | null) {
 
 /**
  * Converte latitude/longitude vindas da API (string, number ou null) em Coords.
- * Retorna null quando o endereco nao tem coordenada utilizavel.
+ * Retorna null quando o endereço nao tem coordenada utilizavel.
  */
 export function parseCoords(lat: unknown, lng: unknown): Coords | null {
   if (lat === null || lat === undefined || lat === "") return null;
@@ -37,7 +37,7 @@ export function parseCoords(lat: unknown, lng: unknown): Coords | null {
 }
 
 /**
- * Compara a cidade do cliente com a cidade de um endereco.
+ * Compara a cidade do cliente com a cidade de um endereço.
  * O valor do cliente pode vir como "Castelo" ou "Castelo, ES", entao usamos
  * apenas o primeiro trecho e aceitamos correspondencia parcial em nomes longos.
  */
@@ -78,7 +78,7 @@ async function searchNominatim(query: string): Promise<Coords | null> {
 }
 
 /**
- * Geocodifica um endereco. Tenta o endereco completo e, se nao encontrar,
+ * Geocodifica um endereço. Tenta o endereço completo e, se nao encontrar,
  * cai para bairro/cidade/estado - o suficiente para o filtro por raio.
  */
 export async function geocodeAddress(

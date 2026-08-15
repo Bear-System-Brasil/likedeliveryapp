@@ -31,7 +31,7 @@ export const useRestaurantActions = () => {
 
   const handleFindFood = (location: string) => {
     if (!location.trim()) {
-      alert("Por favor, digite sua localizacao");
+      alert("Por favor, digite sua localização ");
       return;
     }
 

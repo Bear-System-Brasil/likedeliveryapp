@@ -1,22 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import { useRouter, useSearchParams } from "next/navigation";
-
 import { useRestaurants, useSyncedUserLocation } from "@/hooks";
 import { useCartStore } from "@/stores";
 import { useAuth } from "@/contexts/auth-provider";
-
 import { AnimatedBackground } from "@/components/ui/custom";
-
 import { TrendingRestaurantsSection } from "@/components/home-page/trending-restaurants-section";
-
 import { CouponBanner } from "@/components/home-page/coupon-banner";
 import { MainHeader } from "@/components/main-header";
 import { MobileSearchTrigger } from "@/components/main-header/mobile-search-trigger";
 import { Footer } from "@/components/footer";
-
 import { Coords } from "@/types/restaurant";
 import { BannerCarousel } from "../banner-carousel";
 
@@ -29,12 +23,9 @@ export function LikeDeliveryAppPage({
 }: LikeDeliveryAppPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-
   const { showAuthModal } = useAuth();
   const { getTotalItems } = useCartStore();
-
   const { location } = useSyncedUserLocation(initialLocation);
-
   const [visibleCount, setVisibleCount] = useState(4);
 
   const { data: restaurants = [], isLoading: loadingCompanies } =
@@ -64,7 +55,6 @@ export function LikeDeliveryAppPage({
         () => setVisibleCount(restaurants.length),
         100,
       );
-
       return () => clearTimeout(timeout);
     }
   }, [loading, restaurants.length, visibleCount]);
@@ -102,7 +92,9 @@ export function LikeDeliveryAppPage({
           visibleCount={visibleCount}
           restaurants={restaurants}
           loading={loading}
+          hasUserLocation={Boolean(location)}
         />
+
         <Footer />
         <CouponBanner />
       </main>

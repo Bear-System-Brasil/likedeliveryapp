@@ -145,7 +145,7 @@ export function DeliveryForm({
 
   const handleUseLocation = () => {
     if (!navigator.geolocation) {
-      toast.error("Localizacao indisponivel neste dispositivo.");
+      toast.error("Localização  indisponivel neste dispositivo.");
       return;
     }
 
@@ -153,10 +153,10 @@ export function DeliveryForm({
       (position) => {
         handleInputChange("latitude", position.coords.latitude);
         handleInputChange("longitude", position.coords.longitude);
-        toast.success("Localizacao capturada.");
+        toast.success("Localização  capturada.");
       },
       () => {
-        toast.error("Nao foi possivel capturar sua localizacao.");
+        toast.error("Nao foi possivel capturar sua localização .");
       },
     );
   };
@@ -233,255 +233,264 @@ export function DeliveryForm({
       </section>
 
       {orderType === "delivery" && (
-      <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
-              <MapPin className="h-4 w-4" />
+        <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                <MapPin className="h-4 w-4" />
+              </div>
+              <h2 className="text-sm font-extrabold text-gray-950">
+                Endereço de entrega
+              </h2>
             </div>
-            <h2 className="text-sm font-extrabold text-gray-950">
-              Endereco de entrega
-            </h2>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleUseLocation}
-              className="h-8 px-2 text-xs font-bold text-orange-600 hover:bg-orange-50 hover:text-orange-700"
-            >
-              <LocateFixed className="h-4 w-4" />
-              Usar localizacao
-            </Button>
-
-            {!loadingAddresses && userAddresses.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={handleNewAddress}
-                className="h-8 rounded-lg border-[#E9EAEE] px-2 text-xs font-bold text-gray-800 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700"
+                onClick={handleUseLocation}
+                className="h-8 px-2 text-xs font-bold text-orange-600 hover:bg-orange-50 hover:text-orange-700"
               >
-                <Plus className="h-4 w-4" />
-                {addressMode === "select" ? "Novo endereco" : "Meus enderecos"}
+                <LocateFixed className="h-4 w-4" />
+                Usar localização
               </Button>
-            )}
-          </div>
-        </div>
 
-        {loadingAddresses && (
-          <div className="grid gap-2">
-            <Skeleton className="h-20 w-full rounded-lg" />
-            <Skeleton className="h-20 w-full rounded-lg" />
+              {!loadingAddresses && userAddresses.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNewAddress}
+                  className="h-8 rounded-lg border-[#E9EAEE] px-2 text-xs font-bold text-gray-800 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  {addressMode === "select"
+                    ? "Novo endereço"
+                    : "Meus endereços"}
+                </Button>
+              )}
+            </div>
           </div>
-        )}
 
-        {!loadingAddresses &&
-          addressMode === "select" &&
-          userAddresses.length > 0 && (
+          {loadingAddresses && (
             <div className="grid gap-2">
-              {userAddresses.map((address) => {
-                const isSelected = selectedAddressId === address.id;
-
-                return (
-                  <button
-                    key={address.id}
-                    type="button"
-                    onClick={() => handleAddressSelect(address.id)}
-                    className={cn(
-                      "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors",
-                      isSelected
-                        ? "border-orange-500 bg-orange-50"
-                        : "border-[#E9EAEE] bg-[#FAFAFB] hover:border-orange-300 hover:bg-white",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
-                        isSelected
-                          ? "border-orange-500 bg-orange-500 text-white"
-                          : "border-gray-300 bg-white text-transparent",
-                      )}
-                    >
-                      <Check className="h-3 w-3" />
-                    </span>
-
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-bold text-gray-950">
-                        {address.street}, {address.number}
-                      </span>
-                      <span className="mt-0.5 block text-xs font-semibold text-gray-600">
-                        {address.neighborhood} - {address.city}/{address.state}
-                      </span>
-                      <span className="mt-0.5 block text-xs font-medium text-gray-500">
-                        CEP {address.zipCode}
-                        {address.complement ? ` · ${address.complement}` : ""}
-                      </span>
-                    </span>
-
-                    {address.isDefault && (
-                      <span className="rounded-md bg-gray-950 px-2 py-1 text-[10px] font-bold text-white">
-                        Padrao
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              <Skeleton className="h-20 w-full rounded-lg" />
+              <Skeleton className="h-20 w-full rounded-lg" />
             </div>
           )}
 
-        {shouldShowNewAddress && (
-          <div className="space-y-3">
-            {userAddresses.length === 0 && (
-              <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
-                Preencha os dados abaixo para entregar este pedido.
+          {!loadingAddresses &&
+            addressMode === "select" &&
+            userAddresses.length > 0 && (
+              <div className="grid gap-2">
+                {userAddresses.map((address) => {
+                  const isSelected = selectedAddressId === address.id;
+
+                  return (
+                    <button
+                      key={address.id}
+                      type="button"
+                      onClick={() => handleAddressSelect(address.id)}
+                      className={cn(
+                        "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors",
+                        isSelected
+                          ? "border-orange-500 bg-orange-50"
+                          : "border-[#E9EAEE] bg-[#FAFAFB] hover:border-orange-300 hover:bg-white",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                          isSelected
+                            ? "border-orange-500 bg-orange-500 text-white"
+                            : "border-gray-300 bg-white text-transparent",
+                        )}
+                      >
+                        <Check className="h-3 w-3" />
+                      </span>
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-bold text-gray-950">
+                          {address.street}, {address.number}
+                        </span>
+                        <span className="mt-0.5 block text-xs font-semibold text-gray-600">
+                          {address.neighborhood} - {address.city}/
+                          {address.state}
+                        </span>
+                        <span className="mt-0.5 block text-xs font-medium text-gray-500">
+                          CEP {address.zipCode}
+                          {address.complement ? ` · ${address.complement}` : ""}
+                        </span>
+                      </span>
+
+                      {address.isDefault && (
+                        <span className="rounded-md bg-gray-950 px-2 py-1 text-[10px] font-bold text-white">
+                          Padrao
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-4">
-              <Field htmlFor="zipCode" label="CEP">
-                <Input
-                  id="zipCode"
-                  placeholder="00000-000"
-                  value={deliveryInfo.zipCode}
-                  maxLength={9}
-                  onChange={(e) => handleZipCode(formatCep(e.target.value))}
-                  disabled={isLoadingCep}
-                  className={inputClass}
-                />
-              </Field>
+          {shouldShowNewAddress && (
+            <div className="space-y-3">
+              {userAddresses.length === 0 && (
+                <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
+                  Preencha os dados abaixo para entregar este pedido.
+                </div>
+              )}
 
-              <Field htmlFor="state" label="Estado">
-                <Input
-                  id="state"
-                  placeholder="SP"
-                  value={deliveryInfo.state}
-                  onChange={(e) => handleInputChange("state", e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
+              <div className="grid grid-cols-1 gap-2.5 md:grid-cols-4">
+                <Field htmlFor="zipCode" label="CEP">
+                  <Input
+                    id="zipCode"
+                    placeholder="00000-000"
+                    value={deliveryInfo.zipCode}
+                    maxLength={9}
+                    onChange={(e) => handleZipCode(formatCep(e.target.value))}
+                    disabled={isLoadingCep}
+                    className={inputClass}
+                  />
+                </Field>
 
-              <Field htmlFor="city" label="Cidade" className="md:col-span-2">
-                <Input
-                  id="city"
-                  placeholder="Sao Paulo"
-                  value={deliveryInfo.city}
-                  onChange={(e) => handleInputChange("city", e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
+                <Field htmlFor="state" label="Estado">
+                  <Input
+                    id="state"
+                    placeholder="SP"
+                    value={deliveryInfo.state}
+                    onChange={(e) => handleInputChange("state", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
 
-              <p className="text-xs font-semibold text-gray-500 md:col-span-4">
-                {isLoadingCep
-                  ? "Buscando CEP..."
-                  : "Digite o CEP e os campos serao preenchidos."}
-              </p>
+                <Field htmlFor="city" label="Cidade" className="md:col-span-2">
+                  <Input
+                    id="city"
+                    placeholder="Sao Paulo"
+                    value={deliveryInfo.city}
+                    onChange={(e) => handleInputChange("city", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
 
-              <Field
-                htmlFor="neighborhood"
-                label="Bairro"
-                className="md:col-span-2"
-              >
-                <Input
-                  id="neighborhood"
-                  placeholder="Centro"
-                  value={deliveryInfo.neighborhood}
-                  onChange={(e) =>
-                    handleInputChange("neighborhood", e.target.value)
-                  }
-                  className={inputClass}
-                />
-              </Field>
+                <p className="text-xs font-semibold text-gray-500 md:col-span-4">
+                  {isLoadingCep
+                    ? "Buscando CEP..."
+                    : "Digite o CEP e os campos serao preenchidos."}
+                </p>
 
-              <Field htmlFor="street" label="Rua">
-                <Input
-                  id="street"
-                  placeholder="Rua das Flores"
-                  value={deliveryInfo.street}
-                  onChange={(e) => handleInputChange("street", e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
+                <Field
+                  htmlFor="neighborhood"
+                  label="Bairro"
+                  className="md:col-span-2"
+                >
+                  <Input
+                    id="neighborhood"
+                    placeholder="Centro"
+                    value={deliveryInfo.neighborhood}
+                    onChange={(e) =>
+                      handleInputChange("neighborhood", e.target.value)
+                    }
+                    className={inputClass}
+                  />
+                </Field>
 
-              <Field htmlFor="number" label="Numero">
-                <Input
-                  id="number"
-                  placeholder="123"
-                  value={deliveryInfo.number}
-                  onChange={(e) => handleInputChange("number", e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
+                <Field htmlFor="street" label="Rua">
+                  <Input
+                    id="street"
+                    placeholder="Rua das Flores"
+                    value={deliveryInfo.street}
+                    onChange={(e) =>
+                      handleInputChange("street", e.target.value)
+                    }
+                    className={inputClass}
+                  />
+                </Field>
 
-              <Field
-                htmlFor="complement"
-                label="Complemento"
-                optional
-                className="md:col-span-2"
-              >
-                <Input
-                  id="complement"
-                  placeholder="Apartamento, bloco..."
-                  value={deliveryInfo.complement}
-                  onChange={(e) =>
-                    handleInputChange("complement", e.target.value)
-                  }
-                  className={inputClass}
-                />
-              </Field>
+                <Field htmlFor="number" label="Numero">
+                  <Input
+                    id="number"
+                    placeholder="123"
+                    value={deliveryInfo.number}
+                    onChange={(e) =>
+                      handleInputChange("number", e.target.value)
+                    }
+                    className={inputClass}
+                  />
+                </Field>
 
-              <Field
-                htmlFor="reference"
-                label="Ponto de referencia"
-                optional
-                className="md:col-span-2"
-              >
-                <Input
-                  id="reference"
-                  placeholder="Proximo ao mercado"
-                  value={deliveryInfo.reference}
-                  onChange={(e) =>
-                    handleInputChange("reference", e.target.value)
-                  }
-                  className={inputClass}
-                />
-              </Field>
-            </div>
+                <Field
+                  htmlFor="complement"
+                  label="Complemento"
+                  optional
+                  className="md:col-span-2"
+                >
+                  <Input
+                    id="complement"
+                    placeholder="Apartamento, bloco..."
+                    value={deliveryInfo.complement}
+                    onChange={(e) =>
+                      handleInputChange("complement", e.target.value)
+                    }
+                    className={inputClass}
+                  />
+                </Field>
 
-            <div className="rounded-lg border border-[#E9EAEE] bg-[#FAFAFB] p-2.5">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-gray-800">
-                  Localizacao no mapa
-                </span>
-                <span className="text-[11px] font-semibold text-gray-500">
-                  Clique no mapa para ajustar
-                </span>
+                <Field
+                  htmlFor="reference"
+                  label="Ponto de referencia"
+                  optional
+                  className="md:col-span-2"
+                >
+                  <Input
+                    id="reference"
+                    placeholder="Proximo ao mercado"
+                    value={deliveryInfo.reference}
+                    onChange={(e) =>
+                      handleInputChange("reference", e.target.value)
+                    }
+                    className={inputClass}
+                  />
+                </Field>
               </div>
-              <CheckoutMap
-                mapHeight={220}
-                updateCoords={(key, value) => handleInputChange(key, value)}
-              />
-            </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              <Checkbox
-                id="saveAddress"
-                checked={saveAddress}
-                onCheckedChange={(checked) => setSaveAddress(Boolean(checked))}
-                className="rounded-md border-gray-300 data-[state=checked]:bg-orange-500"
-              />
-              <Label
-                htmlFor="saveAddress"
-                className="cursor-pointer text-xs font-semibold text-gray-700"
-              >
-                Salvar este endereco para pedidos futuros
-              </Label>
+              <div className="rounded-lg border border-[#E9EAEE] bg-[#FAFAFB] p-2.5">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-gray-800">
+                    Localização no mapa
+                  </span>
+                  <span className="text-[11px] font-semibold text-gray-500">
+                    Clique no mapa para ajustar
+                  </span>
+                </div>
+                <CheckoutMap
+                  mapHeight={220}
+                  updateCoords={(key, value) => handleInputChange(key, value)}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox
+                  id="saveAddress"
+                  checked={saveAddress}
+                  onCheckedChange={(checked) =>
+                    setSaveAddress(Boolean(checked))
+                  }
+                  className="rounded-md border-gray-300 data-[state=checked]:bg-orange-500"
+                />
+                <Label
+                  htmlFor="saveAddress"
+                  className="cursor-pointer text-xs font-semibold text-gray-700"
+                >
+                  Salvar este endereço para pedidos futuros
+                </Label>
+              </div>
             </div>
-          </div>
-        )}
-      </section>
+          )}
+        </section>
       )}
 
       {orderType === "pickup" && (
@@ -502,7 +511,7 @@ export function DeliveryForm({
                 {restaurant?.name || "Restaurante"}
               </p>
               <p className="mt-0.5 text-xs font-semibold text-orange-700">
-                {restaurant?.address || "Endereco disponivel apos confirmacao"}
+                {restaurant?.address || "Endereço disponivel apos confirmacao"}
               </p>
               <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-orange-600">
                 <Clock className="h-3.5 w-3.5" />
