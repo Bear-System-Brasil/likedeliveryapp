@@ -9,6 +9,7 @@ import {
   House,
   LayoutDashboard,
   LayoutGrid,
+  LogOut,
   Settings,
   ThumbsUp,
   TrendingUp,
@@ -19,8 +20,9 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/auth-provider";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -90,9 +92,17 @@ const navGroups = [
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
+
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+    onClose?.();
+  };
 
   return (
     <div className="flex h-full flex-col bg-white text-[#14161A]">
@@ -159,6 +169,17 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         ))}
       </nav>
 
+      <div className="shrink-0 border-t border-[#E9EAEE] px-3 pb-3 pt-3">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex h-[38px] w-full items-center gap-[11px] rounded-[14px] bg-[#FF6B00] px-3 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(255,107,0,0.35)] transition-colors hover:bg-[#FF8A33] cursor-pointer"
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          <span className="truncate">Sair da conta</span>
+        </button>
+      </div>
+
       <div className="shrink-0 border-t border-[#E9EAEE] px-[18px] py-[14px] text-center text-[10.5px] font-semibold text-[#A2A7B0]">
         v1.0.0
       </div>
@@ -172,8 +193,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     setIsDesktop(mq.matches);
-    const handler = (event: MediaQueryListEvent) =>
-      setIsDesktop(event.matches);
+    const handler = (event: MediaQueryListEvent) => setIsDesktop(event.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
