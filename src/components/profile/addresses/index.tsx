@@ -158,6 +158,7 @@ export function Addresses({
                     size="sm"
                     onClick={() => handleEditAddress(address)}
                     className="text-gray-600 hover:text-orange-600 hover:bg-orange-50"
+                    aria-label="Editar endereço"
                     title="Editar endereço"
                   >
                     <Pencil className="h-4 w-4" />
