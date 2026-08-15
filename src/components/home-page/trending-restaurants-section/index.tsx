@@ -176,6 +176,7 @@ function StoreCategoriesFilter({
         {/* Seta esquerda - só aparece a partir de sm */}
         <button
           type="button"
+          aria-label="Rolar categorias para a esquerda"
           onClick={() => scrollCategories("left")}
           className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/80 shadow-md border border-gray-200 items-center justify-center hover:bg-white transition-colors"
         >
