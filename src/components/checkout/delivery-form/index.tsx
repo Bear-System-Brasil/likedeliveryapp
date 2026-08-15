@@ -145,7 +145,7 @@ export function DeliveryForm({
 
   const handleUseLocation = () => {
     if (!navigator.geolocation) {
-      toast.error("Localização  indisponivel neste dispositivo.");
+      toast.error("Localização indisponível neste dispositivo.");
       return;
     }
 
