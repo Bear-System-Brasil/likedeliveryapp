@@ -152,12 +152,14 @@ function StoreCategoriesFilter({
         </h3>
         <Link
           href="/restaurants"
-          className="group flex items-center gap-1 rounded-full bg-orange-600 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white transition-colors hover:bg-orange-400"
+          className="group inline-flex items-center gap-1 rounded-full bg-orange-600 px-2.5 py-1.5 text-xs sm:text-sm font-semibold leading-none text-white transition-all duration-200 hover:bg-orange-700 hover:shadow-md"
         >
-          <span className="leading-none">Ver todas</span>
+          <span>Ver todas</span>
+
           <ChevronRight
             size={16}
-            className="shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
+            strokeWidth={2.5}
+            className="relative top-px shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
           />
         </Link>
       </div>
