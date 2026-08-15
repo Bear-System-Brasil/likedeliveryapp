@@ -115,9 +115,7 @@ export const useCheckoutProcess = () => {
   const [saveAddress, setSaveAddress] = useState(true);
 
   // Delivery vs pickup
-  const [orderType, setOrderType] = useState<"delivery" | "pickup">(
-    "delivery",
-  );
+  const [orderType, setOrderType] = useState<"delivery" | "pickup">("delivery");
 
   // Form state
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
@@ -238,7 +236,7 @@ export const useCheckoutProcess = () => {
 
   /**
    * Valida os dados de entrega (etapa 1 do checkout)
-   * Endereco so e obrigatorio quando o pedido e para entrega
+   * Endereço so e obrigatorio quando o pedido e para entrega
    */
   const isDeliveryValid = () => {
     const contactValid = Boolean(deliveryInfo.name && deliveryInfo.phone);
@@ -249,12 +247,12 @@ export const useCheckoutProcess = () => {
 
     return Boolean(
       contactValid &&
-        deliveryInfo.street &&
-        deliveryInfo.number &&
-        deliveryInfo.neighborhood &&
-        deliveryInfo.city &&
-        deliveryInfo.state &&
-        deliveryInfo.zipCode,
+      deliveryInfo.street &&
+      deliveryInfo.number &&
+      deliveryInfo.neighborhood &&
+      deliveryInfo.city &&
+      deliveryInfo.state &&
+      deliveryInfo.zipCode,
     );
   };
 
@@ -279,9 +277,9 @@ export const useCheckoutProcess = () => {
       (paymentMethod !== "credit" && paymentMethod !== "debit") ||
       Boolean(
         cardInfo.number.trim() &&
-          cardInfo.expiry.trim() &&
-          cardInfo.cvv.trim() &&
-          cardInfo.name.trim(),
+        cardInfo.expiry.trim() &&
+        cardInfo.cvv.trim() &&
+        cardInfo.name.trim(),
       );
 
     // Se é dinheiro e precisa de troco, validar valor

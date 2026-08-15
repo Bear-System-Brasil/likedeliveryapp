@@ -7,7 +7,7 @@ export interface Coords {
   lat: number;
 }
 
-/** Localizacao escolhida pelo cliente (cookie `userLocation`). */
+/** Localização  escolhida pelo cliente (cookie `userLocation`). */
 export interface UserLocation extends Coords {
   city?: string;
 }
@@ -86,6 +86,6 @@ export interface Restaurant {
   categories: Category[];
   specialty?: Specialty[];
 
-  /** Enderecos da loja (a API retorna a chave com "A" maiusculo). */
+  /** Endereços da loja (a API retorna a chave com "A" maiúsculo). */
   Address?: Address[];
 }

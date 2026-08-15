@@ -99,7 +99,7 @@ export function DeliveryMap({ userToken, deliveryCoord }: Props) {
         }
       },
       (err) => {
-        console.error("Erro na geolocalizacao:", err);
+        console.error("Erro na geolocalização:", err);
       },
       {
         enableHighAccuracy: true,

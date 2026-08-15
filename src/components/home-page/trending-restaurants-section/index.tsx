@@ -1,23 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { RESTAURANT_CATEGORIES } from "@/constants";
 import { RestaurantGridSkeleton } from "@/components/restaurant-card-skeleton";
-
 import { Restaurant } from "@/components/ui/restaurant";
-
 import { Restaurant as RestaurantType } from "@/types/restaurant";
 import { NoRestaurantNear } from "@/components/ui/no-restaurant-near";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {
   loading: boolean;
   restaurants: RestaurantType[];
   visibleCount: number;
   trendingRestaurants: RestaurantType[];
+  hasUserLocation?: boolean;
 };
 
 type RestaurantListBlockProps = {
@@ -144,6 +142,17 @@ function StoreCategoriesFilter({
   selectedValue: string | null;
   onSelect: (value: string | null) => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategories = (direction: "left" | "right") => {
+    if (!scrollRef.current) return;
+    const amount = 200;
+    scrollRef.current.scrollBy({
+      left: direction === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <div className="mb-3 sm:mb-4">
       <div className="mb-1.5 sm:mb-2 flex items-center justify-between gap-3 sm:gap-4">
@@ -155,7 +164,6 @@ function StoreCategoriesFilter({
           className="group inline-flex items-center gap-1 rounded-full bg-orange-600 px-2.5 py-1.5 text-xs sm:text-sm font-semibold leading-none text-white transition-all duration-200 hover:bg-orange-700 hover:shadow-md"
         >
           <span>Ver todas</span>
-
           <ChevronRight
             size={16}
             strokeWidth={2.5}
@@ -164,29 +172,53 @@ function StoreCategoriesFilter({
         </Link>
       </div>
 
-      <div className="flex gap-2 sm:gap-3 overflow-x-auto scroll-smooth scrollbar-hide py-1">
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            type="button"
-            onClick={() =>
-              onSelect(selectedValue === category.id ? null : category.id)
-            }
-            className={cn(
-              "shrink-0 flex h-8 sm:h-9 items-center gap-1.5 sm:gap-2 rounded-full border px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap shadow-sm transition-all",
-              selectedValue === category.id
-                ? "bg-orange-500 text-white border-orange-500"
-                : "bg-white border-gray-200 text-gray-800 hover:border-orange-200 hover:bg-orange-50",
-            )}
-          >
-            {category.icon && (
-              <span className="text-xs sm:text-sm leading-none">
-                {category.icon}
-              </span>
-            )}
-            {category.name}
-          </button>
-        ))}
+      <div className="relative">
+        {/* Seta esquerda - só aparece a partir de sm */}
+        <button
+          type="button"
+          aria-label="Rolar categorias para a esquerda"
+          onClick={() => scrollCategories("left")}
+          className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/80 shadow-md border border-gray-200 items-center justify-center hover:bg-white transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        <div
+          ref={scrollRef}
+          className="flex gap-2 sm:gap-3 overflow-x-auto scroll-smooth scrollbar-hide py-1"
+        >
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() =>
+                onSelect(selectedValue === category.id ? null : category.id)
+              }
+              className={cn(
+                "shrink-0 flex h-8 sm:h-9 items-center gap-1.5 sm:gap-2 rounded-full border px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap shadow-sm transition-all",
+                selectedValue === category.id
+                  ? "bg-orange-500 text-white border-orange-500"
+                  : "bg-white border-gray-200 text-gray-800 hover:border-orange-200 hover:bg-orange-50",
+              )}
+            >
+              {category.icon && (
+                <span className="text-xs sm:text-sm leading-none">
+                  {category.icon}
+                </span>
+              )}
+              {category.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Seta direita - só aparece a partir de sm */}
+        <button
+          type="button"
+          onClick={() => scrollCategories("right")}
+          className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/80 shadow-md border border-gray-200 items-center justify-center hover:bg-white transition-colors"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );
@@ -197,8 +229,8 @@ export function TrendingRestaurantsSection({
   visibleCount,
   restaurants,
   loading,
+  hasUserLocation = false,
 }: Props) {
-  const [location, setLocation] = useState("");
   const [selectedStoreCategory, setSelectedStoreCategory] = useState<
     string | null
   >(null);
@@ -220,9 +252,9 @@ export function TrendingRestaurantsSection({
     [],
   );
 
-  // A API ja filtra por raio quando recebe lat/lng. Aqui so descartamos o que
-  // vier marcado explicitamente como fora do raio - `undefined` significa
-  // "resposta sem calculo de distancia" e nao pode esconder a loja.
+  // A API já filtra por raio quando recebe lat/lng.
+  // Aqui só descartamos o que vier marcado explicitamente como fora do raio.
+  // `undefined` significa "resposta sem cálculo de distância" e não pode esconder a loja.
   const restaurantsNearUser = useMemo(
     () =>
       restaurants.filter((restaurant) => restaurant.isWithinRadius !== false),
@@ -281,45 +313,7 @@ export function TrendingRestaurantsSection({
 
   const visibleStores = filteredStores.slice(0, visibleCount);
   const isInitialLoading = loading && !restaurants.length;
-  const shouldAskForLocation = !location && !restaurants.length;
-
-  useEffect(() => {
-    const handler = () => {
-      const findLocation = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("userLocation="));
-
-      const foundLocation = findLocation ? findLocation.split("=")[1] : "";
-
-      if (foundLocation) {
-        try {
-          const decodedLocation = decodeURIComponent(foundLocation);
-          const parsedLocation = JSON.parse(decodedLocation);
-
-          if (
-            typeof parsedLocation === "object" &&
-            parsedLocation !== null &&
-            "lat" in parsedLocation &&
-            "lng" in parsedLocation
-          ) {
-            setLocation(`${parsedLocation.lat}, ${parsedLocation.lng}`);
-          } else {
-            setLocation(decodedLocation);
-          }
-        } catch {
-          setLocation(foundLocation);
-        }
-      } else {
-        setLocation("");
-      }
-    };
-
-    handler();
-
-    window.addEventListener("locationChanged", handler);
-
-    return () => window.removeEventListener("locationChanged", handler);
-  }, []);
+  const shouldAskForLocation = !hasUserLocation && !restaurants.length;
 
   return (
     <div className="px-3 sm:px-4 mb-6 sm:mb-10">
@@ -333,7 +327,7 @@ export function TrendingRestaurantsSection({
           emptyTitle="Nenhuma novidade encontrada"
           emptyMessage={
             shouldAskForLocation
-              ? "Escolha um endereco para ver as novidades perto de voce."
+              ? "Escolha um endereço para ver as novidades perto de voce."
               : "Ainda nao ha novidades perto de voce."
           }
         />

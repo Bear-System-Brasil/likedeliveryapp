@@ -8,14 +8,14 @@ import { toast } from "sonner";
 
 /**
  * A busca por proximidade do catalogo descarta qualquer loja sem
- * latitude/longitude cadastrada. Por isso geocodificamos o endereco antes de
- * salvar - sem isso a loja fica invisivel para todo cliente com localizacao.
+ * latitude/longitude cadastrada. Por isso geocodificamos o endereço antes de
+ * salvar - sem isso a loja fica invisivel para todo cliente com localização .
  */
 async function withStoreCoordinates<T extends AddressFormData>(address: T) {
   const coords = await geocodeAddress(address);
 
   if (!coords) {
-    toast.warning("Nao localizamos esse endereco no mapa", {
+    toast.warning("Nao localizamos esse endereço no mapa", {
       description:
         "Confira CEP, rua e numero. Sem isso a loja nao aparece nas buscas por proximidade.",
       duration: 6000,
@@ -70,7 +70,9 @@ export const useCompanyProfileManagement = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [companySpecialities, setCompanySpecialities] = useState<Speciality[]>([]);
+  const [companySpecialities, setCompanySpecialities] = useState<Speciality[]>(
+    [],
+  );
   const [isSavingSpeciality, setIsSavingSpeciality] = useState(false);
 
   const [formData, setFormData] = useState<CompanyFormData>({
@@ -245,11 +247,14 @@ export const useCompanyProfileManagement = () => {
       }
 
       // Assign new speciality
-      const response = await apiService.assignSpecialityToCompany(newSpecialityId);
+      const response =
+        await apiService.assignSpecialityToCompany(newSpecialityId);
       if (response.success) {
         setSelectedCategory(newSpecialityId);
         // Refresh company specialities
-        const companyResponse = await apiService.companies.getById(user.companyId || user.id);
+        const companyResponse = await apiService.companies.getById(
+          user.companyId || user.id,
+        );
         if (companyResponse.success && companyResponse.data) {
           const specs = (companyResponse.data as any).speciality || [];
           setCompanySpecialities(specs);
@@ -344,7 +349,10 @@ export const useCompanyProfileManagement = () => {
         updateData.cover_url = formData.cover_url;
       }
 
-      const response = await apiService.companies.update(user.companyId || user.id, updateData);
+      const response = await apiService.companies.update(
+        user.companyId || user.id,
+        updateData,
+      );
 
       if (response.success && response.data) {
         toast.success("Perfil atualizado com sucesso!");

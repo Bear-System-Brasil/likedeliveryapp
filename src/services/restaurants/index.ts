@@ -56,7 +56,7 @@ export async function getActiveRestaurants(userLocation?: UserLocation) {
 
   const nearbyIds = new Set(nearby.map((restaurant) => restaurant.id));
 
-  // Loja sem geocodificacao so entra se o endereco for da cidade do cliente.
+  // Loja sem geocodificacao so entra se o endereço for da cidade do cliente.
   const unmappedInUserCity = catalogResponse.data
     .filter(
       (restaurant) =>

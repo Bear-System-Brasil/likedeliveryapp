@@ -80,7 +80,7 @@ export function DeliveryWrapper() {
       toast.error(
         orderType === "pickup"
           ? "Preencha nome e telefone para continuar."
-          : "Preencha nome, telefone e endereco para continuar.",
+          : "Preencha nome, telefone e endereço para continuar.",
       );
       return;
     }
@@ -206,9 +206,7 @@ export function DeliveryWrapper() {
             </button>
 
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-extrabold text-gray-950">
-                Checkout
-              </h1>
+              <h1 className="text-xl font-extrabold text-gray-950">Checkout</h1>
               {restaurant?.name && (
                 <p className="truncate text-xs font-semibold text-gray-500">
                   {restaurant.name}
