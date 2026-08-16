@@ -106,10 +106,15 @@ export const useUpdateAddress = () => {
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       // 1. Se está marcando como padrão, desmarcar os outros usando o cache (muito mais rápido)
       if (data.isDefault === true) {
-        const currentAddresses =
-          queryClient.getQueryData<any[]>(["addresses", "user", user?.id]) ||
+        let currentAddresses =
+          queryClient.getQueryData<Address[]>(["addresses", "user", user?.id]) ??
           [];
 
+        if (currentAddresses.length === 0) {
+          const res = await apiService.address.getUserAddresses();
+          currentAddresses =
+            res.success && Array.isArray(res.data) ? res.data : [];
+        }
         const defaultAddresses = currentAddresses.filter(
           (addr) => addr.isDefault && addr.id !== id,
         );
