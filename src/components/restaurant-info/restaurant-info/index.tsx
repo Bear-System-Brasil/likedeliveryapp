@@ -81,7 +81,9 @@ export default function RestaurantPage() {
   const categoryMap = useMemo(() => {
     if (!allCategories) return {};
 
-    return Object.fromEntries(allCategories.map((category: any) => [category.id, category.name]));
+    return Object.fromEntries(
+      allCategories.map((category: any) => [category.id, category.name]),
+    );
   }, [allCategories]);
 
   const categories = useMemo(() => {
@@ -102,13 +104,15 @@ export default function RestaurantPage() {
     return menuItems.filter((item: any) =>
       (item.productCategories || []).some(
         (productCategory: any) =>
-          getProductCategoryName(productCategory, categoryMap) === selectedCategory,
+          getProductCategoryName(productCategory, categoryMap) ===
+          selectedCategory,
       ),
     );
   }, [categoryMap, menuItems, selectedCategory]);
 
   const restaurantData = restaurant as any;
-  const specialties = restaurantData?.specialty || restaurantData?.speciality || [];
+  const specialties =
+    restaurantData?.specialty || restaurantData?.speciality || [];
   const restaurantCategory =
     specialties[0]?.name || restaurantData?.categories?.[0]?.name || "Delivery";
   const restaurantRating = Number(restaurantData?.rating || 0);
@@ -137,10 +141,7 @@ export default function RestaurantPage() {
   };
 
   return (
-    <AnimatedBackground
-      showBlobs={false}
-      className="bg-[#f4f5f7] py-0"
-    >
+    <AnimatedBackground showBlobs={false} className="bg-[#f4f5f7] py-0">
       <MainHeader
         cartItems={totalItems}
         onCartClick={() => router.push("/cart")}
@@ -193,8 +194,16 @@ export default function RestaurantPage() {
                     type="button"
                     onClick={() => setIsFavorite((favorite) => !favorite)}
                     className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-gray-700 shadow-sm transition hover:bg-white"
-                    aria-label={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-                    title={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                    aria-label={
+                      isFavorite
+                        ? "Remover dos favoritos"
+                        : "Adicionar aos favoritos"
+                    }
+                    title={
+                      isFavorite
+                        ? "Remover dos favoritos"
+                        : "Adicionar aos favoritos"
+                    }
                   >
                     <Heart
                       className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`}
@@ -380,7 +389,8 @@ export default function RestaurantPage() {
                 <ShoppingBag className="h-4 w-4 shrink-0 text-orange-400" />
                 <div className="min-w-0">
                   <p className="truncate text-xs font-bold sm:text-sm">
-                    {totalItems} {totalItems === 1 ? "item" : "itens"} no carrinho
+                    {totalItems} {totalItems === 1 ? "item" : "itens"} no
+                    carrinho
                   </p>
                   <p className="text-[11px] font-medium text-gray-300 sm:text-xs">
                     Total: {formatCurrency(totalPrice || 0)}
