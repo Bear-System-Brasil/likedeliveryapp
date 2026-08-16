@@ -16,35 +16,35 @@ export const useProducts = () => {
       }
       return response.data;
     },
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 30 * 60 * 1000,
   });
 };
 
 /**
  * Hook para buscar produtos por empresa
- * Otimizado com cache agressivo
+ * Cache agressivo — ideal pra cardápio
  */
 export const useCompanyProducts = (companyId: string | null) => {
   return useQuery({
     queryKey: ["products", "company", companyId],
-    queryFn: () => getCompanyProducts(companyId!), // safe por causa do enabled
+    queryFn: () => getCompanyProducts(companyId!),
     enabled: !!companyId,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 min
+    gcTime: 60 * 60 * 1000, // 1h
     refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 
 /**
  * Hook para buscar detalhes de um produto
- * Otimizado com cache agressivo
  */
 export const useProduct = (productId: string | null) => {
   return useQuery({
     queryKey: ["product", productId],
     queryFn: async () => {
       if (!productId) throw new Error("Product ID is required");
-
       const response = await apiService.getProduct(productId);
       if (!response.success || !response.data) {
         throw new Error("Falha ao carregar produto");
@@ -52,10 +52,40 @@ export const useProduct = (productId: string | null) => {
       return response.data;
     },
     enabled: !!productId,
-    staleTime: 15 * 60 * 1000, // 15 minutos - dados de produto são estáveis
-    gcTime: 60 * 60 * 1000, // 1 hora
+    staleTime: 15 * 60 * 1000, // 15 min
+    gcTime: 60 * 60 * 1000,
   });
 };
+
+/**
+ * Helper: invalida todas as queries relacionadas a produtos
+ */
+function invalidateProductQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  options?: { productId?: string; companyId?: string },
+) {
+  // Lista geral
+  queryClient.invalidateQueries({ queryKey: ["products"] });
+
+  // Lista por empresa (se soubermos a company)
+  if (options?.companyId) {
+    queryClient.invalidateQueries({
+      queryKey: ["products", "company", options.companyId],
+    });
+  } else {
+    // Se não souber, invalida todas as listas por empresa
+    queryClient.invalidateQueries({
+      queryKey: ["products", "company"],
+    });
+  }
+
+  // Produto individual
+  if (options?.productId) {
+    queryClient.invalidateQueries({
+      queryKey: ["product", options.productId],
+    });
+  }
+}
 
 /**
  * Hook para criar um produto
@@ -67,12 +97,14 @@ export const useCreateProduct = () => {
     mutationFn: async (productData: any) => {
       const response = await apiService.createProduct(productData);
       if (!response.success) {
-        throw new Error("Falha ao criar produto");
+        throw new Error(response.message || "Falha ao criar produto");
       }
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+    onSuccess: (data, variables) => {
+      invalidateProductQueries(queryClient, {
+        companyId: variables.companyId ?? variables.company?.id,
+      });
       toast.success("Produto criado com sucesso!");
     },
     onError: (error: Error) => {
@@ -91,13 +123,15 @@ export const useUpdateProduct = () => {
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const response = await apiService.updateProduct(id, data);
       if (!response.success) {
-        throw new Error("Falha ao atualizar produto");
+        throw new Error(response.message || "Falha ao atualizar produto");
       }
       return response.data;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["product", variables.id] });
+      invalidateProductQueries(queryClient, {
+        productId: variables.id,
+        companyId: variables.data?.companyId ?? data?.companyId,
+      });
       toast.success("Produto atualizado com sucesso!");
     },
     onError: (error: Error) => {
@@ -116,15 +150,22 @@ export const useDeleteProduct = () => {
     mutationFn: async (productId: string) => {
       const response = await apiService.deleteProduct(productId);
       if (!response.success) {
-        // Cria erro com mensagem para melhor tratamento
-        const error = new Error(response.message || "Falha ao deletar produto") as any;
+        const error = new Error(
+          response.message || "Falha ao deletar produto",
+        ) as any;
         error.errorMessage = response.message;
         throw error;
       }
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+    onSuccess: (_data, productId) => {
+      invalidateProductQueries(queryClient, { productId });
+      toast.success("Produto removido com sucesso!");
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.errorMessage || error.message || "Erro ao deletar produto",
+      );
     },
   });
 };

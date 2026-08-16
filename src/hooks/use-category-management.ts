@@ -71,8 +71,18 @@ export const useCategoryManagement = () => {
       return false;
     }
 
-    if (formData.name.length < 3) {
+    if (formData.name.trim().length < 3) {
       toast.error("Nome deve ter pelo menos 3 caracteres");
+      return false;
+    }
+
+    if (formData.name.trim().length > 50) {
+      toast.error("Nome da categoria deve ter no máximo 50 caracteres");
+      return false;
+    }
+
+    if (formData.description.trim().length > 200) {
+      toast.error("Descrição deve ter no máximo 200 caracteres");
       return false;
     }
 

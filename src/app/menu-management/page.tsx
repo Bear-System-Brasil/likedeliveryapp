@@ -2,7 +2,7 @@
 
 import { AdminPageLayout } from "@/components/admin-page-layout";
 import { AdminDish, AdminDishCard } from "@/components/admin-dish-card";
-import ProtectedRoute from "@/components/role-check";
+import ProtectedRoute from "@/components/protected-route";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -210,7 +210,10 @@ function MenuManagementContent() {
         categoryDragFrameRef.current = null;
       }
 
-      scrollElement.removeEventListener("scroll", scheduleCategoryDragVisualSync);
+      scrollElement.removeEventListener(
+        "scroll",
+        scheduleCategoryDragVisualSync,
+      );
       window.removeEventListener("resize", scheduleCategoryDragVisualSync);
     };
   }, [
@@ -394,460 +397,461 @@ function MenuManagementContent() {
       }
     >
       <div className="mx-auto max-w-[1180px]">
-            <div className="mb-3 max-w-[420px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8A8F99]" />
+        <div className="mb-3 max-w-[420px]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8A8F99]" />
+            <Input
+              placeholder="Buscar pratos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-[38px] rounded-[10px] border-[#E9EAEE] bg-white pl-9 text-[12.5px] font-medium text-[#14161A] shadow-none transition-colors placeholder:text-[#8A8F99] focus-visible:ring-1 focus-visible:ring-[#FF6B00]"
+            />
+          </div>
+        </div>
+
+        <Tabs
+          value={selectedCategory}
+          onValueChange={setSelectedCategory}
+          className="mb-4"
+        >
+          <TabsList
+            ref={categoriesScrollRef}
+            id="menu-category-tabs"
+            className="scrollbar-hide h-auto w-full justify-start gap-[7px] overflow-x-auto scroll-smooth bg-transparent p-0"
+          >
+            {allCategories.map((category) => (
+              <TabsTrigger
+                key={category.id}
+                value={category.id}
+                className="h-[30px] shrink-0 rounded-full border border-[#E9EAEE] bg-white px-[13px] py-0 text-xs font-semibold text-[#3D4149] shadow-none transition-colors data-[state=active]:border-[#14161A] data-[state=active]:bg-[#14161A] data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
+                {category.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {canCategoryScroll && (
+            <div
+              ref={categoryDragTrackRef}
+              className="relative mt-2 h-[38px] overflow-hidden rounded-full border border-[#FFD3B0] bg-white shadow-[inset_0_1px_2px_rgba(20,22,26,0.06)]"
+            >
+              <div className="pointer-events-none absolute left-3 right-3 top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#FFE1CC]" />
+              <button
+                ref={categoryDragButtonRef}
+                type="button"
+                aria-controls="menu-category-tabs"
+                aria-label="Arraste para navegar pelas categorias"
+                title="Arraste para navegar pelas categorias"
+                onPointerDown={handleCategoryDragPointerDown}
+                onPointerMove={handleCategoryDragPointerMove}
+                onPointerUp={handleCategoryDragPointerEnd}
+                onPointerCancel={handleCategoryDragPointerEnd}
+                onKeyDown={handleCategoryDragKeyDown}
+                className={`absolute left-0 top-1/2 z-10 flex h-[30px] min-w-[112px] touch-none select-none items-center justify-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold text-white shadow-[0_8px_18px_rgba(255,107,0,0.26)] outline-none transition-[background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-[#FF6B00]/35 sm:min-w-[126px] ${
+                  isCategoryDragActive
+                    ? "cursor-grabbing bg-[#E05A00] shadow-[0_10px_22px_rgba(255,107,0,0.34)]"
+                    : "cursor-grab bg-[#FF6B00] hover:bg-[#E05A00]"
+                }`}
+                style={{
+                  transform: "translate3d(0, -50%, 0)",
+                  willChange: "transform",
+                }}
+              >
+                <MoveHorizontal className="h-3.5 w-3.5" />
+                <span>Arraste</span>
+                <GripHorizontal className="h-3.5 w-3.5 opacity-80" />
+              </button>
+            </div>
+          )}
+        </Tabs>
+
+        {loading ? (
+          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="flex gap-3 rounded-[13px] border border-[#E9EAEE] bg-white p-2.5"
+              >
+                <Skeleton className="h-[72px] w-[72px] shrink-0 rounded-[10px]" />
+                <div className="flex flex-1 flex-col justify-center gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                  <Skeleton className="h-3 w-4/5" />
+                  <div className="flex gap-1.5">
+                    <Skeleton className="h-5 w-20 rounded-md" />
+                    <Skeleton className="h-5 w-24 rounded-md" />
+                  </div>
+                </div>
+                <div className="flex flex-col justify-center gap-1.5">
+                  <Skeleton className="h-7 w-7 rounded-lg" />
+                  <Skeleton className="h-7 w-7 rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredDishes.length > 0 ? (
+          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+            {filteredDishes.map((dish) => (
+              <AdminDishCard
+                key={dish.id}
+                dish={dish}
+                onEdit={handleEditDish}
+                onDelete={handleDeleteDish}
+                onToggleAvailability={handleToggleAvail}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[13px] border border-[#E9EAEE] bg-white px-5 py-9 text-center">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#F4F5F7] text-[#FF6B00]">
+              <Plus className="h-5 w-5" />
+            </div>
+            <p className="text-[13.5px] font-bold text-[#14161A]">
+              Nenhum prato encontrado
+            </p>
+            <p className="mt-1 text-xs font-medium text-[#8A8F99]">
+              {searchQuery
+                ? "Tente outro termo de busca"
+                : "Comece adicionando seu primeiro prato"}
+            </p>
+          </div>
+        )}
+      </div>
+
+      <Dialog
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseModalWithReset();
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] rounded-[14px] border-[#E9EAEE] bg-white p-0 shadow-[0_24px_70px_rgba(20,22,26,0.18)] sm:max-w-[520px]">
+          <DialogHeader className="shrink-0 border-b border-[#E9EAEE] px-4 pb-3 pt-4 sm:px-6">
+            <DialogTitle className="text-base font-extrabold text-[#14161A] sm:text-lg">
+              {editingProduct ? "Editar Prato" : "Adicionar Novo Prato"}
+            </DialogTitle>
+            <DialogDescription className="text-xs font-medium text-[#8A8F99] sm:text-sm">
+              Preencha as informações do prato.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
+            <div className="grid gap-3">
+              <div className="grid gap-1.5">
+                <Label
+                  htmlFor="productImage"
+                  className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                >
+                  Imagem do Prato
+                </Label>
                 <Input
-                  placeholder="Buscar pratos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-[38px] rounded-[10px] border-[#E9EAEE] bg-white pl-9 text-[12.5px] font-medium text-[#14161A] shadow-none transition-colors placeholder:text-[#8A8F99] focus-visible:ring-1 focus-visible:ring-[#FF6B00]"
+                  id="productImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 5 * 1024 * 1024) {
+                        toast.error("Imagem muito grande. Máximo 5MB");
+                        e.target.value = "";
+                        return;
+                      }
+                      setSelectedImage(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                  className={fieldClassName}
+                />
+
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img
+                      src={imagePreview}
+                      alt="Preview da imagem"
+                      className="h-24 w-24 rounded-[10px] border border-[#E9EAEE] object-cover"
+                    />
+                  </div>
+                )}
+
+                {selectedImage && (
+                  <p className="text-[11px] font-bold text-[#1B7F4C]">
+                    {selectedImage.name}
+                  </p>
+                )}
+                {editingProduct &&
+                  editingProduct.imageURL &&
+                  editingProduct.imageURL.length > 0 && (
+                    <p className="text-xs font-medium text-[#8A8F99]">
+                      Imagem atual: {editingProduct.imageURL.length} foto(s)
+                    </p>
+                  )}
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label
+                  htmlFor="name"
+                  className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                >
+                  Nome do Prato *
+                </Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => updateFormField("name", e.target.value)}
+                  placeholder="Nome do prato"
+                  maxLength={80}
+                  className={fieldClassName}
                 />
               </div>
-            </div>
 
-            <Tabs
-              value={selectedCategory}
-              onValueChange={setSelectedCategory}
-              className="mb-4"
-            >
-              <TabsList
-                ref={categoriesScrollRef}
-                id="menu-category-tabs"
-                className="scrollbar-hide h-auto w-full justify-start gap-[7px] overflow-x-auto scroll-smooth bg-transparent p-0"
-              >
-                {allCategories.map((category) => (
-                  <TabsTrigger
-                    key={category.id}
-                    value={category.id}
-                    className="h-[30px] shrink-0 rounded-full border border-[#E9EAEE] bg-white px-[13px] py-0 text-xs font-semibold text-[#3D4149] shadow-none transition-colors data-[state=active]:border-[#14161A] data-[state=active]:bg-[#14161A] data-[state=active]:text-white data-[state=active]:shadow-none"
-                  >
-                    {category.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {canCategoryScroll && (
-                <div
-                  ref={categoryDragTrackRef}
-                  className="relative mt-2 h-[38px] overflow-hidden rounded-full border border-[#FFD3B0] bg-white shadow-[inset_0_1px_2px_rgba(20,22,26,0.06)]"
-                >
-                  <div className="pointer-events-none absolute left-3 right-3 top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#FFE1CC]" />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-[#3D4149] sm:text-sm">
+                    Categoria *
+                  </Label>
                   <button
-                    ref={categoryDragButtonRef}
                     type="button"
-                    aria-controls="menu-category-tabs"
-                    aria-label="Arraste para navegar pelas categorias"
-                    title="Arraste para navegar pelas categorias"
-                    onPointerDown={handleCategoryDragPointerDown}
-                    onPointerMove={handleCategoryDragPointerMove}
-                    onPointerUp={handleCategoryDragPointerEnd}
-                    onPointerCancel={handleCategoryDragPointerEnd}
-                    onKeyDown={handleCategoryDragKeyDown}
-                    className={`absolute left-0 top-1/2 z-10 flex h-[30px] min-w-[112px] touch-none select-none items-center justify-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold text-white shadow-[0_8px_18px_rgba(255,107,0,0.26)] outline-none transition-[background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-[#FF6B00]/35 sm:min-w-[126px] ${
-                      isCategoryDragActive
-                        ? "cursor-grabbing bg-[#E05A00] shadow-[0_10px_22px_rgba(255,107,0,0.34)]"
-                        : "cursor-grab bg-[#FF6B00] hover:bg-[#E05A00]"
-                    }`}
-                    style={{
-                      transform: "translate3d(0, -50%, 0)",
-                      willChange: "transform",
+                    onClick={() => {
+                      setIsCreatingCategory(!isCreatingCategory);
+                      if (isCreatingCategory) {
+                        setNewCategoryName("");
+                      } else {
+                        updateFormField("categoryId", "");
+                      }
                     }}
+                    className="cursor-pointer text-xs font-extrabold text-[#FF6B00] transition-colors hover:text-[#E05A00]"
                   >
-                    <MoveHorizontal className="h-3.5 w-3.5" />
-                    <span>Arraste</span>
-                    <GripHorizontal className="h-3.5 w-3.5 opacity-80" />
+                    {isCreatingCategory
+                      ? "Selecionar existente"
+                      : "+ Criar nova"}
                   </button>
                 </div>
-              )}
-            </Tabs>
 
-            {loading ? (
-              <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div
-                    key={i}
-                    className="flex gap-3 rounded-[13px] border border-[#E9EAEE] bg-white p-2.5"
-                  >
-                    <Skeleton className="h-[72px] w-[72px] shrink-0 rounded-[10px]" />
-                    <div className="flex flex-1 flex-col justify-center gap-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <Skeleton className="h-4 w-36" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-                      <Skeleton className="h-3 w-4/5" />
-                      <div className="flex gap-1.5">
-                        <Skeleton className="h-5 w-20 rounded-md" />
-                        <Skeleton className="h-5 w-24 rounded-md" />
-                      </div>
-                    </div>
-                    <div className="flex flex-col justify-center gap-1.5">
-                      <Skeleton className="h-7 w-7 rounded-lg" />
-                      <Skeleton className="h-7 w-7 rounded-lg" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : filteredDishes.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
-                {filteredDishes.map((dish) => (
-                  <AdminDishCard
-                    key={dish.id}
-                    dish={dish}
-                    onEdit={handleEditDish}
-                    onDelete={handleDeleteDish}
-                    onToggleAvailability={handleToggleAvail}
+                {isCreatingCategory ? (
+                  <Input
+                    id="newCategory"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Digite o nome da nova categoria"
+                    maxLength={50}
+                    className={fieldClassName}
+                    autoFocus
                   />
-                ))}
+                ) : (
+                  <select
+                    value={formData.categoryId}
+                    onChange={(e) =>
+                      updateFormField("categoryId", e.target.value)
+                    }
+                    className="h-9 w-full rounded-[10px] border border-[#E9EAEE] bg-white px-3 text-xs font-medium text-[#14161A] outline-none transition-colors focus:border-[#FF6B00] sm:h-10 sm:text-sm"
+                  >
+                    <option value="">Selecione uma categoria</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
-            ) : (
-              <div className="rounded-[13px] border border-[#E9EAEE] bg-white px-5 py-9 text-center">
-                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#F4F5F7] text-[#FF6B00]">
-                  <Plus className="h-5 w-5" />
+
+              <div className="grid gap-1.5">
+                <Label
+                  htmlFor="description"
+                  className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                >
+                  Descrição *
+                </Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) =>
+                    updateFormField("description", e.target.value)
+                  }
+                  placeholder="Descreva o prato"
+                  maxLength={300}
+                  className={textareaClassName}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid gap-1.5">
+                  <Label
+                    htmlFor="costPrice"
+                    className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                  >
+                    Custo
+                  </Label>
+
+                  <CurrencyCentsInput
+                    id="costPrice"
+                    value={formData.costPrice}
+                    onValueChange={(value) =>
+                      updateFormField("costPrice", value)
+                    }
+                    maskWhileTyping={true}
+                    placeholder="R$ 0,01"
+                    className={fieldClassName}
+                  />
                 </div>
-                <p className="text-[13.5px] font-bold text-[#14161A]">
-                  Nenhum prato encontrado
-                </p>
-                <p className="mt-1 text-xs font-medium text-[#8A8F99]">
-                  {searchQuery
-                    ? "Tente outro termo de busca"
-                    : "Comece adicionando seu primeiro prato"}
-                </p>
+
+                <div className="grid gap-1.5">
+                  <Label
+                    htmlFor="salePrice"
+                    className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                  >
+                    Venda *
+                  </Label>
+
+                  <CurrencyCentsInput
+                    id="salePrice"
+                    value={formData.salePrice}
+                    onValueChange={(value) =>
+                      updateFormField("salePrice", value)
+                    }
+                    maskWhileTyping={true}
+                    placeholder="R$ 0,01"
+                    className={fieldClassName}
+                  />
+                </div>
               </div>
-            )}
+
+              <div className="grid gap-1.5">
+                <Label
+                  htmlFor="stockQuantity"
+                  className="text-xs font-bold text-[#3D4149] sm:text-sm"
+                >
+                  Qtd. Estoque
+                </Label>
+
+                <StockQuantityInput
+                  id="stockQuantity"
+                  value={formData.stockQuantity}
+                  onValueChange={(value) =>
+                    updateFormField("stockQuantity", value)
+                  }
+                  placeholder="1"
+                  minValue={1}
+                  maxValue={9999}
+                  className={fieldClassName}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 rounded-[10px] border border-[#E9EAEE] bg-[#F7F8FA] px-3 py-2">
+                <input
+                  type="checkbox"
+                  id="isAvailable"
+                  checked={formData.available}
+                  onChange={(e) =>
+                    updateFormField("available", e.target.checked)
+                  }
+                  className="h-4 w-4 cursor-pointer accent-[#FF6B00]"
+                />
+                <Label
+                  htmlFor="isAvailable"
+                  className="cursor-pointer text-xs font-bold text-[#3D4149] sm:text-sm"
+                >
+                  Disponível para venda
+                </Label>
+              </div>
+            </div>
           </div>
 
-          <Dialog
-            open={isModalOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                handleCloseModalWithReset();
-              }
-            }}
-          >
-            <DialogContent className="max-h-[90vh] rounded-[14px] border-[#E9EAEE] bg-white p-0 shadow-[0_24px_70px_rgba(20,22,26,0.18)] sm:max-w-[520px]">
-              <DialogHeader className="shrink-0 border-b border-[#E9EAEE] px-4 pb-3 pt-4 sm:px-6">
-                <DialogTitle className="text-base font-extrabold text-[#14161A] sm:text-lg">
-                  {editingProduct ? "Editar Prato" : "Adicionar Novo Prato"}
-                </DialogTitle>
-                <DialogDescription className="text-xs font-medium text-[#8A8F99] sm:text-sm">
-                  Preencha as informações do prato.
-                </DialogDescription>
-              </DialogHeader>
+          <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-[#E9EAEE] px-4 py-3 sm:flex-row sm:px-6">
+            <Button
+              variant="ghost"
+              onClick={handleClearForm}
+              className="h-9 w-full cursor-pointer rounded-[9px] text-sm font-bold text-[#8A8F99] hover:bg-[#F7F8FA] hover:text-[#3D4149] sm:w-auto"
+            >
+              Limpar Tudo
+            </Button>
+            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+              <Button
+                variant="outline"
+                onClick={handleCloseModalWithReset}
+                className="h-9 w-full cursor-pointer rounded-[9px] border-[#E9EAEE] bg-white text-sm font-bold text-[#3D4149] shadow-none hover:bg-[#F7F8FA] sm:w-auto"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => handleSaveProduct(selectedImage || undefined)}
+                disabled={isSaving}
+                className="h-9 w-full cursor-pointer rounded-[9px] bg-[#FF6B00] text-sm font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,0.25)] transition-colors hover:bg-[#E05A00] sm:w-auto"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {editingProduct ? "Atualizando..." : "Criando..."}
+                  </>
+                ) : (
+                  <>{editingProduct ? "Atualizar" : "Criar"} Prato</>
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-              <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
-                <div className="grid gap-3">
-                  <div className="grid gap-1.5">
-                    <Label
-                      htmlFor="productImage"
-                      className="text-xs font-bold text-[#3D4149] sm:text-sm"
-                    >
-                      Imagem do Prato
-                    </Label>
-                    <Input
-                      id="productImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (file.size > 5 * 1024 * 1024) {
-                            toast.error("Imagem muito grande. Máximo 5MB");
-                            e.target.value = "";
-                            return;
-                          }
-                          setSelectedImage(file);
-                          setImagePreview(URL.createObjectURL(file));
-                        }
-                      }}
-                      className={fieldClassName}
-                    />
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            handleCancelDelete();
+          }
+        }}
+      >
+        <AlertDialogContent className="flex w-[calc(100vw-32px)] max-w-sm flex-col items-center rounded-[14px] border-[#E9EAEE] bg-white text-center shadow-[0_24px_70px_rgba(20,22,26,0.18)]">
+          <div className="mt-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF4DE]">
+            <TriangleAlert className="h-6 w-6 text-[#B7791F]" />
+          </div>
 
-                    {imagePreview && (
-                      <div className="mt-2">
-                        <img
-                          src={imagePreview}
-                          alt="Preview da imagem"
-                          className="h-24 w-24 rounded-[10px] border border-[#E9EAEE] object-cover"
-                        />
-                      </div>
-                    )}
+          <AlertDialogHeader className="space-y-3 px-2">
+            <AlertDialogTitle className="text-center text-lg font-extrabold text-[#14161A]">
+              Atenção!
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-sm font-medium text-[#5F6673]">
+              <p>
+                Você está prestes a remover{" "}
+                <strong className="text-[#14161A]">
+                  &quot;{deleteTarget?.name}&quot;
+                </strong>{" "}
+                do seu cardápio.
+              </p>
+              <p className="font-bold text-[#D64545]">
+                Esta ação não poderá ser desfeita.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-                    {selectedImage && (
-                      <p className="text-[11px] font-bold text-[#1B7F4C]">
-                        {selectedImage.name}
-                      </p>
-                    )}
-                    {editingProduct &&
-                      editingProduct.imageURL &&
-                      editingProduct.imageURL.length > 0 && (
-                        <p className="text-xs font-medium text-[#8A8F99]">
-                          Imagem atual: {editingProduct.imageURL.length} foto(s)
-                        </p>
-                      )}
-                  </div>
-
-                  <div className="grid gap-1.5">
-                    <Label
-                      htmlFor="name"
-                      className="text-xs font-bold text-[#3D4149] sm:text-sm"
-                    >
-                      Nome do Prato *
-                    </Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => updateFormField("name", e.target.value)}
-                      placeholder="Nome do prato"
-                      className={fieldClassName}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-bold text-[#3D4149] sm:text-sm">
-                        Categoria *
-                      </Label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsCreatingCategory(!isCreatingCategory);
-                          if (isCreatingCategory) {
-                            setNewCategoryName("");
-                          } else {
-                            updateFormField("categoryId", "");
-                          }
-                        }}
-                        className="cursor-pointer text-xs font-extrabold text-[#FF6B00] transition-colors hover:text-[#E05A00]"
-                      >
-                        {isCreatingCategory
-                          ? "Selecionar existente"
-                          : "+ Criar nova"}
-                      </button>
-                    </div>
-
-                    {isCreatingCategory ? (
-                      <Input
-                        id="newCategory"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="Digite o nome da nova categoria"
-                        className={fieldClassName}
-                        autoFocus
-                      />
-                    ) : (
-                      <select
-                        value={formData.categoryId}
-                        onChange={(e) =>
-                          updateFormField("categoryId", e.target.value)
-                        }
-                        className="h-9 w-full rounded-[10px] border border-[#E9EAEE] bg-white px-3 text-xs font-medium text-[#14161A] outline-none transition-colors focus:border-[#FF6B00] sm:h-10 sm:text-sm"
-                      >
-                        <option value="">Selecione uma categoria</option>
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-
-                  <div className="grid gap-1.5">
-                    <Label
-                      htmlFor="description"
-                      className="text-xs font-bold text-[#3D4149] sm:text-sm"
-                    >
-                      Descrição *
-                    </Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) =>
-                        updateFormField("description", e.target.value)
-                      }
-                      placeholder="Descreva o prato"
-                      className={textareaClassName}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                    <div className="grid gap-1.5">
-                      <Label
-                        htmlFor="costPrice"
-                        className="text-xs font-bold text-[#3D4149] sm:text-sm"
-                      >
-                        Custo
-                      </Label>
-
-                      <CurrencyCentsInput
-                        id="costPrice"
-                        value={formData.costPrice}
-                        onValueChange={(value) =>
-                          updateFormField("costPrice", value)
-                        }
-                        maskWhileTyping={true}
-                        placeholder="R$ 0,01"
-                        className={fieldClassName}
-                      />
-                    </div>
-
-                    <div className="grid gap-1.5">
-                      <Label
-                        htmlFor="salePrice"
-                        className="text-xs font-bold text-[#3D4149] sm:text-sm"
-                      >
-                        Venda *
-                      </Label>
-
-                      <CurrencyCentsInput
-                        id="salePrice"
-                        value={formData.salePrice}
-                        onValueChange={(value) =>
-                          updateFormField("salePrice", value)
-                        }
-                        maskWhileTyping={true}
-                        placeholder="R$ 0,01"
-                        className={fieldClassName}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-1.5">
-                    <Label
-                      htmlFor="stockQuantity"
-                      className="text-xs font-bold text-[#3D4149] sm:text-sm"
-                    >
-                      Qtd. Estoque
-                    </Label>
-
-                    <StockQuantityInput
-                      id="stockQuantity"
-                      value={formData.stockQuantity}
-                      onValueChange={(value) =>
-                        updateFormField("stockQuantity", value)
-                      }
-                      placeholder="1"
-                      minValue={1}
-                      maxValue={9999}
-                      className={fieldClassName}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 rounded-[10px] border border-[#E9EAEE] bg-[#F7F8FA] px-3 py-2">
-                    <input
-                      type="checkbox"
-                      id="isAvailable"
-                      checked={formData.available}
-                      onChange={(e) =>
-                        updateFormField("available", e.target.checked)
-                      }
-                      className="h-4 w-4 cursor-pointer accent-[#FF6B00]"
-                    />
-                    <Label
-                      htmlFor="isAvailable"
-                      className="cursor-pointer text-xs font-bold text-[#3D4149] sm:text-sm"
-                    >
-                      Disponível para venda
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-[#E9EAEE] px-4 py-3 sm:flex-row sm:px-6">
-                <Button
-                  variant="ghost"
-                  onClick={handleClearForm}
-                  className="h-9 w-full cursor-pointer rounded-[9px] text-sm font-bold text-[#8A8F99] hover:bg-[#F7F8FA] hover:text-[#3D4149] sm:w-auto"
-                >
-                  Limpar Tudo
-                </Button>
-                <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
-                  <Button
-                    variant="outline"
-                    onClick={handleCloseModalWithReset}
-                    className="h-9 w-full cursor-pointer rounded-[9px] border-[#E9EAEE] bg-white text-sm font-bold text-[#3D4149] shadow-none hover:bg-[#F7F8FA] sm:w-auto"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      handleSaveProduct(selectedImage || undefined)
-                    }
-                    disabled={isSaving}
-                    className="h-9 w-full cursor-pointer rounded-[9px] bg-[#FF6B00] text-sm font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,0.25)] transition-colors hover:bg-[#E05A00] sm:w-auto"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {editingProduct ? "Atualizando..." : "Criando..."}
-                      </>
-                    ) : (
-                      <>{editingProduct ? "Atualizar" : "Criar"} Prato</>
-                    )}
-                  </Button>
-                </div>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <AlertDialog
-            open={!!deleteTarget}
-            onOpenChange={(open) => {
-              if (!open && !isDeleting) {
-                handleCancelDelete();
-              }
-            }}
-          >
-            <AlertDialogContent className="flex w-[calc(100vw-32px)] max-w-sm flex-col items-center rounded-[14px] border-[#E9EAEE] bg-white text-center shadow-[0_24px_70px_rgba(20,22,26,0.18)]">
-              <div className="mt-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF4DE]">
-                <TriangleAlert className="h-6 w-6 text-[#B7791F]" />
-              </div>
-
-              <AlertDialogHeader className="space-y-3 px-2">
-                <AlertDialogTitle className="text-center text-lg font-extrabold text-[#14161A]">
-                  Atenção!
-                </AlertDialogTitle>
-                <AlertDialogDescription className="space-y-2 text-sm font-medium text-[#5F6673]">
-                  <p>
-                    Você está prestes a remover{" "}
-                    <strong className="text-[#14161A]">
-                      &quot;{deleteTarget?.name}&quot;
-                    </strong>{" "}
-                    do seu cardápio.
-                  </p>
-                  <p className="font-bold text-[#D64545]">
-                    Esta ação não poderá ser desfeita.
-                  </p>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <div className="flex w-full flex-row gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={handleCancelDelete}
-                  disabled={isDeleting}
-                  className="h-10 flex-1 cursor-pointer rounded-[9px] border-[#E9EAEE] bg-white font-bold text-[#3D4149] shadow-none hover:bg-[#F7F8FA]"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleConfirmDelete}
-                  disabled={isDeleting}
-                  className="h-10 flex-1 cursor-pointer rounded-[9px] bg-[#D64545] font-bold text-white transition-colors hover:bg-[#B83232]"
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Removendo...
-                    </>
-                  ) : (
-                    "Remover Prato"
-                  )}
-                </Button>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div className="flex w-full flex-row gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={handleCancelDelete}
+              disabled={isDeleting}
+              className="h-10 flex-1 cursor-pointer rounded-[9px] border-[#E9EAEE] bg-white font-bold text-[#3D4149] shadow-none hover:bg-[#F7F8FA]"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="h-10 flex-1 cursor-pointer rounded-[9px] bg-[#D64545] font-bold text-white transition-colors hover:bg-[#B83232]"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Removendo...
+                </>
+              ) : (
+                "Remover Prato"
+              )}
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminPageLayout>
   );
 }
