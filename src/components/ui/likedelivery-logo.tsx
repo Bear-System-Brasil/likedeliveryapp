@@ -1,6 +1,5 @@
 import { ThumbsUp } from "lucide-react";
 import Link from "next/link";
-import router from "next/router";
 
 type LikeDeliveryLogoProps = {
   children?: React.ReactNode;
