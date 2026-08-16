@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   type ColumnId,
   type CompanyOrder,
@@ -11,8 +11,8 @@ import {
   formatCurrency,
   getColumnForOrder,
   getOrderItemDisplayName,
-} from '@/constants/order-management'
-import { useOrderManagement } from '@/hooks'
+} from "@/constants/order-management";
+import { useOrderManagement } from "@/hooks";
 import {
   Bell,
   BellOff,
@@ -24,12 +24,12 @@ import {
   Package,
   RefreshCw,
   Truck,
-} from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { AcceptOrderDialog } from './accept-order-dialog'
-import { CancelOrderDialog } from './cancel-order-dialog'
-import { OrderCard } from './order-card'
-import { OrderDetailSheet } from './order-detail-sheet'
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AcceptOrderDialog } from "./accept-order-dialog";
+import { CancelOrderDialog } from "./cancel-order-dialog";
+import { OrderCard } from "./order-card";
+import { OrderDetailSheet } from "./order-detail-sheet";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-componentes internos
@@ -41,39 +41,46 @@ function StatusCard({
   icon: Icon,
   color,
 }: {
-  title: string
-  count: number
-  icon: React.ElementType
-  color: string
+  title: string;
+  count: number;
+  icon: React.ElementType;
+  color: string;
 }) {
   return (
     <div className="flex-1">
-      <div className={`flex flex-col items-center gap-1 rounded-lg border p-2 md:p-3 ${color}`}>
+      <div
+        className={`flex flex-col items-center gap-1 rounded-lg border p-2 md:p-3 ${color}`}
+      >
         <Icon className="h-4 w-4 md:h-5 md:w-5" />
-        <span className="text-xs font-medium text-center md:text-sm">{title}</span>
+        <span className="text-xs font-medium text-center md:text-sm">
+          {title}
+        </span>
         <span className="text-xl font-bold md:text-2xl">{count}</span>
       </div>
     </div>
-  )
+  );
 }
 
 function EmptyColumn({ columnId }: { columnId: ColumnId }) {
-  const emptyContent: Record<ColumnId, { icon: React.ElementType; message: string }> = {
-    new: { icon: Package, message: 'Nenhum pedido novo no momento' },
-    preparing: { icon: ChefHat, message: 'Nenhum pedido em preparo' },
-    ready: { icon: Truck, message: 'Nenhum pedido pronto' },
-    completed: { icon: CheckCircle, message: 'Nenhum pedido concluído hoje' },
-  }
+  const emptyContent: Record<
+    ColumnId,
+    { icon: React.ElementType; message: string }
+  > = {
+    new: { icon: Package, message: "Nenhum pedido novo no momento" },
+    preparing: { icon: ChefHat, message: "Nenhum pedido em preparo" },
+    ready: { icon: Truck, message: "Nenhum pedido pronto" },
+    completed: { icon: CheckCircle, message: "Nenhum pedido concluído hoje" },
+  };
 
-  const content = emptyContent[columnId]
-  const Icon = content.icon
+  const content = emptyContent[columnId];
+  const Icon = content.icon;
 
   return (
     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
       <Icon className="h-12 w-12 mb-3 opacity-30" />
       <p className="text-sm">{content.message}</p>
     </div>
-  )
+  );
 }
 
 function ColumnSkeleton() {
@@ -98,7 +105,7 @@ function ColumnSkeleton() {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -106,14 +113,14 @@ function ColumnSkeleton() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PrintArea({ order }: { order: CompanyOrder | null }) {
-  if (!order) return null
+  if (!order) return null;
 
-  const items = order.orderedItems || []
-  const orderNumber = order.orderNumber || order.id.slice(0, 6)
-  const customerName = order.customer?.name || 'Cliente'
+  const items = order.orderedItems || [];
+  const orderNumber = order.orderNumber || order.id.slice(0, 6);
+  const customerName = order.customer?.name || "Cliente";
 
   return (
-    <div className="hidden print:block print:w-[80mm] print:mx-auto print:text-xs print:font-mono">
+    <div className="print-area hidden print:block print:w-[80mm] print:mx-auto print:text-xs print:font-mono print:bg-white print:text-black">
       <div className="text-center mb-2">
         <h2 className="text-base font-bold">LIKE DELIVERY</h2>
         <p>───────────────────────</p>
@@ -122,7 +129,7 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
       <div className="mb-2">
         <p className="font-bold text-sm">PEDIDO #{orderNumber}</p>
         <p>Cliente: {customerName}</p>
-        <p>Data: {new Date(order.created_at).toLocaleString('pt-BR')}</p>
+        <p>Data: {new Date(order.created_at).toLocaleString("pt-BR")}</p>
       </div>
 
       <p>───────────────────────</p>
@@ -134,10 +141,14 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
               {item.quantity}x {getOrderItemDisplayName(item)}
             </p>
             {item.addOns?.map((addon, i) => (
-              <p key={i} className="pl-2">+ {addon.productAddOns?.description || 'Adicional'}</p>
+              <p key={i} className="pl-2">
+                + {addon.productAddOns?.description || "Adicional"}
+              </p>
             ))}
             {item.variations?.map((v, i) => (
-              <p key={i} className="pl-2">{v.productVariation?.description || 'Variação'}</p>
+              <p key={i} className="pl-2">
+                {v.productVariation?.description || "Variação"}
+              </p>
             ))}
           </div>
         ))}
@@ -148,14 +159,18 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
       <div className="mb-2">
         <div className="flex justify-between">
           <span>TOTAL:</span>
-          <span className="font-bold">{formatCurrency(order.totalValue || 0)}</span>
+          <span className="font-bold">
+            {formatCurrency(order.totalValue || 0)}
+          </span>
         </div>
       </div>
 
       <p className="text-center mt-2">───────────────────────</p>
-      <p className="text-center text-[10px]">Impresso em {new Date().toLocaleString('pt-BR')}</p>
+      <p className="text-center text-[10px]">
+        Impresso em {new Date().toLocaleString("pt-BR")}
+      </p>
     </div>
-  )
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -186,40 +201,44 @@ export default function OrderManagement() {
     refetch,
     isUpdating,
     isCanceling,
-  } = useOrderManagement()
+  } = useOrderManagement();
 
-  const [printOrder, setPrintOrder] = useState<CompanyOrder | null>(null)
-  const printRef = useRef(false)
+  const [printOrder, setPrintOrder] = useState<CompanyOrder | null>(null);
+  const printRef = useRef(false);
 
   useEffect(() => {
     if (printOrder && !printRef.current) {
-      printRef.current = true
+      printRef.current = true;
       setTimeout(() => {
-        window.print()
-        printRef.current = false
-      }, 100)
+        window.print();
+        // limpa depois da impressão
+        setTimeout(() => {
+          setPrintOrder(null);
+          printRef.current = false;
+        }, 500);
+      }, 100);
     }
-  }, [printOrder])
+  }, [printOrder]);
 
   const handlePrint = (order: CompanyOrder) => {
-    setPrintOrder(order)
-  }
+    setPrintOrder(order);
+  };
 
   const handleViewDetails = (order: CompanyOrder) => {
-    stopAlert()
-    setSelectedOrder(order)
-  }
+    stopAlert();
+    setSelectedOrder(order);
+  };
 
   const getColumnIdForOrder = (order: CompanyOrder): ColumnId => {
-    const col = getColumnForOrder(order)
-    return col === 'canceled' ? 'completed' : col
-  }
+    const col = getColumnForOrder(order);
+    return col === "canceled" ? "completed" : col;
+  };
 
   const renderCards = (columnId: ColumnId) => {
-    const items = columns[columnId]
+    const items = columns[columnId];
 
-    if (isLoading) return <ColumnSkeleton />
-    if (items.length === 0) return <EmptyColumn columnId={columnId} />
+    if (isLoading) return <ColumnSkeleton />;
+    if (items.length === 0) return <EmptyColumn columnId={columnId} />;
 
     return (
       <div className="space-y-3">
@@ -236,35 +255,64 @@ export default function OrderManagement() {
           />
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <ClipboardList className="h-16 w-16 text-muted-foreground opacity-30" />
         <p className="text-muted-foreground">Erro ao carregar pedidos</p>
-        <Button variant="outline" onClick={() => refetch()} className="cursor-pointer">
+        <Button
+          variant="outline"
+          onClick={() => refetch()}
+          className="cursor-pointer"
+        >
           <RefreshCw className="h-4 w-4 mr-2" />
           Tentar novamente
         </Button>
       </div>
-    )
+    );
   }
 
   return (
     <>
       {/* ─── Header: Status Cards ─────────────────────────────────── */}
       <div className="flex overflow-x-auto p-2 gap-2 bg-white print:hidden">
-        <StatusCard title="Novos" count={statusCounts.new} icon={Package} color="bg-amber-50 text-amber-700 border-amber-200" />
-        <StatusCard title="Em Preparo" count={statusCounts.preparing} icon={ChefHat} color="bg-blue-50 text-blue-700 border-blue-200" />
-        <StatusCard title="Prontos" count={statusCounts.ready} icon={Truck} color="bg-emerald-50 text-emerald-700 border-emerald-200" />
-        <StatusCard title="Concluídos" count={statusCounts.completed} icon={CheckCircle} color="bg-gray-50 text-gray-700 border-gray-200" />
+        <StatusCard
+          title="Novos"
+          count={statusCounts.new}
+          icon={Package}
+          color="bg-amber-50 text-amber-700 border-amber-200"
+        />
+        <StatusCard
+          title="Em Preparo"
+          count={statusCounts.preparing}
+          icon={ChefHat}
+          color="bg-blue-50 text-blue-700 border-blue-200"
+        />
+        <StatusCard
+          title="Prontos"
+          count={statusCounts.ready}
+          icon={Truck}
+          color="bg-emerald-50 text-emerald-700 border-emerald-200"
+        />
+        <StatusCard
+          title="Concluídos"
+          count={statusCounts.completed}
+          icon={CheckCircle}
+          color="bg-gray-50 text-gray-700 border-gray-200"
+        />
       </div>
 
       {/* ─── Toolbar ──────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-3 py-2 border-b bg-white print:hidden">
-        <Button variant="ghost" size="sm" className="cursor-pointer gap-1.5" onClick={toggleSound}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="cursor-pointer gap-1.5"
+          onClick={toggleSound}
+        >
           {soundEnabled ? (
             <>
               <Bell className="h-4 w-4" />
@@ -273,7 +321,9 @@ export default function OrderManagement() {
           ) : (
             <>
               <BellOff className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs hidden sm:inline text-muted-foreground">Som desativado</span>
+              <span className="text-xs hidden sm:inline text-muted-foreground">
+                Som desativado
+              </span>
             </>
           )}
         </Button>
@@ -284,14 +334,18 @@ export default function OrderManagement() {
           onClick={() => refetch()}
           disabled={isLoading}
         >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           <span className="text-xs hidden sm:inline">Atualizar</span>
         </Button>
       </div>
 
       {/* ─── Mobile: Tabs ─────────────────────────────────────────── */}
       <div className="md:hidden p-2 print:hidden">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ColumnId)} className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as ColumnId)}
+          className="w-full"
+        >
           <TabsList className="grid grid-cols-4 mb-3">
             <TabsTrigger value="new" className="relative text-xs">
               Novos
@@ -327,10 +381,14 @@ export default function OrderManagement() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="new">{renderCards('new')}</TabsContent>
-          <TabsContent value="preparing">{renderCards('preparing')}</TabsContent>
-          <TabsContent value="ready">{renderCards('ready')}</TabsContent>
-          <TabsContent value="completed">{renderCards('completed')}</TabsContent>
+          <TabsContent value="new">{renderCards("new")}</TabsContent>
+          <TabsContent value="preparing">
+            {renderCards("preparing")}
+          </TabsContent>
+          <TabsContent value="ready">{renderCards("ready")}</TabsContent>
+          <TabsContent value="completed">
+            {renderCards("completed")}
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -339,13 +397,17 @@ export default function OrderManagement() {
         <div className="grid grid-cols-3 gap-4">
           {COLUMNS.map((col) => (
             <div key={col.id} className="flex flex-col">
-              <div className={`${col.headerBg} p-3 rounded-t-lg font-medium ${col.color} flex items-center justify-between`}>
+              <div
+                className={`${col.headerBg} p-3 rounded-t-lg font-medium ${col.color} flex items-center justify-between`}
+              >
                 <span>{col.label}</span>
                 <Badge variant="secondary" className="text-xs">
                   {columns[col.id].length}
                 </Badge>
               </div>
-              <div className={`flex-1 min-h-[200px] border border-t-0 rounded-b-lg p-3 ${col.bgColor} bg-opacity-30`}>
+              <div
+                className={`flex-1 min-h-[200px] border border-t-0 rounded-b-lg p-3 ${col.bgColor} bg-opacity-30`}
+              >
                 {renderCards(col.id)}
               </div>
             </div>
@@ -363,7 +425,11 @@ export default function OrderManagement() {
               <CheckCircle className="h-4 w-4" />
               Concluídos / Cancelados ({statusCounts.completed})
             </span>
-            {showCompleted ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {showCompleted ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </Button>
 
           {showCompleted && (
@@ -410,7 +476,7 @@ export default function OrderManagement() {
         order={selectedOrder}
         open={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
-        columnId={selectedOrder ? getColumnIdForOrder(selectedOrder) : 'new'}
+        columnId={selectedOrder ? getColumnIdForOrder(selectedOrder) : "new"}
         onAction={setActionTarget}
         onCancel={setCancelTarget}
         onPrint={handlePrint}
@@ -420,5 +486,5 @@ export default function OrderManagement() {
       {/* ─── Área de Impressão (oculta) ───────────────────────────── */}
       <PrintArea order={printOrder} />
     </>
-  )
+  );
 }
