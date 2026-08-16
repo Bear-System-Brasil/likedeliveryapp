@@ -7,7 +7,7 @@ import {
 } from "@/lib/order-status";
 import type { SoundName } from "@/lib/sound";
 import { useAuthStore } from "@/stores/auth-store";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
