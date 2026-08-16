@@ -173,3 +173,44 @@
     display: none;
   }
 }
+
+/* ────────────────────────────────────────────────
+   Impressão de pedidos (cupom térmico 80mm)
+   ──────────────────────────────────────────────── */
+@media print {
+  /* Esconde absolutamente tudo */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Só o PrintArea e seus filhos ficam visíveis */
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  /* Posiciona o cupom corretamente */
+  .print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+    font-family: monospace !important;
+  }
+
+  /* Configuração da página para impressora térmica */
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  /* Remove qualquer sombra, borda ou fundo residual */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
