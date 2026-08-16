@@ -135,31 +135,32 @@ export default function AuthModal({
   };
 
   const handleInputChange = (field: string, value: string) => {
+    const normalizedValue = field === "email" ? value.toLowerCase() : value;
+
     if (activeTab === "login") {
-      setLoginData((prev) => ({ ...prev, [field]: value }));
-    } else {
-      let formattedValue = value;
-      if (field === "cpf") formattedValue = formatCPF(value);
-      if (field === "phone") formattedValue = formatPhone(value);
-      if (field === "birthDate") formattedValue = formatDate(value);
-
-      setRegisterData((prev) => {
-        const newData = { ...prev, [field]: formattedValue };
-
-        // Validate password
-        if (field === "password") {
-          setPasswordErrors(validatePassword(formattedValue));
-          setPasswordMatch(formattedValue === prev.confirmPassword);
-        }
-
-        // Check password match
-        if (field === "confirmPassword") {
-          setPasswordMatch(formattedValue === prev.password);
-        }
-
-        return newData;
-      });
+      setLoginData((prev) => ({ ...prev, [field]: normalizedValue }));
+      return;
     }
+
+    let formattedValue = normalizedValue;
+    if (field === "cpf") formattedValue = formatCPF(value);
+    if (field === "phone") formattedValue = formatPhone(value);
+    if (field === "birthDate") formattedValue = formatDate(value);
+
+    setRegisterData((prev) => {
+      const newData = { ...prev, [field]: formattedValue };
+
+      if (field === "password") {
+        setPasswordErrors(validatePassword(formattedValue));
+        setPasswordMatch(formattedValue === prev.confirmPassword);
+      }
+
+      if (field === "confirmPassword") {
+        setPasswordMatch(formattedValue === prev.password);
+      }
+
+      return newData;
+    });
   };
 
   const isFormValid = () => {
