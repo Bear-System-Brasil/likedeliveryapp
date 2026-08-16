@@ -135,7 +135,6 @@ export const useOrderStatus = () => {
   const orderId = searchParams?.get("orderId");
   const { user } = useAuthStore();
   const { play } = useSound("customer");
-  const queryClient = useQueryClient();
 
   const announcedStatusRef = useRef<OrderStatus | null>(null);
   const canceledAnnouncedRef = useRef(false);
