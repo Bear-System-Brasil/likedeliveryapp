@@ -187,10 +187,7 @@ export const useUpdateAddress = () => {
     },
 
     onSuccess: (data, variables) => {
-      // Garante que o cache fique 100% sincronizado
-      queryClient.invalidateQueries({
-        queryKey: ["addresses", "user", user?.id],
-      });
+      // Garante que o cache do endereço individual fique sincronizado (a lista é invalidada no onSettled)
       queryClient.invalidateQueries({ queryKey: ["address", variables.id] });
       toast.success("Endereço atualizado com sucesso!");
     },
