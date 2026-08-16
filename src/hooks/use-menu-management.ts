@@ -159,7 +159,15 @@ export const useMenuManagement = () => {
       toast.error("Nome do produto é obrigatório");
       return false;
     }
+    if (formData.name.trim().length > 80) {
+      toast.error("Nome do prato deve ter no máximo 80 caracteres");
+      return false;
+    }
 
+    if (formData.description.trim().length > 300) {
+      toast.error("Descrição deve ter no máximo 300 caracteres");
+      return false;
+    }
     if (formData.salePrice === undefined || formData.salePrice < 0.01) {
       toast.error("Preço de venda é obrigatório e deve ser no mínimo R$ 0,01");
       return false;
@@ -195,11 +203,13 @@ export const useMenuManagement = () => {
       return false;
     }
 
-    // --- MUDANÇA AQUI ---
-    // Se o usuário clicou em criar nova categoria, valida o input de texto
     if (isCreatingCategory) {
       if (!newCategoryName.trim()) {
         toast.error("O nome da nova categoria é obrigatório");
+        return false;
+      }
+      if (newCategoryName.trim().length > 50) {
+        toast.error("Nome da categoria deve ter no máximo 50 caracteres");
         return false;
       }
     }
@@ -399,7 +409,11 @@ export const useMenuManagement = () => {
    * Usa optimistic updates para resposta instantânea
    */
   const handleToggleAvailability = async (product: Product) => {
-    const queryKey = ['products', 'company', user?.companyId || user?.id || null];
+    const queryKey = [
+      "products",
+      "company",
+      user?.companyId || user?.id || null,
+    ];
 
     // Salva estado anterior para rollback em caso de erro
     const previousProducts = queryClient.getQueryData(queryKey);
