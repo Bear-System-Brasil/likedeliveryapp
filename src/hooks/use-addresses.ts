@@ -119,11 +119,11 @@ export const useUpdateAddress = () => {
           (addr) => addr.isDefault && addr.id !== id,
         );
 
-        // Atualiza em paralelo (Promise.all)
-        await Promise.all(
+        await Promise.allSettled(
           defaultAddresses.map((addr) =>
             apiService.address.updateUserAddress(addr.id, {
-              ...addr, // mantém todos os campos
+              latitude: addr.latitude,
+              longitude: addr.longitude,
               isDefault: false,
             }),
           ),
