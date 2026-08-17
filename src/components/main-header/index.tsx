@@ -48,10 +48,8 @@ export function MainHeader({
 }: MainHeaderProps) {
   const router = useRouter();
   const { showAuthModal, logout } = useAuth();
-
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-
   const [isMounted, setIsMounted] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,7 +81,6 @@ export function MainHeader({
     document.cookie = `userLocation=${encodeURIComponent(
       JSON.stringify(location),
     )}; path=/; max-age=86400; SameSite=Lax`;
-
     setLocationLabel(location.address || location.city);
     setLocationOpen(false);
     setIsChangingLocation(false);
@@ -94,38 +91,30 @@ export function MainHeader({
 
   const handleManualLocation = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     const query = manualLocation.trim();
     if (!query) {
       setLocationError("Digite uma cidade, bairro ou endereço.");
       return;
     }
-
     setLocationLoading(true);
     setLocationError("");
-
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
           `${query}, Brasil`,
         )}&format=jsonv2&limit=1&addressdetails=1`,
       );
-
       if (!response.ok) throw new Error("Falha ao buscar localização");
-
       const results = await response.json();
       const result = results?.[0];
-
       if (!result?.lat || !result?.lon) {
         throw new Error("Localização não encontrada");
       }
-
       const city =
         result.address?.city ||
         result.address?.town ||
         result.address?.municipality ||
         query;
-
       saveLocation({
         lat: Number(result.lat),
         lng: Number(result.lon),
@@ -146,10 +135,8 @@ export function MainHeader({
       setLocationError("Seu navegador não permite localização automática.");
       return;
     }
-
     setLocationLoading(true);
     setLocationError("");
-
     try {
       const position = await new Promise<GeolocationPosition>(
         (resolve, reject) =>
@@ -162,9 +149,7 @@ export function MainHeader({
       const response = await fetch(
         `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=pt`,
       );
-
       if (!response.ok) throw new Error("Falha ao buscar endereço");
-
       const data = await response.json();
       const city = data.city || data.locality || "Minha localização";
       const address = [
@@ -176,7 +161,6 @@ export function MainHeader({
       ]
         .filter(Boolean)
         .join(", ");
-
       saveLocation({
         lat: latitude,
         lng: longitude,
@@ -195,30 +179,24 @@ export function MainHeader({
       const locationCookie = document.cookie
         .split("; ")
         .find((row) => row.startsWith("userLocation="));
-
       if (!locationCookie) {
         setLocationLabel(DEFAULT_LOCATION_LABEL);
         return;
       }
-
       const encodedLocation = locationCookie.split("=").slice(1).join("=");
-
       try {
         const parsedLocation = JSON.parse(decodeURIComponent(encodedLocation));
         const label =
           parsedLocation?.address ||
           parsedLocation?.locality ||
           parsedLocation?.city;
-
         setLocationLabel(label || DEFAULT_LOCATION_LABEL);
       } catch {
         setLocationLabel(DEFAULT_LOCATION_LABEL);
       }
     };
-
     syncLocation();
     window.addEventListener("locationChanged", syncLocation);
-
     return () => {
       window.removeEventListener("locationChanged", syncLocation);
     };
@@ -226,16 +204,12 @@ export function MainHeader({
 
   // Espera a store terminar de rehydrar do localStorage
   useEffect(() => {
-    // Já rehydratou?
     if (useAuthStore.persist.hasHydrated()) {
       setHasHydrated(true);
     }
-
-    // Escuta quando terminar de rehydrar
     const unsub = useAuthStore.persist.onFinishHydration(() => {
       setHasHydrated(true);
     });
-
     return () => {
       unsub();
     };
@@ -278,12 +252,13 @@ export function MainHeader({
       )}
     >
       <div className="px-3 py-2 sm:px-6 sm:py-3">
-        <div className="flex items-center justify-between gap-1">
-          {/* Logo + Endereço */}
-          <div className="flex min-w-0 items-center gap-2">
-            <Link href="/">
+        <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+          {/* Logo + Endereço – agora com flex-1 + min-w-0 para ceder espaço */}
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
+            <Link href="/" className="shrink-0">
               <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
             </Link>
+
             <div className="min-w-0 leading-tight">
               <Sheet
                 open={locationOpen}
@@ -293,7 +268,6 @@ export function MainHeader({
                     setIsChangingLocation(!hasSavedLocation);
                     return;
                   }
-
                   setLocationError("");
                   setIsChangingLocation(false);
                 }}
@@ -301,7 +275,7 @@ export function MainHeader({
                 <SheetTrigger asChild>
                   <button
                     type="button"
-                    className="flex max-w-[120px] cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-200 xs:max-w-[150px] sm:max-w-[260px]"
+                    className="flex max-w-[90px] cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-200 xs:max-w-[120px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[240px]"
                     title="Alterar endereço"
                   >
                     <MapPin className="h-3.5 w-3.5 shrink-0 fill-pink-500 text-pink-500" />
@@ -311,10 +285,12 @@ export function MainHeader({
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
                   </button>
                 </SheetTrigger>
+
                 <SheetContent
                   side="top"
                   className="border-b border-orange-100 bg-white px-4 py-5 sm:px-6"
                 >
+                  {/* ... conteúdo do Sheet de localização permanece exatamente igual ... */}
                   <div className="mx-auto w-full max-w-xl space-y-4">
                     <div className="space-y-1 pr-8">
                       <SheetTitle className="text-lg font-bold text-gray-950">
@@ -331,7 +307,6 @@ export function MainHeader({
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
                           <MapPin className="h-5 w-5 fill-pink-500" />
                         </span>
-
                         <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-bold uppercase tracking-wide text-orange-600">
                             Entregando em
@@ -360,7 +335,6 @@ export function MainHeader({
                           <PencilLine className="mr-2 h-4 w-4" />
                           Trocar endereço
                         </Button>
-
                         <Button
                           type="button"
                           variant="outline"
@@ -384,7 +358,6 @@ export function MainHeader({
                             ? "Digite o novo endereço"
                             : "Adicionar endereço"}
                         </p>
-
                         <div className="flex flex-col gap-2 sm:flex-row">
                           <Input
                             autoFocus
@@ -417,15 +390,17 @@ export function MainHeader({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center space-x-3">
-            {/* Search (desktop/tablet: icone que expande ao lado) */}
+          {/* Actions – shrink-0 + gaps responsivos */}
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            {/* Search agora só a partir de md (768px) – alinha com o modo desktop */}
             {showSearch && (
-              <div className="hidden items-center sm:flex">
+              <div className="hidden items-center md:flex">
                 <div
                   className={clsx(
                     "overflow-hidden transition-all duration-200 ease-out",
-                    searchOpen ? "mr-2 w-56 opacity-100" : "w-0 opacity-0",
+                    searchOpen
+                      ? "mr-1.5 w-40 opacity-100 lg:w-48 xl:w-56"
+                      : "w-0 opacity-0",
                   )}
                 >
                   <Input
@@ -439,7 +414,6 @@ export function MainHeader({
                     className="h-10 rounded-xl border-0 bg-gray-50/50"
                   />
                 </div>
-
                 <Button
                   type="button"
                   variant="outline"
@@ -457,7 +431,7 @@ export function MainHeader({
               </div>
             )}
 
-            {/* Carrinho (o BottomBar ja cobre isso no mobile) */}
+            {/* Carrinho (BottomBar cobre no mobile) */}
             <Button
               variant="outline"
               size="icon"
@@ -466,8 +440,6 @@ export function MainHeader({
               aria-label="Carrinho"
             >
               <ShoppingCart className="h-4 w-4" />
-              {/* Só após montar: o total vem do store persistido e no SSR é 0,
-                  o que quebraria a hidratação. */}
               {isMounted && cartItems > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
                   {cartItems}
@@ -475,7 +447,7 @@ export function MainHeader({
               )}
             </Button>
 
-            {/* Meus Pedidos (o BottomBar ja cobre isso no mobile) */}
+            {/* Meus Pedidos */}
             {canShowAuthUI && isAuthenticated && user?.role === "client" && (
               <Button
                 variant="outline"
@@ -502,7 +474,6 @@ export function MainHeader({
                         <Menu className="h-5 w-5" />
                       </Button>
                     </SheetTrigger>
-
                     <SheetContent
                       side="right"
                       className="w-[300px] sm:w-[400px]"
@@ -510,13 +481,11 @@ export function MainHeader({
                       <SheetTitle className="sr-only">
                         Menu de navegação
                       </SheetTitle>
-
                       <div className="flex flex-col h-full">
                         <div className="flex items-center space-x-2 mb-6">
                           <LikeDeliveryLogo />
                           <h2 className="text-lg font-bold">Menu</h2>
                         </div>
-
                         <div className="space-y-2">
                           <Button
                             variant="outline"
@@ -534,7 +503,6 @@ export function MainHeader({
                             )}
                             Perfil
                           </Button>
-
                           <Button
                             variant="outline"
                             className="w-full justify-start rounded-xl"
@@ -548,7 +516,6 @@ export function MainHeader({
                               </span>
                             )}
                           </Button>
-
                           {user?.role === "client" && (
                             <Button
                               variant="outline"
@@ -562,7 +529,6 @@ export function MainHeader({
                               Meus Pedidos
                             </Button>
                           )}
-
                           {user?.role === "owner" && (
                             <Button
                               variant="outline"
@@ -576,7 +542,6 @@ export function MainHeader({
                               Gestão
                             </Button>
                           )}
-
                           <Button
                             className="w-full justify-start rounded-xl text-orange-600 hover:text-orange-700 hover:bg-red-50"
                             onClick={handleLogout}
