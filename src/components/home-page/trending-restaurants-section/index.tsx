@@ -109,9 +109,7 @@ function RestaurantListBlock({
           </p>
         </div>
       </div>
-
       {filterContent}
-
       {loading ? (
         <RestaurantGridSkeleton count={skeletonCount} />
       ) : restaurants.length ? (
@@ -173,7 +171,6 @@ function StoreCategoriesFilter({
       </div>
 
       <div className="relative">
-        {/* Seta esquerda - só aparece a partir de sm */}
         <button
           type="button"
           aria-label="Rolar categorias para a esquerda"
@@ -211,7 +208,6 @@ function StoreCategoriesFilter({
           ))}
         </div>
 
-        {/* Seta direita - só aparece a partir de sm */}
         <button
           type="button"
           onClick={() => scrollCategories("right")}
@@ -241,7 +237,6 @@ export function TrendingRestaurantsSection({
         const category = RESTAURANT_CATEGORIES.find(
           (item) => item.id === categoryId,
         );
-
         return {
           id: categoryId,
           icon: category?.icon,
@@ -254,7 +249,6 @@ export function TrendingRestaurantsSection({
 
   // A API já filtra por raio quando recebe lat/lng.
   // Aqui só descartamos o que vier marcado explicitamente como fora do raio.
-  // `undefined` significa "resposta sem cálculo de distância" e não pode esconder a loja.
   const restaurantsNearUser = useMemo(
     () =>
       restaurants.filter((restaurant) => restaurant.isWithinRadius !== false),
@@ -318,6 +312,7 @@ export function TrendingRestaurantsSection({
   return (
     <div className="px-3 sm:px-4 mb-6 sm:mb-10">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+        {/* 1. Novidades */}
         <RestaurantListBlock
           title="Novidades"
           subtitle="Destaques recentes perto de voce"
@@ -332,28 +327,49 @@ export function TrendingRestaurantsSection({
           }
         />
 
-        <RestaurantListBlock
-          id="lojas"
-          title="Lojas"
-          subtitle="Tudo perto de voce"
-          restaurants={visibleStores}
-          loading={isInitialLoading}
-          skeletonCount={8}
-          emptyTitle="Nenhuma loja encontrada"
-          emptyMessage={
-            selectedStoreCategory
-              ? "Nenhuma loja encontrada nessa categoria."
-              : "Ainda nao ha lojas perto de voce."
-          }
-          filterContent={
-            <StoreCategoriesFilter
-              categories={storeCategories}
-              selectedValue={selectedStoreCategory}
-              onSelect={setSelectedStoreCategory}
-            />
-          }
-          emptyContent={shouldAskForLocation ? <NoRestaurantNear /> : undefined}
+        {/* 2. Categorias */}
+        <StoreCategoriesFilter
+          categories={storeCategories}
+          selectedValue={selectedStoreCategory}
+          onSelect={setSelectedStoreCategory}
         />
+
+        {/* 3. Título Lojas (agora no lugar certo, acima da lista) */}
+        <div id="lojas" className="scroll-mt-28">
+          <div className="mb-2 sm:mb-3">
+            <h2 className="text-sm sm:text-base font-bold text-gray-950">
+              Lojas
+            </h2>
+            <p className="mt-0.5 text-[11px] sm:text-sm text-gray-500">
+              Tudo perto de voce
+            </p>
+          </div>
+
+          {isInitialLoading ? (
+            <RestaurantGridSkeleton count={8} />
+          ) : visibleStores.length ? (
+            <div className="grid grid-cols-1 gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {visibleStores.map((restaurant, index) => (
+                <Restaurant
+                  key={restaurant.id}
+                  restaurant={restaurant}
+                  index={index}
+                />
+              ))}
+            </div>
+          ) : shouldAskForLocation ? (
+            <NoRestaurantNear />
+          ) : (
+            <CompactEmptyState
+              title="Nenhuma loja encontrada"
+              message={
+                selectedStoreCategory
+                  ? "Nenhuma loja encontrada nessa categoria."
+                  : "Ainda nao ha lojas perto de voce."
+              }
+            />
+          )}
+        </div>
       </div>
     </div>
   );

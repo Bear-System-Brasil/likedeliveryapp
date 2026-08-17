@@ -16,7 +16,6 @@ export function Footer() {
               Encontre os melhores restaurantes e receba seu pedido com rapidez
               e praticidade.
             </p>
-
             <div className="flex gap-2.5">
               <Link
                 href="https://facebook.com"
@@ -54,9 +53,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="mb-3 text-base font-semibold text-white">
-              Navegue
-            </h4>
+            <h4 className="mb-3 text-base font-semibold text-white">Navegue</h4>
             <ul className="space-y-2">
               <li>
                 <Link

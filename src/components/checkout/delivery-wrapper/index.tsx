@@ -155,7 +155,7 @@ export function DeliveryWrapper() {
               Login necessario
             </h2>
             <p className="mb-6 text-gray-600">
-              Voce precisa estar logado para finalizar seu pedido
+              Você precisa estar logado para finalizar seu pedido
             </p>
             <GradientButton onClick={() => showAuthModal()}>
               Fazer login

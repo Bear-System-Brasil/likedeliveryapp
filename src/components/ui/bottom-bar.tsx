@@ -42,7 +42,10 @@ function getActiveTab(pathname: string): BottomTabId {
     return "orders";
   }
 
-  if (pathname.startsWith("/profile") || pathname.startsWith("/company-profile")) {
+  if (
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/company-profile")
+  ) {
     return "profile";
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminPageLayout } from "@/components/admin-page-layout";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -45,7 +46,10 @@ function formatTime(value?: string) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function StatCard({
@@ -84,8 +88,7 @@ function CompactButton({
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      type="button"
+    <Button
       {...props}
       className={cn(
         "h-9 shrink-0 rounded-[9px] bg-[#F4F5F7] px-4 text-xs font-bold text-[#3D4149] transition-colors hover:bg-[#E9EAEE] disabled:cursor-not-allowed disabled:opacity-50",
@@ -107,13 +110,12 @@ function ModalTitle({
       <DialogTitle className="text-[16px] font-extrabold tracking-tight text-[#14161A]">
         {children}
       </DialogTitle>
-      <button
-        type="button"
+      <Button
         onClick={onClose}
         className="flex h-[26px] w-[26px] items-center justify-center rounded-lg bg-[#F4F5F7] text-xs text-[#3D4149]"
       >
         ✕
-      </button>
+      </Button>
     </div>
   );
 }
@@ -236,7 +238,8 @@ export default function CashRegisterPage() {
   const availableBalance = summary?.availableBalance ?? 0;
   const hasContado = countedTotal.trim() !== "";
   const contadoVal = parseFloat(countedTotal.replace(",", "."));
-  const difVal = hasContado && !isNaN(contadoVal) ? contadoVal - availableBalance : 0;
+  const difVal =
+    hasContado && !isNaN(contadoVal) ? contadoVal - availableBalance : 0;
   const difOk = hasContado && !isNaN(contadoVal) && Math.abs(difVal) < 0.005;
   const difSobra = hasContado && !isNaN(contadoVal) && difVal >= 0.005;
   const difFalta = hasContado && !isNaN(contadoVal) && difVal <= -0.005;
@@ -274,14 +277,13 @@ export default function CashRegisterPage() {
       icon={Banknote}
       mainClassName="p-4 pb-20 sm:p-6 md:pb-10 lg:pl-64 lg:pr-8"
       actions={
-        <button
-          type="button"
+        <Button
           onClick={handleRefresh}
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] border border-[#E9EAEE] bg-white px-3.5 text-xs font-bold text-[#FF6B00] transition-colors hover:bg-[#FFF7F0]"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Atualizar
-        </button>
+        </Button>
       }
     >
       <div className="mx-auto max-w-7xl">
@@ -322,20 +324,18 @@ export default function CashRegisterPage() {
                 </div>
               </div>
               <div className="flex shrink-0 gap-[7px]">
-                <button
-                  type="button"
+                <Button
                   onClick={() => openMovementDialog("deposit")}
                   className="h-[34px] rounded-[9px] bg-white/[.12] px-3.5 text-xs font-bold text-white hover:bg-white/20"
                 >
                   + Entrada
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
                   onClick={() => openMovementDialog("withdrawal")}
                   className="h-[34px] rounded-[9px] bg-white/[.12] px-3.5 text-xs font-bold text-white hover:bg-white/20"
                 >
                   − Saída
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -385,7 +385,10 @@ export default function CashRegisterPage() {
                   {summaryLoading ? (
                     <div className="space-y-2.5">
                       {[1, 2, 3, 4, 5].map((i) => (
-                        <Skeleton key={i} className="h-[30px] w-full rounded-[8px]" />
+                        <Skeleton
+                          key={i}
+                          className="h-[30px] w-full rounded-[8px]"
+                        />
                       ))}
                     </div>
                   ) : (
@@ -433,14 +436,13 @@ export default function CashRegisterPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2 p-3.5 sm:grid-cols-4">
                     {MOVEMENT_OPTIONS.map((opt) => (
-                      <button
+                      <Button
                         key={opt.value}
-                        type="button"
                         onClick={() => openMovementDialog(opt.value)}
                         className="rounded-[10px] border border-[#E9EAEE] bg-white px-2 py-2.5 text-center text-[12px] font-bold text-[#3D4149] transition-colors hover:bg-[#F4F5F7]"
                       >
                         {opt.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -481,9 +483,7 @@ export default function CashRegisterPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#8A8F99]">
-                      Saídas
-                    </span>
+                    <span className="font-semibold text-[#8A8F99]">Saídas</span>
                     <span className="font-bold text-[#C0392B]">
                       − {formatCurrency(summary?.totalWithdrawals ?? 0)}
                     </span>
@@ -544,14 +544,13 @@ export default function CashRegisterPage() {
                   className={cn(fieldClass, "mt-2.5 bg-white")}
                 />
 
-                <button
-                  type="button"
+                <Button
                   onClick={handleCloseRegister}
                   disabled={closeMutation.isPending}
                   className="mt-3 h-10 w-full rounded-[10px] bg-[#14161A] text-[13px] font-extrabold text-white transition-colors hover:bg-[#2A2D33] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {closeMutation.isPending ? "Fechando..." : "Fechar caixa"}
-                </button>
+                </Button>
               </div>
             </div>
           </>
@@ -565,13 +564,12 @@ export default function CashRegisterPage() {
                   Caixa Fechado
                 </span>
               </div>
-              <button
-                type="button"
+              <Button
                 onClick={() => setDialog("open-register")}
                 className="h-[34px] rounded-[9px] bg-[#FF6B00] px-4 text-[12.5px] font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,.25)] hover:bg-[#E86000]"
               >
                 🔓 Abrir Caixa
-              </button>
+              </Button>
             </div>
             <div className="rounded-[13px] border border-dashed border-[#DDDFE4] bg-white px-5 py-10 text-center">
               <div className="text-[26px]">💵</div>
@@ -622,14 +620,13 @@ export default function CashRegisterPage() {
             <CompactButton onClick={closeDialog} className="flex-1">
               Cancelar
             </CompactButton>
-            <button
-              type="button"
+            <Button
               onClick={handleOpenRegister}
               disabled={openMutation.isPending || !openingBalance}
               className="h-9 flex-1 rounded-[9px] bg-[#FF6B00] text-xs font-extrabold text-white transition-colors hover:bg-[#E86000] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {openMutation.isPending ? "Abrindo..." : "Abrir"}
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -648,9 +645,8 @@ export default function CashRegisterPage() {
           <FieldLabel>Tipo</FieldLabel>
           <div className="mb-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
             {MOVEMENT_OPTIONS.map((opt) => (
-              <button
+              <Button
                 key={opt.value}
-                type="button"
                 onClick={() => setMovementType(opt.value)}
                 className={cn(
                   "h-[30px] rounded-[8px] text-[11px] font-bold transition-colors",
@@ -660,7 +656,7 @@ export default function CashRegisterPage() {
                 )}
               >
                 {opt.label}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -708,14 +704,13 @@ export default function CashRegisterPage() {
             <CompactButton onClick={closeDialog} className="flex-1">
               Cancelar
             </CompactButton>
-            <button
-              type="button"
+            <Button
               onClick={handleConfirmMovement}
               disabled={isMovementPending || !amount || !description}
               className="h-9 flex-1 rounded-[9px] bg-[#FF6B00] text-xs font-extrabold text-white transition-colors hover:bg-[#E86000] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isMovementPending ? "Registrando..." : "Registrar"}
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
