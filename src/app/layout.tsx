@@ -34,7 +34,9 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <AuthProvider>
-              <Suspense fallback={null}>{children}</Suspense>
+              <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+                <Suspense fallback={null}>{children}</Suspense>
+              </div>
               <BottomBar />
             </AuthProvider>
           </Providers>
