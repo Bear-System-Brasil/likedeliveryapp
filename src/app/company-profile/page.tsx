@@ -190,7 +190,7 @@ function CompanyProfileContent() {
     <AdminPageLayout
       title="Perfil da Empresa"
       icon={Building2}
-      mainClassName="p-4 pb-20 sm:p-6 md:pb-10 lg:pl-64 lg:pr-8"
+      mainClassName="p-4 sm:p-6 lg:pl-64 lg:pr-8"
       actions={
         <Badge className="border-0 bg-linear-to-br from-orange-100 to-orange-100 text-orange-700">
           {userRoleLabel}
@@ -339,7 +339,10 @@ function CompanyProfileContent() {
               {isLoadingProfile ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Skeleton key={i} className="h-[37px] w-full rounded-[9px]" />
+                    <Skeleton
+                      key={i}
+                      className="h-[37px] w-full rounded-[9px]"
+                    />
                   ))}
                 </div>
               ) : (
@@ -371,10 +374,7 @@ function CompanyProfileContent() {
                     icon={CreditCard}
                     value={formatCnpj(formData.cnpj)}
                     onChange={(e) =>
-                      updateFormField(
-                        "cnpj",
-                        e.target.value.replace(/\D/g, ""),
-                      )
+                      updateFormField("cnpj", e.target.value.replace(/\D/g, ""))
                     }
                     disabled={!isEditing}
                     placeholder="00.000.000/0000-00"
@@ -608,10 +608,7 @@ function CompanyProfileContent() {
                             id="isDefault"
                             checked={newAddress.isDefault}
                             onChange={(e) =>
-                              updateAddressField(
-                                "isDefault",
-                                e.target.checked,
-                              )
+                              updateAddressField("isDefault", e.target.checked)
                             }
                             className="h-4 w-4 rounded border-[#E9EAEE] text-orange-500 focus:ring-orange-500"
                           />
@@ -652,7 +649,10 @@ function CompanyProfileContent() {
             </SectionCard>
 
             {/* Segurança */}
-            <SectionCard title="Segurança" subtitle="Alterar sua senha de acesso">
+            <SectionCard
+              title="Segurança"
+              subtitle="Alterar sua senha de acesso"
+            >
               {!isChangingPassword ? (
                 <CompactButton
                   variant="outline"
