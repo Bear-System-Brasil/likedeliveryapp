@@ -208,6 +208,10 @@ export const useMenuManagement = () => {
         toast.error("O nome da nova categoria é obrigatório");
         return false;
       }
+      if (newCategoryName.trim().length < 5) {
+        toast.error("Nome da categoria deve ter no mínimo 5 caracteres");
+        return false;
+      }
       if (newCategoryName.trim().length > 50) {
         toast.error("Nome da categoria deve ter no máximo 50 caracteres");
         return false;
@@ -238,18 +242,25 @@ export const useMenuManagement = () => {
       // 1. Criar a categoria primeiro, se o usuário optou por criar uma nova
       if (isCreatingCategory) {
         try {
-          const newCategory = await apiService.createCategory({
+          const newCategoryResponse = await apiService.createCategory({
             name: newCategoryName,
-            description: "", // Como a interface pede uma descrição, mandamos uma string vazia como padrão
+            description: newCategoryName.trim(),
           });
 
-          // Recarrega as categorias em background para atualizar as abas e o select
+          if (!newCategoryResponse.success || !newCategoryResponse.data?.id) {
+            toast.error("Erro ao criar a nova categoria. Tente novamente.");
+            setIsSaving(false);
+            return;
+          }
+
+          finalCategoryId = newCategoryResponse.data.id;
+
           queryClient.invalidateQueries({ queryKey: ["categories"] });
         } catch (catError) {
           console.error("Erro ao criar categoria:", catError);
           toast.error("Erro ao criar a nova categoria. Tente novamente.");
           setIsSaving(false);
-          return; // Interrompe o salvamento do prato se a categoria falhar
+          return;
         }
       }
 
