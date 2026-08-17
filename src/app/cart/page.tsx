@@ -75,9 +75,7 @@ export default function CartPage() {
   }, [isAuthenticated, items.length]);
 
   const restaurantName =
-    restaurantData?.tradeName ||
-    items[0]?.restaurantName ||
-    "Restaurante";
+    restaurantData?.tradeName || items[0]?.restaurantName || "Restaurante";
   const restaurantImage =
     restaurantData?.logo_url || getItemImage(items[0] || {});
   const restaurantTime = restaurantData?.time || "30-40 min";
@@ -85,15 +83,17 @@ export default function CartPage() {
     String(restaurantData?.deliveryFee ?? "0").replace(",", "."),
   );
   const deliveryFee = Number.isFinite(rawDeliveryFee) ? rawDeliveryFee : 0;
-  const deliveryDiscount = appliedPromo === "FRETE10" ? Math.min(deliveryFee, 10) : 0;
+  const deliveryDiscount =
+    appliedPromo === "FRETE10" ? Math.min(deliveryFee, 10) : 0;
 
   const subtotal = totalPrice || 0;
   const promoDiscount = appliedPromo === "PRIMEIRA20" ? subtotal * 0.2 : 0;
   const total = subtotal + deliveryFee - deliveryDiscount - promoDiscount;
 
-  const deliveryLabel = deliveryFee - deliveryDiscount > 0
-    ? formatCurrency(deliveryFee - deliveryDiscount)
-    : "Grátis";
+  const deliveryLabel =
+    deliveryFee - deliveryDiscount > 0
+      ? formatCurrency(deliveryFee - deliveryDiscount)
+      : "Grátis";
 
   const restaurantMeta = useMemo(
     () => [
@@ -245,7 +245,11 @@ export default function CartPage() {
                         </h3>
                         <button
                           type="button"
-                          onClick={() => handleRemoveFromCart(item.id)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // impede que o clique suba para o card/linha pai
+                            e.preventDefault();
+                            handleRemoveFromCart(item.id);
+                          }}
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#8a8f99] transition hover:bg-red-50 hover:text-red-500"
                           aria-label={`Remover ${item.name}`}
                           title={`Remover ${item.name}`}
@@ -313,7 +317,9 @@ export default function CartPage() {
                     <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a8f99]" />
                     <Input
                       value={promoCode}
-                      onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
+                      onChange={(event) =>
+                        setPromoCode(event.target.value.toUpperCase())
+                      }
                       onKeyDown={(event) => {
                         if (event.key === "Enter") applyPromoCode();
                       }}
@@ -346,7 +352,9 @@ export default function CartPage() {
                 <div className="my-4 space-y-3 border-y border-[#e9eaee] py-4 text-xs font-semibold">
                   <div className="flex items-center justify-between text-[#8a8f99]">
                     <span>Subtotal</span>
-                    <span className="text-[#14161a]">{formatCurrency(subtotal)}</span>
+                    <span className="text-[#14161a]">
+                      {formatCurrency(subtotal)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-[#8a8f99]">
                     <span>Taxa de entrega</span>
@@ -361,7 +369,9 @@ export default function CartPage() {
                 </div>
 
                 <div className="flex items-end justify-between gap-3">
-                  <span className="text-sm font-bold text-[#3d4149]">Total</span>
+                  <span className="text-sm font-bold text-[#3d4149]">
+                    Total
+                  </span>
                   <span className="text-2xl font-extrabold tracking-[-0.02em] text-[#14161a]">
                     {formatCurrency(Math.max(0, total))}
                   </span>
@@ -395,7 +405,10 @@ function CartPageSkeleton() {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-3">
             {["a", "b", "c"].map((item) => (
-              <div key={item} className="h-28 animate-pulse rounded-xl bg-white" />
+              <div
+                key={item}
+                className="h-28 animate-pulse rounded-xl bg-white"
+              />
             ))}
           </div>
           <div className="h-80 animate-pulse rounded-xl bg-white" />
