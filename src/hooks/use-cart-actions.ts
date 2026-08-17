@@ -47,38 +47,26 @@ export const useCartActions = () => {
     if (!user?.id) return;
 
     try {
-      // Não usar setLoading aqui - sincronização é não-bloqueante
-
-      // Usar viewOrder para APENAS BUSCAR o carrinho existente
-      // Não usar openCart aqui porque isso pode sobrescrever o companyId com string vazia
-      //
-      // `cart:${user.id}` e exatamente a chave que o backend usa no Redis
-      // (order.repository: `const redisKey = cart:${customerId}`), entao ela e
-      // sempre a referencia correta do carrinho ativo. Nao usar o orderId local
-      // aqui de proposito: apos finalizar um pedido ele vira um UUID de pedido
-      // concluido, e buscar por ele traria itens ja comprados de volta.
       const cartKey = `cart:${user.id}`;
       const response = await apiService.orders.viewOrder(user.id, cartKey);
 
       if (response.success && response.data) {
         const backendCart = response.data as any;
-
-        // IMPORTANTE: Manter o prefixo 'cart:' no orderId
-        // O backend precisa dele para identificar carrinhos do Redis
         const orderId = backendCart.id;
 
         setOrderId(orderId);
 
-        // Atualizar restaurant do carrinho no store
-        if (backendCart.companyId) {
-          setRestaurant({
-            id: backendCart.companyId,
-            name: restaurant?.name || "Restaurante",
-          });
-        }
+        const hasItems =
+          backendCart.orderedItems && backendCart.orderedItems.length > 0;
 
-        // Converter itens do backend para formato do store
-        if (backendCart.orderedItems && backendCart.orderedItems.length > 0) {
+        if (hasItems) {
+          if (backendCart.companyId) {
+            setRestaurant({
+              id: backendCart.companyId,
+              name: restaurant?.name || "Restaurante",
+            });
+          }
+
           const cartItems = backendCart.orderedItems.map((item: any) => ({
             id: item.productId,
             name: item.product?.name || "Produto",
@@ -90,22 +78,14 @@ export const useCartActions = () => {
             customizations: item.addIngredient || undefined,
           }));
           setItems(cartItems);
-        }
-
-        // Validação: Alertar se companyId estiver vazio
-        if (!backendCart.companyId) {
-          // Empty block - just validation
+        } else { 
+          setRestaurant(null);
+          setItems([]);
         }
       }
     } catch (error) {
-      // 404 é ESPERADO quando não há carrinho ativo:
-      // - Primeira vez que o usuário acessa o app
-      // - Após finalizar ou limpar um pedido
-      // - Após carrinho expirar no Redis
-      // Nestes casos, o carrinho será criado quando adicionar o primeiro item
-      // Portanto, este erro pode ser ignorado silenciosamente
+      // 404 é esperado quando não há carrinho ativo
     }
-    // Sem loading state - sincronização é não-bloqueante
   };
 
   /**
@@ -321,7 +301,6 @@ export const useCartActions = () => {
   const handleRemoveFromCart = async (itemId: string) => {
     if (!user?.id || !orderId) return;
 
-    // CONTRAMEDIDA: Cancelar requisições pendentes deste item
     if (pendingRequests.current.has(itemId)) {
       pendingRequests.current.get(itemId)?.abort();
       pendingRequests.current.delete(itemId);
@@ -331,24 +310,30 @@ export const useCartActions = () => {
       updateTimers.current.delete(itemId);
     }
 
-    // Salvar quantidade para API
     const item = items.find((i) => i.id === itemId);
     if (!item) return;
 
     // ===== OPTIMISTIC UPDATE =====
-    // Remover item localmente IMEDIATAMENTE
     const newItems = items.filter((i) => i.id !== itemId);
     setItems(newItems);
+
+    if (newItems.length === 0) {
+      setRestaurant(null);
+    }
+
     toast.success("Item removido do carrinho");
 
     // ===== API CALL EM BACKGROUND =====
     apiService.orderItems
       .removeProductFromCart(user.id, orderId, itemId, item.quantity)
       .catch((error) => {
-        // Reverter se falhar usando estado atual
-        console.error("Erro ao remover item:", error);
         const currentItems = useCartStore.getState().items;
         setItems([...currentItems, item]);
+
+        if (currentItems.length === 0) {
+          setRestaurant({ id: item.restaurantId, name: item.restaurantName });
+        }
+
         toast.error("Erro ao remover. Tente novamente.");
       });
   };
