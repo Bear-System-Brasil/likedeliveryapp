@@ -247,7 +247,7 @@ export function MainHeader({
     <header
       className={clsx(
         "fixed top-1 left-1 right-1 z-50",
-        "bg-white/95 border border-pink-100/50",
+        "bg-white/95 border border-orange-100/50",
         "rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden",
       )}
     >
@@ -278,7 +278,7 @@ export function MainHeader({
                     className="flex max-w-[90px] cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-200 xs:max-w-[120px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[240px]"
                     title="Alterar endereço"
                   >
-                    <MapPin className="h-3.5 w-3.5 shrink-0 fill-pink-500 text-pink-500" />
+                    <MapPin className="h-3.5 w-3.5 shrink-0 fill-orange-500 text-orange-500" />
                     <span className="truncate" title={locationLabel}>
                       {locationLabel}
                     </span>
@@ -304,8 +304,8 @@ export function MainHeader({
 
                     <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4 shadow-sm">
                       <div className="flex gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-pink-500 shadow-sm">
-                          <MapPin className="h-5 w-5 fill-pink-500" />
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-orange-500 shadow-sm">
+                          <MapPin className="h-5 w-5 fill-orange-500" />
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-bold uppercase tracking-wide text-orange-600">
