@@ -227,7 +227,6 @@ function MenuManagementContent() {
       scheduleCategoryDragVisualSync();
     }
   }, [canCategoryScroll, scheduleCategoryDragVisualSync]);
-
   const handleCategoryDragPointerDown = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
       const scrollElement = categoriesScrollRef.current;
@@ -258,19 +257,35 @@ function MenuManagementContent() {
       }
 
       const maxScroll = scrollElement.scrollWidth - scrollElement.clientWidth;
+      if (maxScroll <= 0) return;
+
       const availableTrackWidth = Math.max(
         trackElement.clientWidth - buttonElement.offsetWidth,
         1,
       );
-      const deltaX = event.clientX - dragStart.pointerX;
-      const nextScrollLeft =
-        dragStart.scrollLeft + deltaX * (maxScroll / availableTrackWidth);
 
-      requestCategoryScrollLeft(
-        Math.min(Math.max(nextScrollLeft, 0), maxScroll),
+      const deltaX = event.clientX - dragStart.pointerX;
+      const nextScrollLeft = Math.min(
+        Math.max(
+          dragStart.scrollLeft + deltaX * (maxScroll / availableTrackWidth),
+          0,
+        ),
+        maxScroll,
       );
+
+      scrollElement.scrollLeft = nextScrollLeft;
+
+      // Atualiza o botão imediatamente (sem esperar o evento scroll)
+      const progress = nextScrollLeft / maxScroll;
+      categoryScrollProgressRef.current = progress;
+
+      const maxHandleOffset = Math.max(
+        trackElement.clientWidth - buttonElement.offsetWidth,
+        0,
+      );
+      buttonElement.style.transform = `translate3d(${progress * maxHandleOffset}px, -50%, 0)`;
     },
-    [requestCategoryScrollLeft],
+    [],
   );
 
   const handleCategoryDragPointerEnd = useCallback(
@@ -278,14 +293,11 @@ function MenuManagementContent() {
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
-
       categoryDragStartRef.current = null;
       setIsCategoryDragActive(false);
-      applyPendingCategoryScrollLeft();
     },
-    [applyPendingCategoryScrollLeft],
+    [],
   );
-
   const handleCategoryDragKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>) => {
       const scrollElement = categoriesScrollRef.current;
@@ -417,7 +429,7 @@ function MenuManagementContent() {
           <TabsList
             ref={categoriesScrollRef}
             id="menu-category-tabs"
-            className="scrollbar-hide h-auto w-full justify-start gap-[7px] overflow-x-auto scroll-smooth bg-transparent p-0"
+            className="scrollbar-hide h-auto w-full justify-start gap-[7px] overflow-x-auto bg-transparent p-0"
           >
             {allCategories.map((category) => (
               <TabsTrigger

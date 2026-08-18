@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { GradientButton } from "@/components/ui/gradient-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -171,159 +172,153 @@ export default function CashRegisterPage() {
           Abertura, fechamento e movimentos financeiros
         </p>
 
-          {/* Status do Caixa */}
-          {registerLoading ? (
-            <Skeleton className="h-24 w-full rounded-xl" />
-          ) : (
-            <div
-              className={`rounded-xl p-5 border flex items-center justify-between ${
-                isRegisterOpen
-                  ? "bg-green-50 border-green-200"
-                  : "bg-gray-100 border-gray-200"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {isRegisterOpen ? (
-                  <Unlock className="h-7 w-7 text-green-600" />
-                ) : (
-                  <Lock className="h-7 w-7 text-gray-400" />
-                )}
-                <div>
-                  <p className="font-semibold text-lg">
-                    {isRegisterOpen ? "Caixa Aberto" : "Caixa Fechado"}
-                  </p>
-                  {isRegisterOpen && register && (
-                    <p className="text-sm text-gray-600">
-                      Aberto em{" "}
-                      {new Date(register.openedAt).toLocaleString("pt-BR")} •
-                      Saldo inicial: {formatCurrency(register.openingBalance)}
-                    </p>
-                  )}
-                </div>
-              </div>
-
+        {/* Status do Caixa */}
+        {registerLoading ? (
+          <Skeleton className="h-24 w-full rounded-xl" />
+        ) : (
+          <div
+            className={`rounded-xl p-5 border flex items-center justify-between ${
+              isRegisterOpen
+                ? "bg-green-50 border-green-200"
+                : "bg-gray-100 border-gray-200"
+            }`}
+          >
+            <div className="flex items-center gap-3">
               {isRegisterOpen ? (
-                <Button
-                  variant="outline"
-                  onClick={() => setDialog("close-register")}
-                  className="rounded-xl border-red-300 text-red-600 hover:bg-red-50"
-                >
-                  <Lock className="h-4 w-4 mr-2" />
-                  Fechar Caixa
-                </Button>
+                <Unlock className="h-7 w-7 text-green-600" />
               ) : (
-                <Button
-                  onClick={() => setDialog("open-register")}
-                  className="rounded-xl bg-linear-to-r from-orange-500 to-pink-500 text-white"
-                >
-                  <Unlock className="h-4 w-4 mr-2" />
-                  Abrir Caixa
-                </Button>
+                <Lock className="h-7 w-7 text-gray-400" />
               )}
-            </div>
-          )}
-
-          {/* Resumo do Caixa */}
-          {isRegisterOpen && (
-            <>
-              {summaryLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-24 rounded-xl" />
-                  ))}
-                </div>
-              ) : summary ? (
-                <>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <SummaryCard
-                      label="Saldo Disponível"
-                      value={formatCurrency(summary.availableBalance)}
-                      color="text-green-700"
-                      bg="bg-green-50 border-green-200"
-                    />
-                    <SummaryCard
-                      label="Total em Vendas"
-                      value={formatCurrency(summary.totalSales)}
-                      color="text-blue-700"
-                      bg="bg-blue-50 border-blue-200"
-                    />
-                    <SummaryCard
-                      label="Total Sangrias"
-                      value={formatCurrency(summary.totalWithdrawals)}
-                      color="text-red-700"
-                      bg="bg-red-50 border-red-200"
-                    />
-                    <SummaryCard
-                      label="Total Suprimentos"
-                      value={formatCurrency(summary.totalDeposits)}
-                      color="text-purple-700"
-                      bg="bg-purple-50 border-purple-200"
-                    />
-                  </div>
-
-                  <div className="bg-white rounded-xl border border-gray-200 p-5">
-                    <h3 className="font-semibold mb-4">
-                      Por método de pagamento
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                      <MethodBadge label="Dinheiro" value={summary.totalCash} />
-                      <MethodBadge
-                        label="Crédito"
-                        value={summary.totalCredit}
-                      />
-                      <MethodBadge label="Débito" value={summary.totalDebit} />
-                      <MethodBadge label="PIX" value={summary.totalPix} />
-                      <MethodBadge
-                        label="Transferência"
-                        value={summary.totalTransfer}
-                      />
-                    </div>
-                  </div>
-                </>
-              ) : null}
-
-              {/* Ações de movimento */}
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <h3 className="font-semibold mb-4">Registrar Movimento</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <ActionButton
-                    icon={<Minus className="h-5 w-5 text-red-500" />}
-                    label="Sangria"
-                    description="Retirada de valor"
-                    onClick={() => setDialog("withdrawal")}
-                  />
-                  <ActionButton
-                    icon={<Plus className="h-5 w-5 text-purple-500" />}
-                    label="Suprimento"
-                    description="Entrada de troco"
-                    onClick={() => setDialog("deposit")}
-                  />
-                  <ActionButton
-                    icon={<ShoppingCart className="h-5 w-5 text-blue-500" />}
-                    label="Venda Manual"
-                    description="Registrar venda"
-                    onClick={() => setDialog("sale")}
-                  />
-                  <ActionButton
-                    icon={<ArrowUpRight className="h-5 w-5 text-orange-500" />}
-                    label="Reembolso"
-                    description="Devolução manual"
-                    onClick={() => setDialog("refund")}
-                  />
-                </div>
+              <div>
+                <p className="font-semibold text-lg">
+                  {isRegisterOpen ? "Caixa Aberto" : "Caixa Fechado"}
+                </p>
+                {isRegisterOpen && register && (
+                  <p className="text-sm text-gray-600">
+                    Aberto em{" "}
+                    {new Date(register.openedAt).toLocaleString("pt-BR")} •
+                    Saldo inicial: {formatCurrency(register.openingBalance)}
+                  </p>
+                )}
               </div>
-            </>
-          )}
-
-          {!isRegisterOpen && !registerLoading && (
-            <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
-              <Banknote className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-              <p className="text-gray-500 font-medium">Nenhum caixa aberto</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Abra o caixa para registrar movimentos
-              </p>
             </div>
-          )}
+
+            {isRegisterOpen ? (
+              <Button
+                variant="outline"
+                onClick={() => setDialog("close-register")}
+                className="rounded-xl border-red-300 text-red-600 hover:bg-red-50"
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                Fechar Caixa
+              </Button>
+            ) : (
+              <GradientButton onClick={() => setDialog("open-register")}>
+                <Unlock className="h-4 w-4 mr-2" />
+                Abrir Caixa
+              </GradientButton>
+            )}
+          </div>
+        )}
+
+        {/* Resumo do Caixa */}
+        {isRegisterOpen && (
+          <>
+            {summaryLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-24 rounded-xl" />
+                ))}
+              </div>
+            ) : summary ? (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <SummaryCard
+                    label="Saldo Disponível"
+                    value={formatCurrency(summary.availableBalance)}
+                    color="text-green-700"
+                    bg="bg-green-50 border-green-200"
+                  />
+                  <SummaryCard
+                    label="Total em Vendas"
+                    value={formatCurrency(summary.totalSales)}
+                    color="text-blue-700"
+                    bg="bg-blue-50 border-blue-200"
+                  />
+                  <SummaryCard
+                    label="Total Sangrias"
+                    value={formatCurrency(summary.totalWithdrawals)}
+                    color="text-red-700"
+                    bg="bg-red-50 border-red-200"
+                  />
+                  <SummaryCard
+                    label="Total Suprimentos"
+                    value={formatCurrency(summary.totalDeposits)}
+                    color="text-purple-700"
+                    bg="bg-purple-50 border-purple-200"
+                  />
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <h3 className="font-semibold mb-4">
+                    Por método de pagamento
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                    <MethodBadge label="Dinheiro" value={summary.totalCash} />
+                    <MethodBadge label="Crédito" value={summary.totalCredit} />
+                    <MethodBadge label="Débito" value={summary.totalDebit} />
+                    <MethodBadge label="PIX" value={summary.totalPix} />
+                    <MethodBadge
+                      label="Transferência"
+                      value={summary.totalTransfer}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : null}
+
+            {/* Ações de movimento */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="font-semibold mb-4">Registrar Movimento</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <ActionButton
+                  icon={<Minus className="h-5 w-5 text-red-500" />}
+                  label="Sangria"
+                  description="Retirada de valor"
+                  onClick={() => setDialog("withdrawal")}
+                />
+                <ActionButton
+                  icon={<Plus className="h-5 w-5 text-purple-500" />}
+                  label="Suprimento"
+                  description="Entrada de troco"
+                  onClick={() => setDialog("deposit")}
+                />
+                <ActionButton
+                  icon={<ShoppingCart className="h-5 w-5 text-blue-500" />}
+                  label="Venda Manual"
+                  description="Registrar venda"
+                  onClick={() => setDialog("sale")}
+                />
+                <ActionButton
+                  icon={<ArrowUpRight className="h-5 w-5 text-orange-500" />}
+                  label="Reembolso"
+                  description="Devolução manual"
+                  onClick={() => setDialog("refund")}
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {!isRegisterOpen && !registerLoading && (
+          <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
+            <Banknote className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+            <p className="text-gray-500 font-medium">Nenhum caixa aberto</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Abra o caixa para registrar movimentos
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Dialog Abrir Caixa */}
@@ -366,7 +361,7 @@ export default function CashRegisterPage() {
             <Button
               onClick={handleOpenRegister}
               disabled={openMutation.isPending || !openingBalance}
-              className="rounded-xl bg-linear-to-r from-orange-500 to-pink-500 text-white"
+              className="rounded-xl bg-orange-500  text-white"
             >
               {openMutation.isPending ? "Abrindo..." : "Confirmar Abertura"}
             </Button>
@@ -500,7 +495,7 @@ export default function CashRegisterPage() {
             <Button
               onClick={handleMovement}
               disabled={isMovementPending || !amount || !description}
-              className="rounded-xl bg-linear-to-r from-orange-500 to-pink-500 text-white"
+              className="rounded-xl bg-orange-500 text-white"
             >
               {isMovementPending ? "Registrando..." : "Confirmar"}
             </Button>
