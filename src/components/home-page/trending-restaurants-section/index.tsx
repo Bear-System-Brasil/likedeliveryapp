@@ -315,15 +315,15 @@ export function TrendingRestaurantsSection({
         {/* 1. Novidades */}
         <RestaurantListBlock
           title="Novidades"
-          subtitle="Destaques recentes perto de voce"
+          subtitle="Destaques recentes perto de você"
           restaurants={newsRestaurants}
           loading={isInitialLoading}
           skeletonCount={4}
           emptyTitle="Nenhuma novidade encontrada"
           emptyMessage={
             shouldAskForLocation
-              ? "Escolha um endereço para ver as novidades perto de voce."
-              : "Ainda nao ha novidades perto de voce."
+              ? "Escolha um endereço para ver as novidades perto de você."
+              : "Ainda nao ha novidades perto de você."
           }
         />
 
@@ -341,7 +341,7 @@ export function TrendingRestaurantsSection({
               Lojas
             </h2>
             <p className="mt-0.5 text-[11px] sm:text-sm text-gray-500">
-              Tudo perto de voce
+              Tudo perto de você
             </p>
           </div>
 
@@ -365,7 +365,7 @@ export function TrendingRestaurantsSection({
               message={
                 selectedStoreCategory
                   ? "Nenhuma loja encontrada nessa categoria."
-                  : "Ainda nao ha lojas perto de voce."
+                  : "Ainda nao ha lojas perto de você."
               }
             />
           )}

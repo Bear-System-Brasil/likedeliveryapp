@@ -81,10 +81,6 @@ export function LikeDeliveryAppPage({
       />
 
       <main className="flex-1 flex flex-col pt-24">
-        <div className="px-3 pt-1 sm:hidden">
-          <MobileSearchTrigger className="w-full" />
-        </div>
-
         <BannerCarousel />
 
         <TrendingRestaurantsSection

@@ -1,34 +1,3 @@
-/**
- * =============================================================================
- * AUTH STORE - GERENCIAMENTO DE AUTENTICAÇÃO
- * =============================================================================
- *
- * Store global de autenticação usando Zustand.
- *
- * ARMAZENA:
- * - user: dados do usuário logado (null se não logado)
- * - token: JWT token para autenticação na API
- * - isAuthenticated: boolean indicando se está logado
- *
- * PERSISTÊNCIA:
- * - Dados salvos automaticamente no localStorage
- * - Sobrevive a reloads da página
- * - Sincronizado com AuthContext
- *
- * ROLES disponíveis:
- * - client: Cliente normal (faz pedidos)
- * - owner: Dono de restaurante (acessa admin)
- * - admin: Administrador do restaurante
- * - manager: Gerente
- * - cook: Cozinheiro
- * - delivery: Entregador
- *
- * Uso:
- * ```typescript
- * const { user, token, isAuthenticated, login, logout } = useAuthStore()
- * ```
- */
-
 import { STORAGE_KEYS } from "@/utils/storage-manager";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
@@ -52,12 +21,13 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-
+  _hasHydrated: boolean;
   // Actions
   login: (user: User, token: string) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -68,6 +38,7 @@ export const useAuthStore = create<AuthState>()(
         token: null,
         isAuthenticated: false,
         isLoading: false,
+        _hasHydrated: false,
 
         login: (user, token) =>
           set(
@@ -104,6 +75,9 @@ export const useAuthStore = create<AuthState>()(
 
         setLoading: (loading) =>
           set({ isLoading: loading }, false, "auth/setLoading"),
+
+        setHasHydrated: (state) =>
+          set({ _hasHydrated: state }, false, "auth/setHasHydrated"),
       }),
       {
         name: STORAGE_KEYS.AUTH,
@@ -113,6 +87,9 @@ export const useAuthStore = create<AuthState>()(
           token: state.token,
           isAuthenticated: state.isAuthenticated,
         }),
+        onRehydrateStorage: () => (state) => {
+          state?.setHasHydrated(true);
+        },
       },
     ),
     { name: "auth-store", enabled: process.env.NODE_ENV !== "production" },

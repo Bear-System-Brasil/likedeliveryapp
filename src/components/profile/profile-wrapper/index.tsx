@@ -21,6 +21,7 @@ export function ProfileWrapper() {
     user,
     isMounted,
     isAuthenticated,
+    hasHydrated,
     isLoadingProfile,
     profileError,
     // Profile
@@ -52,7 +53,13 @@ export function ProfileWrapper() {
     }
   }, [isAuthenticated, user, router]);
 
-  // Prevent rendering during SSR/SSG
+  useEffect(() => {
+    if (!hasHydrated) return;
+
+    if (!isAuthenticated || !user) {
+      router.push("/?openAuth=true");
+    }
+  }, [hasHydrated, isAuthenticated, user, router]);
   if (!isMounted) {
     return (
       <div className="min-h-screen bg-gray-50">
