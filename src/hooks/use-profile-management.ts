@@ -25,7 +25,8 @@ interface Address extends AddressFormData {
  */
 export const useProfileManagement = () => {
   const router = useRouter();
-  const { user, token, isAuthenticated, updateUser } = useAuthStore();
+  const { user, token, isAuthenticated, updateUser, _hasHydrated } =
+    useAuthStore();
   const { updateProfile } = useProfile();
 
   // Profile state
@@ -407,6 +408,7 @@ export const useProfileManagement = () => {
     token,
     isMounted,
     isAuthenticated,
+    hasHydrated: _hasHydrated,
     isLoadingProfile,
     profileError,
     // Profile

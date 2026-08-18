@@ -50,6 +50,7 @@ export function MainHeader({
   const { showAuthModal, logout } = useAuth();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   const [isMounted, setIsMounted] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,9 +62,9 @@ export function MainHeader({
   const [manualLocation, setManualLocation] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState("");
+
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Montagem do componente
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -202,7 +203,6 @@ export function MainHeader({
     };
   }, []);
 
-  // Espera a store terminar de rehydrar do localStorage
   useEffect(() => {
     if (useAuthStore.persist.hasHydrated()) {
       setHasHydrated(true);
@@ -253,8 +253,13 @@ export function MainHeader({
     >
       <div className="px-3 py-2 sm:px-6 sm:py-3">
         <div className="flex items-center justify-between gap-1.5 sm:gap-2">
-          {/* Logo + Endereço – agora com flex-1 + min-w-0 para ceder espaço */}
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
+          {/* ===== LADO ESQUERDO (Logo + Endereço) ===== */}
+          <div
+            className={clsx(
+              "flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 transition-all duration-200",
+              searchOpen && "max-md:hidden",
+            )}
+          >
             <Link href="/" className="shrink-0">
               <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
             </Link>
@@ -264,12 +269,11 @@ export function MainHeader({
                 open={locationOpen}
                 onOpenChange={(open) => {
                   setLocationOpen(open);
-                  if (open) {
-                    setIsChangingLocation(!hasSavedLocation);
-                    return;
+                  if (!open) {
+                    setLocationError("");
+                    setIsChangingLocation(false);
+                    setManualLocation("");
                   }
-                  setLocationError("");
-                  setIsChangingLocation(false);
                 }}
               >
                 <SheetTrigger asChild>
@@ -287,22 +291,24 @@ export function MainHeader({
                 </SheetTrigger>
 
                 <SheetContent
-                  side="top"
-                  className="border-b border-orange-100 bg-white px-4 py-5 sm:px-6"
+                  side="bottom"
+                  className="rounded-t-3xl border-t border-orange-100 bg-white px-4 pb-8 pt-4 sm:px-6"
                 >
-                  {/* ... conteúdo do Sheet de localização permanece exatamente igual ... */}
+                  {/* Handle visual (opcional mas fica bonito) */}
+                  <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-gray-200" />
+
                   <div className="mx-auto w-full max-w-xl space-y-4">
-                    <div className="space-y-1 pr-8">
+                    <div className="space-y-1">
                       <SheetTitle className="text-lg font-bold text-gray-950">
                         Endereço de entrega
                       </SheetTitle>
                       <p className="text-sm text-gray-500">
-                        Confira onde seu pedido será entregue ou troque para
-                        outro local.
+                        Onde seu pedido será entregue
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4 shadow-sm">
+                    {/* Card do endereço atual */}
+                    <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
                       <div className="flex gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-orange-500 shadow-sm">
                           <MapPin className="h-5 w-5 fill-orange-500" />
@@ -314,14 +320,10 @@ export function MainHeader({
                           <p className="mt-1 text-sm font-semibold leading-snug text-gray-950">
                             {currentLocationText}
                           </p>
-                          <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                            Esse endereço será usado para encontrar restaurantes
-                            próximos e calcular a entrega.
-                          </p>
                         </div>
                       </div>
 
-                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      <div className="mt-4 grid grid-cols-2 gap-2">
                         <Button
                           type="button"
                           variant="outline"
@@ -333,7 +335,7 @@ export function MainHeader({
                           className="h-11 justify-center rounded-xl border-orange-200 bg-white text-orange-600 hover:bg-orange-50"
                         >
                           <PencilLine className="mr-2 h-4 w-4" />
-                          Trocar endereço
+                          Trocar
                         </Button>
                         <Button
                           type="button"
@@ -343,38 +345,51 @@ export function MainHeader({
                           className="h-11 justify-center rounded-xl border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
                         >
                           <Navigation className="mr-2 h-4 w-4" />
-                          Usar minha localização
+                          Usar atual
                         </Button>
                       </div>
                     </div>
 
-                    {(isChangingLocation || !hasSavedLocation) && (
+                    {/* Formulário só aparece quando o usuário clica em "Trocar" */}
+                    {isChangingLocation && (
                       <form
                         onSubmit={handleManualLocation}
-                        className="rounded-2xl border border-gray-200 bg-gray-50 p-3"
+                        className="rounded-2xl border border-gray-200 bg-gray-50 p-4"
                       >
                         <p className="mb-3 text-sm font-semibold text-gray-950">
-                          {hasSavedLocation
-                            ? "Digite o novo endereço"
-                            : "Adicionar endereço"}
+                          Digite o novo endereço
                         </p>
-                        <div className="flex flex-col gap-2 sm:flex-row">
+                        <div className="flex flex-col gap-2">
                           <Input
-                            autoFocus
                             value={manualLocation}
                             onChange={(event) =>
                               setManualLocation(event.target.value)
                             }
                             placeholder="Ex.: Rua Machado de Assis, 334"
                             className="h-11 rounded-xl bg-white"
+                            // ← sem autoFocus
                           />
-                          <Button
-                            type="submit"
-                            disabled={locationLoading}
-                            className="h-11 shrink-0 rounded-xl bg-orange-500 px-5 hover:bg-orange-600"
-                          >
-                            {locationLoading ? "Buscando..." : "Salvar"}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setIsChangingLocation(false);
+                                setManualLocation("");
+                                setLocationError("");
+                              }}
+                              className="h-11 flex-1 rounded-xl"
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              type="submit"
+                              disabled={locationLoading}
+                              className="h-11 flex-1 rounded-xl bg-orange-500 hover:bg-orange-600"
+                            >
+                              {locationLoading ? "Buscando..." : "Salvar"}
+                            </Button>
+                          </div>
                         </div>
                       </form>
                     )}
@@ -390,16 +405,22 @@ export function MainHeader({
             </div>
           </div>
 
-          {/* Actions – shrink-0 + gaps responsivos */}
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            {/* Search agora só a partir de md (768px) – alinha com o modo desktop */}
+          {/* ===== ACTIONS ===== */}
+          <div
+            className={clsx(
+              "flex items-center gap-1.5 sm:gap-2 transition-all duration-200",
+              searchOpen ? "max-md:flex-1 max-md:min-w-0" : "shrink-0",
+            )}
+          >
+            {/* Search */}
             {showSearch && (
-              <div className="hidden items-center md:flex">
+              <div className="flex items-center max-md:flex-1 max-md:min-w-0">
+                {/* Input expande para a ESQUERDA do botão */}
                 <div
                   className={clsx(
                     "overflow-hidden transition-all duration-200 ease-out",
                     searchOpen
-                      ? "mr-1.5 w-40 opacity-100 lg:w-48 xl:w-56"
+                      ? "mr-1.5 w-full opacity-100 max-md:flex-1 sm:w-36 md:w-40 lg:w-48 xl:w-56"
                       : "w-0 opacity-0",
                   )}
                 >
@@ -411,14 +432,16 @@ export function MainHeader({
                     onKeyDown={(e) => {
                       if (e.key === "Escape") setSearchOpen(false);
                     }}
-                    className="h-10 rounded-xl border-0 bg-gray-50/50"
+                    className="h-9 sm:h-10 w-full rounded-xl border-0 bg-gray-50/50 text-sm"
                   />
                 </div>
+
+                {/* Botão SEMPRE fica na direita */}
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-10 w-10 shrink-0 rounded-xl border-0 bg-gray-50/50"
+                  className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-xl border-0 bg-gray-50/50"
                   onClick={() => setSearchOpen((open) => !open)}
                   aria-label={searchOpen ? "Fechar busca" : "Buscar"}
                 >
@@ -431,7 +454,7 @@ export function MainHeader({
               </div>
             )}
 
-            {/* Carrinho (BottomBar cobre no mobile) */}
+            {/* Carrinho */}
             <Button
               variant="outline"
               size="icon"
@@ -460,7 +483,7 @@ export function MainHeader({
               </Button>
             )}
 
-            {/* Área de autenticação */}
+            {/* Menu / Entrar */}
             {canShowAuthUI && (
               <>
                 {isAuthenticated ? (
@@ -474,6 +497,7 @@ export function MainHeader({
                         <Menu className="h-5 w-5" />
                       </Button>
                     </SheetTrigger>
+
                     <SheetContent
                       side="right"
                       className="w-[300px] sm:w-[400px]"
@@ -486,6 +510,7 @@ export function MainHeader({
                           <LikeDeliveryLogo />
                           <h2 className="text-lg font-bold">Menu</h2>
                         </div>
+
                         <div className="space-y-2">
                           <Button
                             variant="outline"
@@ -503,6 +528,7 @@ export function MainHeader({
                             )}
                             Perfil
                           </Button>
+
                           <Button
                             variant="outline"
                             className="w-full justify-start rounded-xl"
@@ -516,6 +542,7 @@ export function MainHeader({
                               </span>
                             )}
                           </Button>
+
                           {user?.role === "client" && (
                             <Button
                               variant="outline"
@@ -529,6 +556,7 @@ export function MainHeader({
                               Meus Pedidos
                             </Button>
                           )}
+
                           {user?.role === "owner" && (
                             <Button
                               variant="outline"
@@ -542,6 +570,7 @@ export function MainHeader({
                               Gestão
                             </Button>
                           )}
+
                           <Button
                             className="w-full justify-start rounded-xl text-orange-600 hover:text-orange-700 hover:bg-red-50"
                             onClick={handleLogout}
