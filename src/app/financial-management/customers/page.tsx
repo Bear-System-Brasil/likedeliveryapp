@@ -29,7 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function CustomersPage() {
-  const { token } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const [search, setSearch] = useState("");
 
   const { data: orders = [], isLoading } = useQuery({
@@ -39,7 +39,7 @@ export default function CustomersPage() {
       if (!response.success || !response.data) return [];
       return response.data;
     },
-    enabled: !!token,
+    enabled: !!isAuthenticated,
     staleTime: 60_000,
   });
 

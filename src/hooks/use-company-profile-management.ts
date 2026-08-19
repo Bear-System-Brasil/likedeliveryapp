@@ -61,7 +61,7 @@ interface PasswordFormData {
  */
 export const useCompanyProfileManagement = () => {
   const router = useRouter();
-  const { user, token, isAuthenticated, updateUser } = useAuthStore();
+  const { user, isAuthenticated, updateUser } = useAuthStore();
 
   // Company profile state
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
@@ -133,7 +133,7 @@ export const useCompanyProfileManagement = () => {
    */
   useEffect(() => {
     const fetchCompanyProfile = async () => {
-      if (!token || !isAuthenticated || !user?.id) {
+      if (!isAuthenticated || !user?.id) {
         router.push("/?openAuth=true");
         return null;
       }
@@ -183,7 +183,7 @@ export const useCompanyProfileManagement = () => {
     };
 
     fetchCompanyProfile();
-  }, [token, isAuthenticated, user?.id, user?.companyId, router]);
+  }, [isAuthenticated, user?.id, user?.companyId, router]);
 
   /**
    * Função para buscar endereços da empresa (reutilizável)

@@ -29,33 +29,11 @@
 import { Coords, ProductCategory, Restaurant } from "@/types/restaurant";
 import { STORAGE_KEYS, storageManager } from "@/utils/storage-manager";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "https://bearsystem.tech";
-
 /**
- * Helper para obter token de autenticação
- * Tenta primeiro do Zustand store, depois fallback para formato legado
+ * Client fala com o BFF do próprio Next. Cookie httpOnly vai junto
+ * automaticamente (same-origin). Nada de token no browser.
  */
-const getAuthToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-
-  try {
-    // Tentar pegar do Zustand store
-    const authData = storageManager.local.get<any>(STORAGE_KEYS.AUTH);
-    if (authData?.state?.token) {
-      return authData.state.token;
-    }
-
-    // Fallback para formato legado
-    const legacyToken = storageManager.local.get<string>(
-      STORAGE_KEYS.LEGACY_TOKEN,
-    );
-    return legacyToken;
-  } catch {
-    return null;
-  }
-};
+const API_BASE_URL = "/api/proxy";
 
 /**
  * Helper para obter usuário autenticado
@@ -151,6 +129,16 @@ export interface LoginApiResponse {
   data: LoginResponse;
 }
 
+/**
+ * Contrato real devolvido por /api/auth/login e /api/auth/register (BFF).
+ * Sem token - a sessão vive no cookie httpOnly, o client só recebe o user.
+ */
+export interface AuthBffResponse {
+  data: {
+    user: (User | Company) & { companyId?: string | null };
+  };
+}
+
 export interface ReportsParams {
   month?: string;
   startDate?: string;
@@ -217,15 +205,13 @@ async function apiRequest<T>(
       config.body = JSON.stringify(data);
     }
 
-    // Add authorization token if needed
+    // Autenticação vai via cookie httpOnly, injetado pelo proxy do Next
+    // (ver /api/proxy/[...path]) - mas só quando explicitamente pedido.
+    // Sem esse sinal, o proxy manda tudo autenticado pra quem tá logado,
+    // o que quebra endpoints publicos que o backend responde diferente
+    // com token (ex: GET /company tenta usar o endereço do usuário).
     if (requiresAuth) {
-      const token = getAuthToken();
-      if (token) {
-        config.headers = {
-          ...config.headers,
-          Authorization: `Bearer ${token}`,
-        };
-      }
+      config.headers = { ...config.headers, "X-Auth-Required": "1" };
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
@@ -744,14 +730,61 @@ export const apiService = {
   verifyOtp: (otpData: VerifyOtpRequest) =>
     apiRequest<string>("POST", "/user/complet", otpData),
 
-  getMe: () => apiRequest<User>("GET", "/user/me", undefined, true),
+  // /user/me devolve o hash bcrypt da senha no corpo - nunca deixar isso
+  // chegar no Zustand (persiste em localStorage via updateUser).
+  getMe: async (): Promise<ApiResponse<User>> => {
+    const response = await apiRequest<User & { password?: string }>(
+      "GET",
+      "/user/me",
+      undefined,
+      true,
+    );
+    if (response.success && response.data) {
+      const { password: _password, ...safeUser } = response.data;
+      return { ...response, data: safeUser };
+    }
+    return response as ApiResponse<User>;
+  },
 
-  // Auth endpoints
-  register: (userData: CreateUserRequest) =>
-    apiRequest<LoginApiResponse>("POST", "/auth/register", userData),
+  // Auth endpoints - falam com as rotas BFF do Next (Set-Cookie httpOnly),
+  // não com o proxy do NestJS.
+  register: async (
+    userData: CreateUserRequest,
+  ): Promise<ApiResponse<AuthBffResponse>> => {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData),
+    });
+    const result = await res.json().catch(() => null);
+    return res.ok
+      ? { success: true, data: result.data as AuthBffResponse }
+      : { success: false, message: result?.message, status: res.status };
+  },
 
-  login: (credentials: { email: string; password: string }) =>
-    apiRequest<LoginApiResponse>("POST", "/auth/login", credentials),
+  login: async (credentials: {
+    email: string;
+    password: string;
+  }): Promise<ApiResponse<AuthBffResponse>> => {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credentials),
+    });
+    const result = await res.json().catch(() => null);
+    return res.ok
+      ? { success: true, data: result.data as AuthBffResponse }
+      : { success: false, message: result?.message, status: res.status };
+  },
+
+  logout: async (): Promise<void> => {
+    await fetch("/api/auth/logout", { method: "POST" });
+  },
+
+  getSession: async (): Promise<{ authenticated: boolean; user: any }> => {
+    const res = await fetch("/api/auth/session", { cache: "no-store" });
+    return res.json();
+  },
 
   getInitialPhone: () =>
     apiRequest<{ phone: string }>("GET", "/auth/login/initial"),
@@ -792,12 +825,11 @@ export const apiService = {
       const formData = new FormData();
       formData.append("image", file);
 
-      const token = getAuthToken();
       const response = await fetch(
         `${API_BASE_URL}/product/image/${productId}`,
         {
           method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: { "X-Auth-Required": "1" },
           body: formData,
         },
       );
@@ -914,29 +946,10 @@ export const apiService = {
 
   // Company endpoints
   companies: {
-    create: (companyData: CreateCompanyRequest, token?: string) =>
-      token
-        ? // Use provided token (e.g. from fresh registration)
-          fetch(`${API_BASE_URL}/company`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(companyData),
-          }).then(async (res): Promise<ApiResponse<Company>> => {
-            const result = await res.json();
-            if (!res.ok) {
-              const msg = Array.isArray(result.message)
-                ? result.message[0]
-                : typeof result.message === "string"
-                  ? result.message
-                  : `Erro ${res.status}`;
-              return { success: false, message: msg };
-            }
-            return { success: true, data: result };
-          })
-        : apiRequest<Company>("POST", "/company", companyData, true),
+    // O cookie de sessão já foi setado pelo /api/auth/register - o proxy
+    // injeta o Bearer sozinho, não precisa mais de token explícito aqui.
+    create: (companyData: CreateCompanyRequest) =>
+      apiRequest<Company>("POST", "/company", companyData, true),
 
     getAll: (userLocation?: Coords) =>
       apiRequest<Restaurant[]>(
@@ -963,10 +976,9 @@ export const apiService = {
           }
         });
 
-        const token = getAuthToken();
         const config: RequestInit = {
           method: "PATCH",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: { "X-Auth-Required": "1" },
           body: formData, // Não definir Content-Type - deixa o browser definir com boundary
         };
 
@@ -1006,10 +1018,9 @@ export const apiService = {
       formData.append("file", file);
       formData.append("folder", folder);
 
-      const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/s3/upload`, {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { "X-Auth-Required": "1" },
         body: formData,
       });
 
@@ -1061,10 +1072,9 @@ export const apiService = {
       // Não enviamos email, cpf ou phone para evitar conflito de unicidade
       if (dataToSend.name) formData.append("name", dataToSend.name);
 
-      const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/user`, {
         method: "PUT",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { "X-Auth-Required": "1" },
         body: formData,
       });
 
@@ -1133,10 +1143,9 @@ export const apiService = {
       if (dataToSend.email) formData.append("email", dataToSend.email);
       if (dataToSend.phone) formData.append("phone", dataToSend.phone);
 
-      const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/company/${companyId}`, {
         method: "PATCH",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { "X-Auth-Required": "1" },
         body: formData,
       });
 
@@ -1205,10 +1214,9 @@ export const apiService = {
       if (dataToSend.email) formData.append("email", dataToSend.email);
       if (dataToSend.phone) formData.append("phone", dataToSend.phone);
 
-      const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/company/${companyId}`, {
         method: "PATCH",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { "X-Auth-Required": "1" },
         body: formData,
       });
 

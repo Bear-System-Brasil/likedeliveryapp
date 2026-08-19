@@ -36,7 +36,7 @@ const ACTIVE_ORDERS_POLL_MS = 30 * 1000
  * status cuida de diferenciá-los na tela.
  */
 export const useUserOrders = () => {
-  const { user, token } = useAuthStore()
+  const { user, isAuthenticated } = useAuthStore()
 
   return useQuery({
     queryKey: ['orders', 'user', user?.id],
@@ -62,7 +62,7 @@ export const useUserOrders = () => {
           new Date(first.created_at).getTime(),
       )
     },
-    enabled: !!token,
+    enabled: !!isAuthenticated,
     // O padrao global do app e cache agressivo com `refetchOnMount: false`.
     // Para pedidos isso congela a tela: a loja avanca o status e o cliente
     // continua vendo o anterior mesmo entrando de novo em "Meus pedidos".
@@ -84,7 +84,7 @@ export const useUserOrders = () => {
  * Hook para buscar pedidos da empresa/restaurante
  */
 export const useCompanyOrders = (_companyId?: string | null) => {
-  const { token } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
 
   return useQuery({
     queryKey: ['orders', 'company'],
@@ -93,7 +93,7 @@ export const useCompanyOrders = (_companyId?: string | null) => {
       if (!response?.success || !response?.data) return []
       return response.data
     },
-    enabled: !!token,
+    enabled: !!isAuthenticated,
     staleTime: 1000 * 30,
     refetchInterval: 1000 * 60,
   })

@@ -32,10 +32,9 @@ type Props = {
     isRefreshing: boolean;
     getStatusMessage: (status: OrderStatus) => string;
   };
-  token: string;
 };
 
-export function OrderStatusTracker({ data, token }: Props) {
+export function OrderStatusTracker({ data }: Props) {
   const [coordinates, setCoordinates] = useState({ lat: 0, lng: 0 });
   const socketRef = useRef<Socket | null>(null);
 
@@ -44,48 +43,59 @@ export function OrderStatusTracker({ data, token }: Props) {
   const isTrackable = order?.status === "delivering";
 
   useEffect(() => {
-    if (!token || !deliveryId || !isTrackable || !DELIVERY_TRACKING_URL) {
+    if (!deliveryId || !isTrackable || !DELIVERY_TRACKING_URL) {
       return;
     }
 
-    const socket = io(DELIVERY_TRACKING_URL, { auth: { token } });
+    let socket: Socket | null = null;
+    let cancelled = false;
 
-    socketRef.current = socket;
+    // O JWT não fica no client - busca no BFF (cookie httpOnly) só na hora
+    // de abrir o handshake do socket, que conecta direto no NestJS.
+    fetch("/api/auth/socket-token")
+      .then((res) => res.json())
+      .then(({ token }: { token: string | null }) => {
+        if (cancelled || !token) return;
 
-    socket.on("connect", () => {
-      socket.emit("joinDelivery", { deliveryId });
-    });
+        socket = io(DELIVERY_TRACKING_URL, { auth: { token } });
+        socketRef.current = socket;
 
-    socket.on("connect_error", (err) => {
-      if (DEBUG_DELIVERY_TRACKING) {
-        console.log("Erro socket:", err);
-      }
-    });
+        socket.on("connect", () => {
+          socket!.emit("joinDelivery", { deliveryId });
+        });
 
-    socket.on("trackingStarted", () => {
-      if (DEBUG_DELIVERY_TRACKING) {
-        console.log("Tracking iniciado");
-      }
-    });
+        socket.on("connect_error", (err) => {
+          if (DEBUG_DELIVERY_TRACKING) {
+            console.log("Erro socket:", err);
+          }
+        });
 
-    socket.on(
-      "locationUpdate",
-      ({ lat, lng }: { lat: number; lng: number }) => {
-        setCoordinates({ lat, lng });
-      },
-    );
+        socket.on("trackingStarted", () => {
+          if (DEBUG_DELIVERY_TRACKING) {
+            console.log("Tracking iniciado");
+          }
+        });
 
-    socket.on("trackingFinished", () => {
-      if (DEBUG_DELIVERY_TRACKING) {
-        console.log("Entrega finalizada");
-      }
-      socket.disconnect();
-    });
+        socket.on(
+          "locationUpdate",
+          ({ lat, lng }: { lat: number; lng: number }) => {
+            setCoordinates({ lat, lng });
+          },
+        );
+
+        socket.on("trackingFinished", () => {
+          if (DEBUG_DELIVERY_TRACKING) {
+            console.log("Entrega finalizada");
+          }
+          socket!.disconnect();
+        });
+      });
 
     return () => {
-      socket.disconnect();
+      cancelled = true;
+      socket?.disconnect();
     };
-  }, [deliveryId, isTrackable, token]);
+  }, [deliveryId, isTrackable]);
 
   if (!order) return null;
 

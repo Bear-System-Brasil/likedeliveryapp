@@ -14,7 +14,7 @@ type Props = {
 export function Delivery({ restaurantId }: Props) {
   const router = useRouter();
 
-  const { user, isMounted, isAuthenticated, token } = useProfileManagement();
+  const { user, isMounted, isAuthenticated } = useProfileManagement();
   const { filteredItems } = useDeliveries({ companyId: restaurantId });
 
   // Prevent rendering during SSR/SSG
@@ -41,7 +41,7 @@ export function Delivery({ restaurantId }: Props) {
       <div className="flex items-center justify-center">
         {filteredItems && (
           <div className="max-w-lg md:max-w-full w-full min-h-96 h-full overflow-y-scroll">
-            <DeliveryList items={filteredItems} token={token} />
+            <DeliveryList items={filteredItems} />
           </div>
         )}
       </div>

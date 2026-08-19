@@ -48,7 +48,7 @@ const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
 ]
 
 export default function OrdersPage() {
-  const { token } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL")
 
   const { data: orders = [], isLoading, refetch } = useQuery({
@@ -58,7 +58,7 @@ export default function OrdersPage() {
       if (!response.success || !response.data) return []
       return response.data
     },
-    enabled: !!token,
+    enabled: !!isAuthenticated,
     staleTime: 30_000,
     refetchInterval: 30_000,
   })

@@ -163,21 +163,9 @@ export const useRestaurantRegistration = () => {
         return
       }
 
-      // Extract token from registration response
-      // Backend returns { data: { token, user } } wrapped in ApiResponse
-      const authData = registerResponse.data as any
-      const token = authData?.data?.token ?? authData?.token
-
-      if (!token) {
-        setSubmitMessage({
-          type: 'error',
-          text: 'Conta criada, mas não foi possível obter o token. Faça login e cadastre a empresa pelo painel.',
-        })
-        setTimeout(() => router.push('/?openAuth=true'), 2000)
-        return
-      }
-
-      // Step 2: Create company via POST /company (with fresh token)
+      // Step 2: Create company via POST /company. A sessão já foi criada
+      // como cookie httpOnly pelo /api/auth/register - o proxy injeta o
+      // Bearer sozinho na próxima chamada.
       const companyPayload = {
         tradeName: registerData.tradeName,
         legalName: registerData.legalName,
@@ -187,7 +175,7 @@ export const useRestaurantRegistration = () => {
         phone: cleanPhone,
       }
 
-      const companyResponse = await apiService.companies.create(companyPayload, token)
+      const companyResponse = await apiService.companies.create(companyPayload)
 
       if (companyResponse.success) {
         setSubmitMessage({

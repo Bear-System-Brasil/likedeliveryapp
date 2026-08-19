@@ -12,7 +12,7 @@ import { toast } from "sonner";
 const SUMMARY_KEY = ["cash-movement", "summary"];
 
 export const useCashMovementSummary = () => {
-  const { token } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   return useQuery({
     queryKey: SUMMARY_KEY,
@@ -29,7 +29,7 @@ export const useCashMovementSummary = () => {
       }
       return response.data ?? null;
     },
-    enabled: !!token,
+    enabled: !!isAuthenticated,
     staleTime: 15_000,
     refetchInterval: 60_000,
     retry: false,

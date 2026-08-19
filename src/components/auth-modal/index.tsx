@@ -189,27 +189,12 @@ export default function AuthModal({
       if (activeTab === "login") {
         const loginResponse = await apiService.login(loginData);
 
-        if (loginResponse.success && loginResponse.data?.data?.token) {
-          const token = loginResponse.data.data.token;
+        if (loginResponse.success && loginResponse.data?.data?.user) {
           const user = loginResponse.data.data.user;
 
-          // Decode JWT to extract companyId (base64url payload)
-          let companyId: string | null = null;
-          try {
-            const parts = token.split(".");
-            if (parts.length === 3) {
-              // base64url → base64: replace -/_ with +/ and pad
-              const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-              const padded = b64.padEnd(
-                b64.length + ((4 - (b64.length % 4)) % 4),
-                "=",
-              );
-              const payload = JSON.parse(atob(padded));
-              companyId = payload.companyId || null;
-            }
-          } catch {
-            // JWT decode failed - companyId stays null
-          }
+          // companyId já vem resolvido pelo BFF (decodificado do JWT no
+          // servidor) - o client nunca ve o token.
+          const companyId: string | null = (user as any).companyId ?? null;
 
           const userRole = (user as any).role || "client";
           const isCompanyUser = [
@@ -255,7 +240,7 @@ export default function AuthModal({
           const userWithRole = { ...user, role: userRole, companyId };
 
           // Save to Zustand store (que automaticamente persiste no localStorage via middleware)
-          zustandLogin(userForStore, token);
+          zustandLogin(userForStore);
 
           setSubmitMessage({
             type: "success",

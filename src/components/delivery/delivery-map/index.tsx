@@ -22,7 +22,6 @@ type NumericCoords = {
 };
 
 type Props = {
-  userToken: string | null;
   deliveryCoord: Coordinates;
 };
 
@@ -48,9 +47,7 @@ function distanceInMeters(a: NumericCoords, b: NumericCoords) {
   return R * y;
 }
 
-export function DeliveryMap({ userToken, deliveryCoord }: Props) {
-  if (!userToken) return null;
-
+export function DeliveryMap({ deliveryCoord }: Props) {
   const deliveryCoordsNumeric: NumericCoords = {
     lat: Number(deliveryCoord.lat),
     lng: Number(deliveryCoord.lng),

@@ -1,6 +1,7 @@
 "use client";
 
 import AuthModal from "@/components/auth-modal";
+import { apiService } from "@/services/api";
 import { useAuthStore } from "@/stores/auth-store";
 import {
   createContext,
@@ -67,6 +68,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("auth:unauthorized", handleUnauthorized);
   }, [storeLogout]);
 
+  // O cookie httpOnly (não o localStorage) é a fonte da verdade da sessão.
+  // No boot, confirma com o BFF se ainda é válida - evita ficar "logado"
+  // no client com um cookie expirado/removido em outro lugar.
+  useEffect(() => {
+    let cancelled = false;
+
+    apiService.getSession().then(({ authenticated, user }) => {
+      if (cancelled) return;
+
+      if (authenticated && user) {
+        // Só preenche se ainda não tem usuário local: o /user/me devolve um
+        // shape mais pobre que o persistido no login (sem tradeName/logo da
+        // empresa) - não queremos substituir dado rico por um mais pobre.
+        if (!authStore.isAuthenticated) {
+          authStore.login(user as any);
+        }
+      } else if (authStore.isAuthenticated) {
+        storeLogout();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const showAuthModal = (tab: "login" | "register" = "login") => {
     setAuthModalTab(tab);
     setIsAuthModalOpen(true);
@@ -76,16 +104,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (userData?: User) => {
     if (userData) {
-      // Usar o método login do store Zustand
-      // O token já deve estar definido antes de chamar login
-      const token = authStore.token || "";
-      authStore.login(userData as any, token);
+      // Sessão já foi criada via cookie httpOnly pelo BFF (/api/auth/login
+      // ou /api/auth/register) - aqui só sincroniza o Zustand com os dados
+      // do usuário.
+      authStore.login(userData as any);
       hideAuthModal();
     }
   };
 
   const logout = () => {
+    // Limpa o Zustand já pra UI reagir na hora, e derruba o cookie httpOnly
+    // no servidor - sem isso a sessão continua válida (proxy e middleware
+    // seguem autenticando com o cookie antigo).
     authStore.logout();
+    void apiService.logout();
   };
 
   const updateUser = (userData: User) => {
