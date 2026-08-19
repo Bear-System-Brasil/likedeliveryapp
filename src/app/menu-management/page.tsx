@@ -2,6 +2,8 @@
 
 import { AdminPageLayout } from "@/components/admin-page-layout";
 import { AdminDish, AdminDishCard } from "@/components/admin-dish-card";
+import { ProductAddOnsDialog } from "@/components/product-add-ons-dialog";
+import { ProductVariationsDialog } from "@/components/product-variations-dialog";
 import ProtectedRoute from "@/components/protected-route";
 import {
   AlertDialog,
@@ -58,6 +60,10 @@ const textareaClassName =
 function MenuManagementContent() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [addOnsTarget, setAddOnsTarget] = useState<AdminDish | null>(null);
+  const [variationsTarget, setVariationsTarget] = useState<AdminDish | null>(
+    null,
+  );
   const [canCategoryScroll, setCanCategoryScroll] = useState(false);
   const [isCategoryDragActive, setIsCategoryDragActive] = useState(false);
   const categoriesScrollRef = useRef<HTMLDivElement>(null);
@@ -512,6 +518,8 @@ function MenuManagementContent() {
                 onEdit={handleEditDish}
                 onDelete={handleDeleteDish}
                 onToggleAvailability={handleToggleAvail}
+                onManageAddOns={setAddOnsTarget}
+                onManageVariations={setVariationsTarget}
               />
             ))}
           </div>
@@ -864,6 +872,20 @@ function MenuManagementContent() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ProductAddOnsDialog
+        productId={addOnsTarget?.id ?? null}
+        productName={addOnsTarget?.name}
+        open={!!addOnsTarget}
+        onOpenChange={(open) => !open && setAddOnsTarget(null)}
+      />
+
+      <ProductVariationsDialog
+        productId={variationsTarget?.id ?? null}
+        productName={variationsTarget?.name}
+        open={!!variationsTarget}
+        onOpenChange={(open) => !open && setVariationsTarget(null)}
+      />
     </AdminPageLayout>
   );
 }

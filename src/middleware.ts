@@ -15,6 +15,7 @@ const PROTECTED: { prefix: string; roles?: string[] }[] = [
   },
   { prefix: "/company-profile", roles: ["owner", "admin"] },
   { prefix: "/financial-management", roles: ["owner", "admin"] },
+  { prefix: "/team-management", roles: ["owner", "admin", "manager"] },
 ];
 
 export function middleware(request: NextRequest) {
@@ -55,5 +56,6 @@ export const config = {
     "/order-management/:path*",
     "/company-profile/:path*",
     "/financial-management/:path*",
+    "/team-management/:path*",
   ],
 };

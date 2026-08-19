@@ -14,6 +14,7 @@ import {
   ThumbsUp,
   TrendingUp,
   User,
+  UserCog,
   Users,
   UtensilsCrossed,
   Wallet,
@@ -44,6 +45,7 @@ const navGroups = [
         label: "Gerenciar Pedidos",
         icon: ClipboardList,
       },
+      { href: "/team-management", label: "Equipe", icon: UserCog },
     ],
   },
   {

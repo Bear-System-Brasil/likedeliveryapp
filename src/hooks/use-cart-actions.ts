@@ -100,6 +100,8 @@ export const useCartActions = () => {
     restaurantName: string;
     image?: string;
     specialInstructions?: string;
+    addOns?: { productAddOnsId: string; quantity: number }[];
+    variations?: { productVariationId: string }[];
   }) => {
     if (!user?.id) {
       toast.error("Você precisa estar logado para adicionar itens ao carrinho");
@@ -227,11 +229,14 @@ export const useCartActions = () => {
       };
 
       const addItemToBackend = async () => {
+        const extras = { addOns: item.addOns, variations: item.variations };
+
         let response = await apiService.orderItems.addProductToCart(
           currentOrderId,
           item.id,
           user.id,
           item.quantity || 1,
+          extras,
         );
 
         // 404 aqui significa que o orderId guardado no localStorage nao existe
@@ -254,6 +259,7 @@ export const useCartActions = () => {
               item.id,
               user.id,
               item.quantity || 1,
+              extras,
             );
           }
         }
