@@ -193,6 +193,11 @@ async function apiRequest<T>(
   endpoint: string,
   data?: unknown,
   requiresAuth: boolean = false,
+  // Alguns GETs exigem token só pra devolver dado (ex: complementos/tamanhos
+  // de um prato, visíveis a qualquer visitante navegando o cardápio) - um
+  // 401 aí não é "sessão expirada", é só "visitante sem login ainda". Não
+  // dispara o popup global de login nem o toast de sessão nesses casos.
+  silentUnauthorized: boolean = false,
 ): Promise<ApiResponse<T>> {
   try {
     const config: RequestInit = {
@@ -217,12 +222,14 @@ async function apiRequest<T>(
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
     if (response.status === 401 && requiresAuth) {
-      if (typeof window !== "undefined") {
+      if (!silentUnauthorized && typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("auth:unauthorized"));
       }
       return {
         success: false,
-        message: "Sessão expirada. Faça login novamente.",
+        message: silentUnauthorized
+          ? "Faça login para ver esta opção."
+          : "Sessão expirada. Faça login novamente.",
         status: response.status,
       };
     }
@@ -376,6 +383,42 @@ export interface UpdateProductRequest {
   salePrice?: number;
   isAvailable?: boolean;
   stockQuantity?: number;
+}
+
+// Product add-on types ("Complementos" - ex: Queijo Extra +R$3,50)
+export interface ProductAddOn {
+  id: string;
+  name: string;
+  priceModifier: number;
+  isAvailable: boolean;
+  productId: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SaveProductAddOnRequest {
+  name: string;
+  priceModifier: number;
+  isAvailable?: boolean;
+}
+
+// Product variation types ("Tamanhos" - ex: Grande +R$10,00)
+export interface ProductVariation {
+  id: string;
+  name: string;
+  priceModifier: number;
+  isAvailable: boolean;
+  stockQuantity?: number;
+  productId: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SaveProductVariationRequest {
+  name: string;
+  priceModifier: number;
+  stockQuantity?: number;
+  isAvailable?: boolean;
 }
 
 // Category types
@@ -862,6 +905,100 @@ export const apiService = {
       undefined,
       true,
     ),
+
+  // Product add-on endpoints ("Complementos")
+  productAddOns: {
+    // O backend ignora o filtro `productId` da query e devolve TODOS os
+    // complementos de TODAS as empresas - o filtro por produto é feito no
+    // hook (use-product-add-ons.ts).
+    getAll: () =>
+      apiRequest<ProductAddOn[]>(
+        "GET",
+        "/product-add-ons",
+        undefined,
+        true,
+      ),
+
+    // Usado pelo modal de personalização do prato, acessível a visitante
+    // não-logado navegando o cardápio - um 401 aí é "ainda não logou", não
+    // "sessão expirada", então não deve abrir o popup global de login.
+    getAllPublic: () =>
+      apiRequest<ProductAddOn[]>(
+        "GET",
+        "/product-add-ons",
+        undefined,
+        true,
+        true,
+      ),
+
+    create: (productId: string, data: SaveProductAddOnRequest) =>
+      apiRequest<ProductAddOn>(
+        "POST",
+        `/product-add-ons/${productId}`,
+        data,
+        true,
+      ),
+
+    // O PATCH exige name + priceModifier juntos, mesmo pra só alternar
+    // isAvailable - não é um partial update de verdade.
+    update: (id: string, data: SaveProductAddOnRequest) =>
+      apiRequest<ProductAddOn>("PATCH", `/product-add-ons/${id}`, data, true),
+
+    delete: (id: string) =>
+      apiRequest<ProductAddOn>(
+        "DELETE",
+        `/product-add-ons/${id}`,
+        undefined,
+        true,
+      ),
+  },
+
+  // Product variation endpoints ("Tamanhos")
+  productVariations: {
+    // Mesma limitação do productAddOns: o backend ignora o filtro
+    // `productId` da query.
+    getAll: () =>
+      apiRequest<ProductVariation[]>(
+        "GET",
+        "/product-variation",
+        undefined,
+        true,
+      ),
+
+    // Ver comentário em productAddOns.getAllPublic.
+    getAllPublic: () =>
+      apiRequest<ProductVariation[]>(
+        "GET",
+        "/product-variation",
+        undefined,
+        true,
+        true,
+      ),
+
+    create: (productId: string, data: SaveProductVariationRequest) =>
+      apiRequest<ProductVariation>(
+        "POST",
+        `/product-variation/${productId}`,
+        data,
+        true,
+      ),
+
+    update: (id: string, data: SaveProductVariationRequest) =>
+      apiRequest<ProductVariation>(
+        "PATCH",
+        `/product-variation/${id}`,
+        data,
+        true,
+      ),
+
+    delete: (id: string) =>
+      apiRequest<ProductVariation>(
+        "DELETE",
+        `/product-variation/${id}`,
+        undefined,
+        true,
+      ),
+  },
 
   // Category endpoints
   // Listagem pública (para a tela /restaurants do cliente) - Todos têm acesso
@@ -1376,11 +1513,23 @@ export const apiService = {
       productId: string,
       _customerId: string,
       quantity: number,
+      extras?: {
+        addOns?: { productAddOnsId: string; quantity: number }[];
+        variations?: { productVariationId: string }[];
+      },
     ) =>
       apiRequest<Order>(
         "POST",
         `/order-item/cart`,
-        { orderId, productId, quantity },
+        {
+          orderId,
+          productId,
+          quantity,
+          ...(extras?.addOns?.length ? { addOns: extras.addOns } : {}),
+          ...(extras?.variations?.length
+            ? { variations: extras.variations }
+            : {}),
+        },
         true,
       ),
 

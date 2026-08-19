@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useAllCategories, useCartActions, useRestaurant } from "@/hooks";
+import {
+  useAllCategories,
+  useCartActions,
+  usePublicProductAddOns,
+  usePublicProductVariations,
+  useRestaurant,
+} from "@/hooks";
 import { formatCurrency } from "@/utils";
 import { Minus, Plus, X } from "lucide-react";
 
@@ -27,70 +33,25 @@ type Props = {
   setIsModalOpen: (val: boolean) => void;
 };
 
-type CustomOrderType = {
-  specialInstructions: string;
-  size: "small" | "medium" | "large" | "extra-large";
-  extraIngredients: string[];
-  currentPrice: number;
-};
-
-export type OptionsType = {
+export type ExtraOption = {
+  id: string;
   label: string;
   price: number;
 };
 
-type ValueType = "size" | "extra-ingredients";
-
-export type OptionalsList = {
-  label: string;
-  value: ValueType;
-  options: OptionsType[];
+export type ExtraGroup = {
+  id: "variation" | "addon";
+  title: string;
+  multiple: boolean;
+  options: ExtraOption[];
 };
 
-const optionalOptions: OptionalsList[] = [
-  {
-    label: "Tamanho",
-    value: "size",
-    options: [
-      {
-        label: "Pequeno",
-        price: 0,
-      },
-      {
-        label: "Medio",
-        price: 5,
-      },
-      {
-        label: "Grande",
-        price: 10,
-      },
-    ],
-  },
-  {
-    label: "Ingredientes Extras",
-    value: "extra-ingredients",
-    options: [
-      {
-        label: "Queijo",
-        price: 3,
-      },
-      {
-        label: "Cebola",
-        price: 1.5,
-      },
-      {
-        label: "Alface",
-        price: 2,
-      },
-    ],
-  },
-];
+type CustomOrderType = {
+  specialInstructions: string;
+};
 
-const initialCustomOrder = (salePrice: number): CustomOrderType => ({
+const initialCustomOrder = (): CustomOrderType => ({
   specialInstructions: "",
-  size: "medium",
-  extraIngredients: [],
-  currentPrice: salePrice,
 });
 
 export function CustomizeOrder({
@@ -101,9 +62,13 @@ export function CustomizeOrder({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [selections, setSelections] = useState<Record<string, string[]>>({
+    variation: [],
+    addon: [],
+  });
 
   const [customOrder, setCustomOrder] = useState<CustomOrderType>(
-    initialCustomOrder(productData.salePrice),
+    initialCustomOrder(),
   );
 
   const { data: restaurant } = useRestaurant(productData.companyId);
@@ -111,6 +76,59 @@ export function CustomizeOrder({
   const { handleAddToCart: addToCart } = useCartActions();
 
   const { data: categories } = useAllCategories();
+
+  const { data: variations = [] } = usePublicProductVariations(
+    productData.id,
+  );
+  const { data: addOns = [] } = usePublicProductAddOns(productData.id);
+
+  const extraGroups: ExtraGroup[] = useMemo(() => {
+    const groups: ExtraGroup[] = [];
+
+    const availableVariations = variations.filter((v) => v.isAvailable);
+    if (availableVariations.length > 0) {
+      groups.push({
+        id: "variation",
+        title: "Tamanho",
+        multiple: false,
+        options: availableVariations.map((v) => ({
+          id: v.id,
+          label: v.name,
+          price: v.priceModifier,
+        })),
+      });
+    }
+
+    const availableAddOns = addOns.filter((a) => a.isAvailable);
+    if (availableAddOns.length > 0) {
+      groups.push({
+        id: "addon",
+        title: "Complementos",
+        multiple: true,
+        options: availableAddOns.map((a) => ({
+          id: a.id,
+          label: a.name,
+          price: a.priceModifier,
+        })),
+      });
+    }
+
+    return groups;
+  }, [variations, addOns]);
+
+  const handleSelectionChange = (groupId: string, selectedIds: string[]) => {
+    setSelections((prev) => ({ ...prev, [groupId]: selectedIds }));
+  };
+
+  const extrasTotal = useMemo(() => {
+    return extraGroups.reduce((total, group) => {
+      const selectedIds = selections[group.id] || [];
+      const groupTotal = group.options
+        .filter((option) => selectedIds.includes(option.id))
+        .reduce((sum, option) => sum + option.price, 0);
+      return total + groupTotal;
+    }, 0);
+  }, [extraGroups, selections]);
 
   const categoryMap = useMemo(() => {
     if (!categories) return {};
@@ -130,9 +148,10 @@ export function CustomizeOrder({
   };
 
   const resetState = () => {
-    setCustomOrder(initialCustomOrder(productData.salePrice));
+    setCustomOrder(initialCustomOrder());
     setQuantity(1);
     setNotesOpen(false);
+    setSelections({ variation: [], addon: [] });
   };
 
   const handleConfirmAddToCart = async () => {
@@ -141,6 +160,9 @@ export function CustomizeOrder({
     setIsAddingToCart(true);
 
     try {
+      const selectedVariationId = selections.variation?.[0];
+      const selectedAddOnIds = selections.addon || [];
+
       const success = await addToCart({
         id: productData.id.toString(),
         name: productData.name,
@@ -150,6 +172,15 @@ export function CustomizeOrder({
         restaurantName: restaurant.tradeName,
         specialInstructions: customOrder.specialInstructions,
         quantity,
+        variations: selectedVariationId
+          ? [{ productVariationId: selectedVariationId }]
+          : undefined,
+        addOns: selectedAddOnIds.length
+          ? selectedAddOnIds.map((id) => ({
+              productAddOnsId: id,
+              quantity: 1,
+            }))
+          : undefined,
       });
 
       if (success) {
@@ -163,20 +194,6 @@ export function CustomizeOrder({
     }
   };
 
-  const handleFinalPrice = (add: boolean, value: number) => {
-    if (add) {
-      setCustomOrder((prev) => ({
-        ...prev,
-        currentPrice: prev.currentPrice + value,
-      }));
-    } else {
-      setCustomOrder((prev) => ({
-        ...prev,
-        currentPrice: prev.currentPrice - value,
-      }));
-    }
-  };
-
   const productTags = getProductCategoryNames(
     productData.productCategories,
     categoryMap,
@@ -187,10 +204,7 @@ export function CustomizeOrder({
     setIsModalOpen(val);
   };
 
-  const unitPrice =
-    customOrder.currentPrice >= productData.salePrice
-      ? customOrder.currentPrice
-      : productData.salePrice + customOrder.currentPrice;
+  const unitPrice = productData.salePrice + extrasTotal;
 
   const totalPrice = unitPrice * quantity;
 
@@ -257,11 +271,12 @@ export function CustomizeOrder({
           </div>
 
           <div className="mt-3.5 flex flex-col gap-3.5">
-            {optionalOptions.map((item) => (
+            {extraGroups.map((group) => (
               <SelectOptions
-                key={item.label}
-                data={item}
-                changePrice={handleFinalPrice}
+                key={group.id}
+                group={group}
+                selectedIds={selections[group.id] || []}
+                onChange={handleSelectionChange}
               />
             ))}
           </div>

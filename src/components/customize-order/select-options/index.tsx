@@ -1,60 +1,52 @@
 import { Check } from "lucide-react";
-import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils";
-import { OptionalsList, OptionsType } from "../customize-order";
+import { ExtraGroup } from "../customize-order";
 
 type Props = {
-  data: OptionalsList;
-  changePrice: (add: boolean, value: number) => void;
+  group: ExtraGroup;
+  selectedIds: string[];
+  onChange: (groupId: string, selectedIds: string[]) => void;
 };
 
-export function SelectOptions({ data, changePrice }: Props) {
-  const [selectedSize, setSelectedSize] = useState(data.options[0]?.label);
-  const [selectedSizePrice, setSelectedSizePrice] = useState(
-    data.options[0]?.price ?? 0,
-  );
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
-
-  const handleSelectSize = (option: OptionsType) => {
-    if (option.label === selectedSize) return;
-
-    changePrice(false, selectedSizePrice);
-    changePrice(true, option.price);
-    setSelectedSize(option.label);
-    setSelectedSizePrice(option.price);
+export function SelectOptions({ group, selectedIds, onChange }: Props) {
+  const handleSelectSingle = (id: string) => {
+    // Clicar na opção já selecionada desmarca - o grupo é opcional.
+    onChange(group.id, selectedIds[0] === id ? [] : [id]);
   };
 
-  const toggleExtra = (label: string, price: number, checked: boolean) => {
-    setSelectedExtras((prev) =>
-      checked ? [...prev, label] : prev.filter((item) => item !== label),
+  const handleToggleMultiple = (id: string) => {
+    const isSelected = selectedIds.includes(id);
+    onChange(
+      group.id,
+      isSelected
+        ? selectedIds.filter((selectedId) => selectedId !== id)
+        : [...selectedIds, id],
     );
-
-    changePrice(checked, price);
   };
 
-  if (data.value === "size") {
+  if (!group.multiple) {
     return (
       <div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-extrabold tracking-tight text-[#14161A]">
-            {data.label}
+            {group.title}
           </span>
-          <span className="rounded-md bg-[#14161A] px-[7px] py-[1px] text-[9.5px] font-extrabold tracking-wide text-white">
-            OBRIGATÓRIO
+          <span className="rounded-md bg-[#F4F5F7] px-[7px] py-[1px] text-[9.5px] font-extrabold tracking-wide text-[#8A8F99]">
+            OPCIONAL
           </span>
         </div>
 
         <div className="mt-[7px] grid grid-cols-3 gap-1.5">
-          {data.options.map((option) => {
-            const isSelected = option.label === selectedSize;
+          {group.options.map((option) => {
+            const isSelected = selectedIds[0] === option.id;
 
             return (
               <button
-                key={option.label}
+                key={option.id}
                 type="button"
-                onClick={() => handleSelectSize(option)}
+                onClick={() => handleSelectSingle(option.id)}
                 className={cn(
                   "flex h-[50px] flex-col items-center justify-center gap-0.5 rounded-[10px] border bg-white transition-colors",
                   isSelected
@@ -64,7 +56,7 @@ export function SelectOptions({ data, changePrice }: Props) {
               >
                 <span
                   className={cn(
-                    "text-[12.5px] font-bold",
+                    "truncate px-1 text-[12.5px] font-bold",
                     isSelected ? "text-orange-600" : "text-[#14161A]",
                   )}
                 >
@@ -92,7 +84,7 @@ export function SelectOptions({ data, changePrice }: Props) {
     <div>
       <div className="flex items-baseline justify-between gap-2.5">
         <span className="text-xs font-extrabold tracking-tight text-[#14161A]">
-          {data.label}
+          {group.title}
         </span>
         <span className="whitespace-nowrap text-[10.5px] font-semibold text-[#A2A7B0]">
           Opcional
@@ -100,14 +92,14 @@ export function SelectOptions({ data, changePrice }: Props) {
       </div>
 
       <div className="mt-[7px] grid grid-cols-2 gap-1.5">
-        {data.options.map((option) => {
-          const isSelected = selectedExtras.includes(option.label);
+        {group.options.map((option) => {
+          const isSelected = selectedIds.includes(option.id);
 
           return (
             <button
-              key={option.label}
+              key={option.id}
               type="button"
-              onClick={() => toggleExtra(option.label, option.price, !isSelected)}
+              onClick={() => handleToggleMultiple(option.id)}
               className={cn(
                 "flex h-[38px] min-w-0 items-center gap-2 rounded-[9px] border bg-white px-2.5 text-left transition-colors",
                 isSelected

@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { formatCnpj, formatPhoneDisplay } from "@/utils";
 import {
   Building2,
+  Clock,
   CreditCard,
   ExternalLink,
   Lock,
@@ -28,7 +29,29 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { toast } from "sonner";
+
+interface DayHours {
+  day: string;
+  label: string;
+  isOpen: boolean;
+  openTime: string;
+  closeTime: string;
+}
+
+// TODO(backend): mock local - o campo `openingHours` já existe na resposta
+// de GET /company/:id, mas ainda não confirmei o contrato de escrita (o
+// PATCH /company/:id usa multipart/form-data, formato de horário incerto).
+const DEFAULT_HOURS: DayHours[] = [
+  { day: "mon", label: "Segunda", isOpen: true, openTime: "18:00", closeTime: "23:00" },
+  { day: "tue", label: "Terça", isOpen: true, openTime: "18:00", closeTime: "23:00" },
+  { day: "wed", label: "Quarta", isOpen: true, openTime: "18:00", closeTime: "23:00" },
+  { day: "thu", label: "Quinta", isOpen: true, openTime: "18:00", closeTime: "23:00" },
+  { day: "fri", label: "Sexta", isOpen: true, openTime: "18:00", closeTime: "23:30" },
+  { day: "sat", label: "Sábado", isOpen: true, openTime: "18:00", closeTime: "23:30" },
+  { day: "sun", label: "Domingo", isOpen: false, openTime: "18:00", closeTime: "22:00" },
+];
 
 export default function CompanyProfilePage() {
   return (
@@ -164,6 +187,25 @@ function CompanyProfileContent() {
     updatePasswordField,
     resetPasswordForm,
   } = useCompanyProfileManagement();
+
+  const [openingHours, setOpeningHours] = useState<DayHours[]>(DEFAULT_HOURS);
+  const [isSavingHours, setIsSavingHours] = useState(false);
+
+  const updateDayHours = (day: string, patch: Partial<DayHours>) => {
+    setOpeningHours((prev) =>
+      prev.map((item) => (item.day === day ? { ...item, ...patch } : item)),
+    );
+  };
+
+  const handleSaveHours = () => {
+    setIsSavingHours(true);
+    // Mock: ainda não há um contrato confirmado de escrita pro backend -
+    // só guarda em memória e confirma visualmente.
+    setTimeout(() => {
+      setIsSavingHours(false);
+      toast.success("Horário de funcionamento atualizado");
+    }, 400);
+  };
 
   const { data: specialities } = useSpecialities();
   const specialityOptions =
@@ -435,6 +477,90 @@ function CompanyProfileContent() {
                   </div>
                 </div>
               )}
+            </SectionCard>
+
+            {/* Horário de Funcionamento */}
+            <SectionCard
+              title="Horário de Funcionamento"
+              subtitle="Dias e horários em que a loja aceita pedidos"
+              className="mb-3"
+              actions={
+                <GradientButton
+                  size="sm"
+                  onClick={handleSaveHours}
+                  isLoading={isSavingHours}
+                  loadingText="Salvando..."
+                  className="h-8 rounded-[9px] px-3.5 text-xs"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  Salvar
+                </GradientButton>
+              }
+            >
+              <div className="mb-3 rounded-[9px] border border-[#FFE1CC] bg-[#FFF7ED] px-3 py-2 text-[11px] font-semibold text-[#B7791F]">
+                Em construção: ainda não salva no servidor.
+              </div>
+
+              <div className="space-y-1.5">
+                {openingHours.map((day) => (
+                  <div
+                    key={day.day}
+                    className="flex flex-wrap items-center gap-2.5 rounded-[10px] border border-[#E9EAEE] px-3 py-2 sm:flex-nowrap"
+                  >
+                    <label className="flex w-[100px] shrink-0 cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={day.isOpen}
+                        onChange={(e) =>
+                          updateDayHours(day.day, { isOpen: e.target.checked })
+                        }
+                        className="h-4 w-4 cursor-pointer rounded border-[#E9EAEE] text-orange-500 focus:ring-orange-500"
+                      />
+                      <span className="text-[12.5px] font-bold text-[#14161A]">
+                        {day.label}
+                      </span>
+                    </label>
+
+                    {day.isOpen ? (
+                      <div className="flex flex-1 items-center gap-2">
+                        <div className="relative flex-1">
+                          <Clock className="pointer-events-none absolute left-[9px] top-1/2 h-[13px] w-[13px] -translate-y-1/2 text-[#A0A6B0]" />
+                          <input
+                            type="time"
+                            value={day.openTime}
+                            onChange={(e) =>
+                              updateDayHours(day.day, {
+                                openTime: e.target.value,
+                              })
+                            }
+                            className="h-[34px] w-full rounded-[8px] border border-[#E9EAEE] bg-white pl-7 pr-2 text-[12.5px] text-[#14161A] outline-none"
+                          />
+                        </div>
+                        <span className="shrink-0 text-[11px] font-bold text-[#A2A7B0]">
+                          até
+                        </span>
+                        <div className="relative flex-1">
+                          <Clock className="pointer-events-none absolute left-[9px] top-1/2 h-[13px] w-[13px] -translate-y-1/2 text-[#A0A6B0]" />
+                          <input
+                            type="time"
+                            value={day.closeTime}
+                            onChange={(e) =>
+                              updateDayHours(day.day, {
+                                closeTime: e.target.value,
+                              })
+                            }
+                            className="h-[34px] w-full rounded-[8px] border border-[#E9EAEE] bg-white pl-7 pr-2 text-[12.5px] text-[#14161A] outline-none"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="flex-1 text-[12px] font-semibold text-[#A2A7B0]">
+                        Fechado
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </SectionCard>
 
             {/* Endereço da Empresa */}

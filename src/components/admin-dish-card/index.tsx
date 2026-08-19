@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/format-currency";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Ruler, Sandwich, Trash2 } from "lucide-react";
 import Image from "next/image";
 
 export interface AdminDish {
@@ -22,6 +22,8 @@ interface AdminDishCardProps {
   onEdit?: (dish: AdminDish) => void;
   onDelete?: (dish: AdminDish) => void;
   onToggleAvailability?: (dish: AdminDish) => void;
+  onManageAddOns?: (dish: AdminDish) => void;
+  onManageVariations?: (dish: AdminDish) => void;
 }
 
 export function AdminDishCard({
@@ -29,6 +31,8 @@ export function AdminDishCard({
   onEdit,
   onDelete,
   onToggleAvailability,
+  onManageAddOns,
+  onManageVariations,
 }: AdminDishCardProps) {
   const isAvailable = dish.available !== false;
 
@@ -119,7 +123,7 @@ export function AdminDishCard({
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-col justify-center gap-1.5">
+      <div className="grid shrink-0 grid-cols-2 content-center gap-1.5">
         <button
           type="button"
           onClick={() => onEdit?.(dish)}
@@ -140,6 +144,28 @@ export function AdminDishCard({
           className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FDEEEE] text-[#D64545] transition-colors hover:bg-[#F9DCDC] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Trash2 className="h-3.5 w-3.5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onManageAddOns?.(dish)}
+          disabled={!onManageAddOns}
+          aria-label={`Complementos de ${dish.name}`}
+          title="Gerenciar complementos"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EAF2FF] text-[#2563EB] transition-colors hover:bg-[#DCEAFF] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Sandwich className="h-3.5 w-3.5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onManageVariations?.(dish)}
+          disabled={!onManageVariations}
+          aria-label={`Tamanhos de ${dish.name}`}
+          title="Gerenciar tamanhos"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F3EAFF] text-[#7C3AED] transition-colors hover:bg-[#EADCFF] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Ruler className="h-3.5 w-3.5" />
         </button>
       </div>
     </article>
