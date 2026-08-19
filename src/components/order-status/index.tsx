@@ -13,7 +13,6 @@ type Props = {
     refresh: () => void;
     getStatusMessage: (status: OrderStatusType) => string;
   };
-  token: string | null;
 };
 
 const CARD = "rounded-[13px] border border-[#e9eaee] bg-white";
@@ -33,10 +32,8 @@ function summarizeItems(items: OrderInfo["items"]) {
   return `${totalQuantity} ${totalQuantity === 1 ? "item" : "itens"} · ${names}`;
 }
 
-export function OrderStatus({ data, token }: Props) {
+export function OrderStatus({ data }: Props) {
   const router = useRouter();
-
-  if (!token) return null;
 
   if (!data.order) {
     return <LoadingPage />;
@@ -90,7 +87,7 @@ export function OrderStatus({ data, token }: Props) {
               </div>
             ) : (
               <div className="mt-4">
-                <OrderStatusTracker data={data} token={token} />
+                <OrderStatusTracker data={data} />
               </div>
             )}
           </section>

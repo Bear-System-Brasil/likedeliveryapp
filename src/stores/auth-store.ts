@@ -18,12 +18,11 @@ export interface User {
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   _hasHydrated: boolean;
   // Actions
-  login: (user: User, token: string) => void;
+  login: (user: User) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
@@ -35,19 +34,17 @@ export const useAuthStore = create<AuthState>()(
     persist(
       (set, get) => ({
         user: null,
-        token: null,
         isAuthenticated: false,
         isLoading: false,
         _hasHydrated: false,
 
-        login: (user, token) =>
+        login: (user) =>
           set(
-            (state) => ({
+            {
               user,
-              token: token || state.token,
               isAuthenticated: true,
               isLoading: false,
-            }),
+            },
             false,
             "auth/login",
           ),
@@ -56,7 +53,6 @@ export const useAuthStore = create<AuthState>()(
           set(
             {
               user: null,
-              token: null,
               isAuthenticated: false,
               isLoading: false,
             },
@@ -84,7 +80,6 @@ export const useAuthStore = create<AuthState>()(
         version: 1,
         partialize: (state) => ({
           user: state.user,
-          token: state.token,
           isAuthenticated: state.isAuthenticated,
         }),
         onRehydrateStorage: () => (state) => {

@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 const QUERY_KEY = ['cash-register', 'current']
 
 export const useCashRegister = () => {
-  const { token } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
 
   return useQuery({
     queryKey: QUERY_KEY,
@@ -25,7 +25,7 @@ export const useCashRegister = () => {
       }
       return response.data ?? null
     },
-    enabled: !!token,
+    enabled: !!isAuthenticated,
     staleTime: 30_000,
     retry: false,
   })

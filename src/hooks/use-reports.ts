@@ -15,7 +15,7 @@ function todayRange(): ReportsParams {
 }
 
 export const useReportsSummary = (params?: ReportsParams) => {
-  const { token } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
   const range = params ?? todayRange()
 
   return useQuery({
@@ -27,7 +27,7 @@ export const useReportsSummary = (params?: ReportsParams) => {
       }
       return response.data ?? null
     },
-    enabled: !!token,
+    enabled: !!isAuthenticated,
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
     retry: false,

@@ -50,7 +50,7 @@ export function useElapsedTimer(interval: number = 60_000) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const useOrderManagement = () => {
-  const { token } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
   const queryClient = useQueryClient()
 
   // Identidade sonora. O mute vive no localStorage: antes ele era estado local
@@ -89,7 +89,7 @@ export const useOrderManagement = () => {
       return response
     },
     refetchInterval: ORDER_POLL_INTERVAL,
-    enabled: !!token,
+    enabled: !!isAuthenticated,
     staleTime: 10_000,
   })
 

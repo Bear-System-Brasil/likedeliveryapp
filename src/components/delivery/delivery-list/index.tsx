@@ -13,7 +13,6 @@ import { DeliveryMap } from "../delivery-map";
 
 type Props = {
   items: Delivery[];
-  token: string | null;
 };
 
 type Coors = {
@@ -27,7 +26,7 @@ type NumericCoords = {
   lng: number;
 };
 
-export function DeliveryList({ items, token }: Props) {
+export function DeliveryList({ items }: Props) {
   const [coordinates, setCoordinates] = useState({
     lng: 0,
     lat: 0,
@@ -91,25 +90,29 @@ export function DeliveryList({ items, token }: Props) {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  if (!token) return null;
-
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     const socketBaseUrl = `${process.env.NEXT_PUBLIC_API_URL}/delivery-tracking`;
+    let socket: Socket | null = null;
+    let cancelled = false;
 
-    const socket = io(socketBaseUrl, {
-      auth: {
-        token: token,
-      },
-    });
+    // O JWT não fica no client - busca no BFF (cookie httpOnly) só na hora
+    // de abrir o handshake do socket, que conecta direto no NestJS.
+    fetch("/api/auth/socket-token")
+      .then((res) => res.json())
+      .then(({ token }: { token: string | null }) => {
+        if (cancelled || !token) return;
 
-    socketRef.current = socket;
+        socket = io(socketBaseUrl, { auth: { token } });
+        socketRef.current = socket;
+      });
 
     return () => {
-      socket.disconnect();
+      cancelled = true;
+      socket?.disconnect();
     };
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     if (!socketRef.current || !deliverySelected) return;
@@ -129,7 +132,6 @@ export function DeliveryList({ items, token }: Props) {
     <div className="flex flex-col items-center">
       <div className="flex items-center justify-center w-full mb-4">
         <DeliveryMap
-          userToken={token}
           deliveryCoord={{
             lat: coordinates.lat.toString(),
             lng: coordinates.lng.toString(),

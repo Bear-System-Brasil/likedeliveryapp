@@ -25,8 +25,7 @@ interface Address extends AddressFormData {
  */
 export const useProfileManagement = () => {
   const router = useRouter();
-  const { user, token, isAuthenticated, updateUser, _hasHydrated } =
-    useAuthStore();
+  const { user, isAuthenticated, updateUser, _hasHydrated } = useAuthStore();
   const { updateProfile } = useProfile();
 
   // Profile state
@@ -75,7 +74,7 @@ export const useProfileManagement = () => {
     if (!isMounted) return;
 
     const fetchUserProfile = async () => {
-      if (!token || !isAuthenticated) {
+      if (!isAuthenticated) {
         router.push("/?auth=required");
         return;
       }
@@ -103,15 +102,7 @@ export const useProfileManagement = () => {
     };
 
     fetchUserProfile();
-  }, [
-    token,
-    isAuthenticated,
-    router,
-    updateUser,
-    user?.id,
-    user?.role,
-    isMounted,
-  ]);
+  }, [isAuthenticated, router, updateUser, user?.id, user?.role, isMounted]);
 
   /**
    * Função para buscar endereços do backend
@@ -405,7 +396,6 @@ export const useProfileManagement = () => {
   return {
     // Auth & Loading
     user,
-    token,
     isMounted,
     isAuthenticated,
     hasHydrated: _hasHydrated,
