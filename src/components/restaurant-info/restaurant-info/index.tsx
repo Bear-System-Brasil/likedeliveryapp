@@ -27,6 +27,7 @@ import {
   useCompanyProducts,
   useRestaurant,
 } from "@/hooks";
+import { useAuth } from "@/contexts/auth-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { formatCurrency } from "@/utils/format-currency";
 import { toast } from "sonner";
@@ -58,6 +59,7 @@ export default function RestaurantPage() {
 
   const { totalItems, totalPrice } = useCartActions();
   const { isAuthenticated, user } = useAuthStore();
+  const { showAuthModal } = useAuth();
 
   const {
     data: restaurant,
@@ -132,8 +134,10 @@ export default function RestaurantPage() {
   const restaurantDescription = restaurantData?.description?.trim();
 
   const handleOpenModal = (item: any) => {
+    // Antes mandava pro /cart, uma página que não ajuda em nada quem não
+    // está logado - abre o login direto, sem sair da página do prato.
     if (!isAuthenticated) {
-      router.push("/cart");
+      showAuthModal("login");
       return;
     }
 
@@ -190,7 +194,7 @@ export default function RestaurantPage() {
                     alt={restaurantData.tradeName || "Restaurante"}
                     className="object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/35 to-transparent" />
 
                   <button
                     type="button"

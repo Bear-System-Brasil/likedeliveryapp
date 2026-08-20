@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Home, ShoppingCart, Store, User } from "lucide-react";
+import { ClipboardList, Home, LogIn, ShoppingCart, Store, User } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ComponentType } from "react";
 
@@ -9,7 +9,13 @@ import { useCartActions } from "@/hooks";
 import { useAuthStore } from "@/stores";
 import { isCompanyRole } from "@/utils/role-helpers";
 
-type BottomTabId = "home" | "cart" | "orders" | "profile" | "management";
+type BottomTabId =
+  | "home"
+  | "cart"
+  | "orders"
+  | "profile"
+  | "management"
+  | "login";
 
 interface BottomBarProps {
   activeTab?: BottomTabId;
@@ -19,9 +25,12 @@ type Tab = {
   id: BottomTabId;
   label: string;
   icon: ComponentType<{ className?: string }>;
-  href: string;
+  href?: string;
   badge?: boolean;
   protected?: boolean;
+  // Ex: "Entrar" pro visitante anônimo - abre o modal de login no lugar,
+  // sem navegar pra rota nenhuma.
+  onSelect?: () => void;
 };
 
 const managementRoutes = [
@@ -59,8 +68,8 @@ function getActiveTab(pathname: string): BottomTabId {
 export function BottomBar({ activeTab }: BottomBarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user: authUser } = useAuth();
-  const { user: storeUser } = useAuthStore();
+  const { user: authUser, showAuthModal } = useAuth();
+  const { user: storeUser, isAuthenticated } = useAuthStore();
   const { totalItems } = useCartActions();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -123,16 +132,36 @@ export function BottomBar({ activeTab }: BottomBarProps) {
     },
   ];
 
-  const tabs = isOwner ? ownerTabs : clientTabs;
+  // Visitante anônimo: mesmas abas de navegação do cliente, mas "Perfil"
+  // não faz sentido sem conta - vira "Entrar" e abre o login direto (sem
+  // navegar/redirecionar), em vez de simular uma aba que só existe pra
+  // mandar de volta pro login ao clicar.
+  const guestTabs: Tab[] = clientTabs.map((tab) =>
+    tab.id === "profile"
+      ? {
+          id: "login" as const,
+          label: "Entrar",
+          icon: LogIn,
+          onSelect: () => showAuthModal("login"),
+        }
+      : tab,
+  );
+
+  const tabs = isOwner ? ownerTabs : isAuthenticated ? clientTabs : guestTabs;
   const gridCols = tabs.length === 4 ? "grid-cols-4" : "grid-cols-3";
 
   const handleNavigate = (tab: Tab) => {
+    if (tab.onSelect) {
+      tab.onSelect();
+      return;
+    }
+
     if (tab.protected && !user) {
       router.push("/?openAuth=true");
       return;
     }
 
-    router.push(tab.href);
+    if (tab.href) router.push(tab.href);
   };
 
   return (
