@@ -5,7 +5,25 @@ import { CompanyCoverUpload } from "@/components/company-cover-upload";
 import { CompanyLogoUpload } from "@/components/company-logo-upload";
 import ProtectedRoute from "@/components/protected-route";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { GradientButton } from "@/components/ui/custom";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RESTAURANT_CATEGORIES } from "@/constants";
 import { useCompanyProfileManagement, useSpecialities } from "@/hooks";
@@ -44,13 +62,55 @@ interface DayHours {
 // de GET /company/:id, mas ainda não confirmei o contrato de escrita (o
 // PATCH /company/:id usa multipart/form-data, formato de horário incerto).
 const DEFAULT_HOURS: DayHours[] = [
-  { day: "mon", label: "Segunda", isOpen: true, openTime: "18:00", closeTime: "23:00" },
-  { day: "tue", label: "Terça", isOpen: true, openTime: "18:00", closeTime: "23:00" },
-  { day: "wed", label: "Quarta", isOpen: true, openTime: "18:00", closeTime: "23:00" },
-  { day: "thu", label: "Quinta", isOpen: true, openTime: "18:00", closeTime: "23:00" },
-  { day: "fri", label: "Sexta", isOpen: true, openTime: "18:00", closeTime: "23:30" },
-  { day: "sat", label: "Sábado", isOpen: true, openTime: "18:00", closeTime: "23:30" },
-  { day: "sun", label: "Domingo", isOpen: false, openTime: "18:00", closeTime: "22:00" },
+  {
+    day: "mon",
+    label: "Segunda",
+    isOpen: true,
+    openTime: "18:00",
+    closeTime: "23:00",
+  },
+  {
+    day: "tue",
+    label: "Terça",
+    isOpen: true,
+    openTime: "18:00",
+    closeTime: "23:00",
+  },
+  {
+    day: "wed",
+    label: "Quarta",
+    isOpen: true,
+    openTime: "18:00",
+    closeTime: "23:00",
+  },
+  {
+    day: "thu",
+    label: "Quinta",
+    isOpen: true,
+    openTime: "18:00",
+    closeTime: "23:00",
+  },
+  {
+    day: "fri",
+    label: "Sexta",
+    isOpen: true,
+    openTime: "18:00",
+    closeTime: "23:30",
+  },
+  {
+    day: "sat",
+    label: "Sábado",
+    isOpen: true,
+    openTime: "18:00",
+    closeTime: "23:30",
+  },
+  {
+    day: "sun",
+    label: "Domingo",
+    isOpen: false,
+    openTime: "18:00",
+    closeTime: "22:00",
+  },
 ];
 
 export default function CompanyProfilePage() {
@@ -75,73 +135,51 @@ function SectionCard({
   className?: string;
 }) {
   return (
-    <div
+    <Card
       className={cn(
-        "rounded-[13px] border border-[#E9EAEE] bg-white p-4",
+        "rounded-[13px] border-border bg-card shadow-none",
         className,
       )}
     >
-      <div className="mb-3.5 flex items-center justify-between gap-3">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 p-4 pb-3.5">
         <div>
-          <div className="text-[13px] font-extrabold text-[#14161A]">
+          <CardTitle className="text-[13px] font-extrabold text-foreground">
             {title}
-          </div>
-          <div className="mt-0.5 text-[11px] font-semibold text-[#A2A7B0]">
+          </CardTitle>
+          <CardDescription className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
             {subtitle}
-          </div>
+          </CardDescription>
         </div>
         {actions}
-      </div>
-      {children}
-    </div>
+      </CardHeader>
+      <CardContent className="p-4 pt-0">{children}</CardContent>
+    </Card>
   );
 }
 
 function IconInput({
   label,
   icon: Icon,
+  className,
   ...inputProps
 }: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  className?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <div>
-      <div className="mb-[5px] text-[11px] font-bold text-[#3D4149]">
+    <div className={className}>
+      <Label className="mb-[5px] block text-[11px] font-bold text-foreground/80">
         {label}
-      </div>
+      </Label>
       <div className="relative">
-        <Icon className="pointer-events-none absolute left-[11px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-[#A0A6B0]" />
-        <input
+        <Icon className="pointer-events-none absolute left-[11px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-muted-foreground" />
+        <Input
           {...inputProps}
-          className="h-[37px] w-full rounded-[9px] border border-[#E9EAEE] bg-white pl-[33px] pr-3 text-[12.5px] text-[#14161A] outline-none disabled:cursor-default disabled:text-[#3D4149]"
+          className="h-[37px] rounded-[9px] border-border bg-background pl-[33px] pr-3 text-[12.5px] text-foreground disabled:cursor-default disabled:opacity-70"
         />
       </div>
     </div>
-  );
-}
-
-function CompactButton({
-  children,
-  variant = "ghost",
-  ...props
-}: {
-  children: ReactNode;
-  variant?: "ghost" | "outline";
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      type="button"
-      {...props}
-      className={cn(
-        "h-8 shrink-0 rounded-[9px] px-3.5 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        variant === "ghost" && "bg-[#F4F5F7] text-[#3D4149] hover:bg-[#E9EAEE]",
-        variant === "outline" &&
-          "border border-[#E9EAEE] bg-white text-[#3D4149] hover:bg-[#F4F5F7]",
-      )}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -152,7 +190,6 @@ function CompanyProfileContent() {
     isLoadingProfile,
     isLoadingAddresses,
     profileError,
-
     formData,
     isEditing,
     isSaving,
@@ -165,7 +202,6 @@ function CompanyProfileContent() {
     setIsEditing,
     updateFormField,
     setSelectedCategory,
-
     addresses,
     newAddress,
     isAddingAddress,
@@ -178,7 +214,6 @@ function CompanyProfileContent() {
     handleSearchZipCode,
     updateAddressField,
     formatZipCode,
-
     passwordData,
     passwordErrors,
     isChangingPassword,
@@ -212,6 +247,7 @@ function CompanyProfileContent() {
     specialities && specialities.length > 0
       ? specialities.map((s) => ({ id: s.id, name: s.name }))
       : RESTAURANT_CATEGORIES.map((c) => ({ id: c.id, name: c.name }));
+
   const selectedSpecialityName = specialityOptions.find(
     (s) => s.id === selectedCategory,
   )?.name;
@@ -234,35 +270,39 @@ function CompanyProfileContent() {
       icon={Building2}
       mainClassName="p-4 sm:p-6 lg:pl-64 lg:pr-8"
       actions={
-        <Badge className="border-0 bg-linear-to-br from-orange-100 to-orange-100 text-orange-700">
+        <Badge className="border-0 bg-primary/10 text-primary">
           {userRoleLabel}
         </Badge>
       }
     >
       <div className="mx-auto max-w-[920px]">
         {profileError && !isLoadingProfile ? (
-          <div className="rounded-[13px] border border-[#E9EAEE] bg-white p-6 text-center text-sm text-[#3D4149]">
+          <Card className="rounded-[13px] border-border bg-card p-6 text-center text-sm text-muted-foreground">
             {profileError}
-          </div>
+          </Card>
         ) : (
           <>
             {/* Header row */}
             <div className="mb-4 flex items-start justify-between gap-4">
-              <p className="text-[12.5px] font-medium text-[#8A8F99]">
+              <p className="text-[12.5px] font-medium text-muted-foreground">
                 A identidade que aparece para o cliente no app
               </p>
               <Link href={`/restaurant/${companyId}`} target="_blank">
-                <CompactButton variant="outline">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-[9px] text-xs font-bold"
+                >
                   <span className="flex items-center gap-1.5">
                     Ver página pública
                     <ExternalLink className="h-3 w-3" />
                   </span>
-                </CompactButton>
+                </Button>
               </Link>
             </div>
 
             {/* Hero card: cover + logo + summary */}
-            <div className="mb-3 overflow-hidden rounded-[14px] border border-[#E9EAEE] bg-white">
+            <Card className="mb-3 overflow-hidden rounded-[14px] border-border bg-card shadow-none">
               {isLoadingProfile ? (
                 <Skeleton className="h-[150px] w-full rounded-none" />
               ) : (
@@ -282,7 +322,7 @@ function CompanyProfileContent() {
 
               <div className="flex items-start gap-3.5 px-[18px] pb-4">
                 {isLoadingProfile ? (
-                  <Skeleton className="-mt-[30px] h-[76px] w-[76px] shrink-0 rounded-full border-[3px] border-white" />
+                  <Skeleton className="-mt-[30px] h-[76px] w-[76px] shrink-0 rounded-full border-[3px] border-background" />
                 ) : (
                   <CompanyLogoUpload
                     value={formData.logo_url}
@@ -307,21 +347,21 @@ function CompanyProfileContent() {
                   ) : (
                     <>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[17px] font-extrabold tracking-tight text-[#14161A]">
+                        <span className="text-[17px] font-extrabold tracking-tight text-foreground">
                           {formData.tradeName || "Sua Empresa"}
                         </span>
                         <span
                           className={cn(
                             "shrink-0 rounded-md px-2 py-0.5 text-[10.5px] font-extrabold",
                             isOpen
-                              ? "bg-[#E9F7EF] text-[#1B7F4C]"
-                              : "bg-[#FDEEEE] text-[#D64545]",
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-red-50 text-red-600",
                           )}
                         >
                           {isOpen ? "Aberto" : "Fechado"}
                         </span>
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1.5 text-[11.5px] font-semibold text-[#8A8F99]">
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1.5 text-[11.5px] font-semibold text-muted-foreground">
                         {selectedSpecialityName && (
                           <span className="whitespace-nowrap">
                             {selectedSpecialityName}
@@ -339,11 +379,11 @@ function CompanyProfileContent() {
                 </div>
               </div>
 
-              <div className="border-t border-[#F4F5F7] bg-[#FAFAFB] px-[18px] py-2.5 text-[11px] font-semibold text-[#A2A7B0]">
+              <div className="border-t border-border bg-muted/40 px-[18px] py-2.5 text-[11px] font-semibold text-muted-foreground">
                 Clique nas imagens para enviar · capa 1200×400, logo quadrada ·
                 até 5MB (JPG, PNG, GIF)
               </div>
-            </div>
+            </Card>
 
             {/* Informações da Empresa */}
             <SectionCard
@@ -352,28 +392,35 @@ function CompanyProfileContent() {
               className="mb-3"
               actions={
                 isLoadingProfile ? null : !isEditing ? (
-                  <CompactButton onClick={() => setIsEditing(true)}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 rounded-[9px] text-xs font-bold"
+                    onClick={() => setIsEditing(true)}
+                  >
                     Editar
-                  </CompactButton>
+                  </Button>
                 ) : (
                   <div className="flex shrink-0 items-center gap-2">
-                    <CompactButton
+                    <Button
                       variant="outline"
+                      size="sm"
+                      className="h-8 rounded-[9px] text-xs font-bold"
                       onClick={handleCancelEdit}
                       disabled={isSaving}
                     >
                       Cancelar
-                    </CompactButton>
-                    <GradientButton
+                    </Button>
+                    <Button
                       size="sm"
+                      variant="secondary"
                       onClick={handleSaveProfile}
-                      isLoading={isSaving}
-                      loadingText="Salvando..."
-                      className="h-8 rounded-[9px] px-3.5 text-xs"
+                      disabled={isSaving}
+                      className="h-8 rounded-[9px] px-3.5 text-xs font-bold"
                     >
                       <Save className="h-3.5 w-3.5" />
                       Salvar
-                    </GradientButton>
+                    </Button>
                   </div>
                 )
               }
@@ -446,28 +493,32 @@ function CompanyProfileContent() {
                     placeholder="(00) 00000-0000"
                     maxLength={15}
                   />
+
                   <div>
-                    <div className="mb-[5px] text-[11px] font-bold text-[#3D4149]">
+                    <Label className="mb-[5px] block text-[11px] font-bold text-foreground/80">
                       Tipo de Restaurante
-                    </div>
-                    <select
+                    </Label>
+                    <Select
                       value={selectedCategory}
-                      onChange={(e) => {
-                        setSelectedCategory(e.target.value);
+                      onValueChange={(value) => {
+                        setSelectedCategory(value);
                         if (specialities && specialities.length > 0) {
-                          handleSaveSpeciality(e.target.value);
+                          handleSaveSpeciality(value);
                         }
                       }}
                       disabled={!isEditing || isSavingSpeciality}
-                      className="h-[37px] w-full rounded-[9px] border border-[#E9EAEE] bg-white px-2.5 text-[12.5px] font-semibold text-[#14161A] outline-none disabled:cursor-default"
                     >
-                      <option value="">Selecione o tipo de restaurante</option>
-                      {specialityOptions.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="h-[37px] rounded-[9px] border-border bg-background text-[12.5px] font-semibold">
+                        <SelectValue placeholder="Selecione o tipo de restaurante" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {specialityOptions.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {(!specialities || specialities.length === 0) && (
                       <p className="mt-1 text-[11px] font-medium text-amber-600">
                         ⚠️ Especialidades não encontradas no servidor - usando
@@ -485,19 +536,21 @@ function CompanyProfileContent() {
               subtitle="Dias e horários em que a loja aceita pedidos"
               className="mb-3"
               actions={
-                <GradientButton
+                <Button
                   size="sm"
+                  variant={"secondary"}
                   onClick={handleSaveHours}
-                  isLoading={isSavingHours}
-                  loadingText="Salvando..."
-                  className="h-8 rounded-[9px] px-3.5 text-xs"
+                  disabled={isSavingHours}
+                  className="h-8 rounded-[9px] px-3.5 text-xs font-bold"
                 >
-                  <Save className="h-3.5 w-3.5" />
-                  Salvar
-                </GradientButton>
+                  <div className="flex gap-2">
+                    <Save className="h-3.5 w-3.5" />
+                    Salvar
+                  </div>
+                </Button>
               }
             >
-              <div className="mb-3 rounded-[9px] border border-[#FFE1CC] bg-[#FFF7ED] px-3 py-2 text-[11px] font-semibold text-[#B7791F]">
+              <div className="mb-3 rounded-[9px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
                 Em construção: ainda não salva no servidor.
               </div>
 
@@ -505,18 +558,19 @@ function CompanyProfileContent() {
                 {openingHours.map((day) => (
                   <div
                     key={day.day}
-                    className="flex flex-wrap items-center gap-2.5 rounded-[10px] border border-[#E9EAEE] px-3 py-2 sm:flex-nowrap"
+                    className="flex flex-wrap items-center gap-2.5 rounded-[10px] border border-border px-3 py-2 sm:flex-nowrap"
                   >
                     <label className="flex w-[100px] shrink-0 cursor-pointer items-center gap-2">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={day.isOpen}
-                        onChange={(e) =>
-                          updateDayHours(day.day, { isOpen: e.target.checked })
+                        onCheckedChange={(checked) =>
+                          updateDayHours(day.day, {
+                            isOpen: checked === true,
+                          })
                         }
-                        className="h-4 w-4 cursor-pointer rounded border-[#E9EAEE] text-orange-500 focus:ring-orange-500"
+                        className="h-4 w-4 border-border data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                       />
-                      <span className="text-[12.5px] font-bold text-[#14161A]">
+                      <span className="text-[12.5px] font-bold text-foreground">
                         {day.label}
                       </span>
                     </label>
@@ -524,8 +578,8 @@ function CompanyProfileContent() {
                     {day.isOpen ? (
                       <div className="flex flex-1 items-center gap-2">
                         <div className="relative flex-1">
-                          <Clock className="pointer-events-none absolute left-[9px] top-1/2 h-[13px] w-[13px] -translate-y-1/2 text-[#A0A6B0]" />
-                          <input
+                          <Clock className="pointer-events-none absolute left-[9px] top-1/2 h-[13px] w-[13px] -translate-y-1/2 text-muted-foreground" />
+                          <Input
                             type="time"
                             value={day.openTime}
                             onChange={(e) =>
@@ -533,15 +587,15 @@ function CompanyProfileContent() {
                                 openTime: e.target.value,
                               })
                             }
-                            className="h-[34px] w-full rounded-[8px] border border-[#E9EAEE] bg-white pl-7 pr-2 text-[12.5px] text-[#14161A] outline-none"
+                            className="h-[34px] rounded-[8px] border-border bg-background pl-7 pr-2 text-[12.5px]"
                           />
                         </div>
-                        <span className="shrink-0 text-[11px] font-bold text-[#A2A7B0]">
+                        <span className="shrink-0 text-[11px] font-bold text-muted-foreground">
                           até
                         </span>
                         <div className="relative flex-1">
-                          <Clock className="pointer-events-none absolute left-[9px] top-1/2 h-[13px] w-[13px] -translate-y-1/2 text-[#A0A6B0]" />
-                          <input
+                          <Clock className="pointer-events-none absolute left-[9px] top-1/2 h-[13px] w-[13px] -translate-y-1/2 text-muted-foreground" />
+                          <Input
                             type="time"
                             value={day.closeTime}
                             onChange={(e) =>
@@ -549,12 +603,12 @@ function CompanyProfileContent() {
                                 closeTime: e.target.value,
                               })
                             }
-                            className="h-[34px] w-full rounded-[8px] border border-[#E9EAEE] bg-white pl-7 pr-2 text-[12.5px] text-[#14161A] outline-none"
+                            className="h-[34px] rounded-[8px] border-border bg-background pl-7 pr-2 text-[12.5px]"
                           />
                         </div>
                       </div>
                     ) : (
-                      <span className="flex-1 text-[12px] font-semibold text-[#A2A7B0]">
+                      <span className="flex-1 text-[12px] font-semibold text-muted-foreground">
                         Fechado
                       </span>
                     )}
@@ -570,12 +624,17 @@ function CompanyProfileContent() {
               className="mb-3"
               actions={
                 !isLoadingAddresses && !isAddingAddress ? (
-                  <CompactButton onClick={() => setIsAddingAddress(true)}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 rounded-[9px] text-xs font-bold"
+                    onClick={() => setIsAddingAddress(true)}
+                  >
                     <span className="flex items-center gap-1">
                       <Plus className="h-3.5 w-3.5" />
                       Adicionar
                     </span>
-                  </CompactButton>
+                  </Button>
                 ) : null
               }
             >
@@ -584,16 +643,21 @@ function CompanyProfileContent() {
               ) : (!Array.isArray(addresses) || addresses.length === 0) &&
                 !isAddingAddress ? (
                 <div className="py-6 text-center">
-                  <MapPin className="mx-auto mb-2 h-8 w-8 text-[#D8DBE0]" />
-                  <p className="mb-3 text-[12.5px] text-[#8A8F99]">
+                  <MapPin className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+                  <p className="mb-3 text-[12.5px] text-muted-foreground">
                     Nenhum endereço cadastrado
                   </p>
-                  <CompactButton onClick={() => setIsAddingAddress(true)}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 rounded-[9px] text-xs font-bold"
+                    onClick={() => setIsAddingAddress(true)}
+                  >
                     <span className="flex items-center gap-1">
                       <Plus className="h-3.5 w-3.5" />
                       Adicionar Endereço
                     </span>
-                  </CompactButton>
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -601,49 +665,51 @@ function CompanyProfileContent() {
                     addresses.map((address) => (
                       <div
                         key={address.id}
-                        className="flex items-center gap-3 rounded-[10px] border border-[#E9EAEE] px-3 py-[11px]"
+                        className="flex items-center gap-3 rounded-[10px] border border-border px-3 py-[11px]"
                       >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[#FFF1E7] text-[#E05A00]">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-primary/10 text-primary">
                           <MapPin className="h-[15px] w-[15px]" />
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[13px] font-bold text-[#14161A]">
+                            <span className="text-[13px] font-bold text-foreground">
                               {address.street}, {address.number}
                             </span>
                             {address.isDefault && (
-                              <span className="flex shrink-0 items-center gap-1 rounded-md bg-[#FFF1E7] px-2 py-0.5 text-[10px] font-extrabold text-[#E05A00]">
+                              <span className="flex shrink-0 items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-extrabold text-primary">
                                 <Star className="h-2.5 w-2.5 fill-current" />
                                 Padrão
                               </span>
                             )}
                           </div>
-                          <div className="mt-0.5 truncate text-[11.5px] font-medium text-[#8A8F99]">
+                          <div className="mt-0.5 truncate text-[11.5px] font-medium text-muted-foreground">
                             {address.neighborhood} - {address.city}/
                             {address.state} · CEP{" "}
                             {formatZipCode(address.zipCode)}
                           </div>
                         </div>
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 rounded-lg"
                           onClick={() => handleEditAddress(address)}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F4F5F7] text-[#3D4149] hover:bg-[#E9EAEE]"
                         >
                           <Pencil className="h-[13px] w-[13px]" />
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => handleDeleteAddress(address.id)}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FDEEEE] text-[#D64545] hover:bg-[#FBDEDE]"
                         >
                           <Trash2 className="h-[13px] w-[13px]" />
-                        </button>
+                        </Button>
                       </div>
                     ))}
 
                   {isAddingAddress && (
-                    <div className="rounded-[10px] border border-dashed border-[#D8DBE0] bg-[#FAFAFB] p-4">
-                      <h3 className="mb-3 text-[13px] font-extrabold text-[#14161A]">
+                    <div className="rounded-[10px] border border-dashed border-border bg-muted/30 p-4">
+                      <h3 className="mb-3 text-[13px] font-extrabold text-foreground">
                         {editingAddressId ? "Editar Endereço" : "Novo Endereço"}
                       </h3>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -729,34 +795,34 @@ function CompanyProfileContent() {
                           />
                         </div>
                         <div className="flex items-center gap-2 sm:col-span-2">
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             id="isDefault"
                             checked={newAddress.isDefault}
                             onChange={(e) =>
                               updateAddressField("isDefault", e.target.checked)
                             }
-                            className="h-4 w-4 rounded border-[#E9EAEE] text-orange-500 focus:ring-orange-500"
+                            className="h-4 w-4 border-border data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                           />
-                          <label
+                          <Label
                             htmlFor="isDefault"
-                            className="cursor-pointer text-[12.5px] font-semibold text-[#3D4149]"
+                            className="cursor-pointer text-[12.5px] font-semibold text-foreground/80"
                           >
                             Definir como endereço padrão
-                          </label>
+                          </Label>
                         </div>
                       </div>
                       <div className="mt-4 flex gap-2">
-                        <CompactButton
+                        <Button
                           variant="outline"
+                          size="sm"
+                          className="h-8 flex-1 rounded-[9px] text-xs font-bold"
                           onClick={handleCancelAddressEdit}
-                          className="flex-1"
                         >
                           <span className="flex items-center justify-center gap-1.5">
                             <X className="h-3.5 w-3.5" />
                             Cancelar
                           </span>
-                        </CompactButton>
+                        </Button>
                         <GradientButton
                           onClick={handleSaveAddress}
                           size="sm"
@@ -780,16 +846,16 @@ function CompanyProfileContent() {
               subtitle="Alterar sua senha de acesso"
             >
               {!isChangingPassword ? (
-                <CompactButton
+                <Button
                   variant="outline"
+                  className="h-8 w-full rounded-[9px] text-xs font-bold"
                   onClick={() => setIsChangingPassword(true)}
-                  className="w-full"
                 >
-                  <span className="flex items-center justify-center gap-1.5">
+                  <span className="flex items-center justify-center gap-2 ">
                     <Lock className="h-3.5 w-3.5" />
                     Alterar Senha
                   </span>
-                </CompactButton>
+                </Button>
               ) : (
                 <div className="space-y-3">
                   <IconInput
@@ -813,7 +879,7 @@ function CompanyProfileContent() {
                     placeholder="Digite a nova senha"
                   />
                   {passwordErrors.length > 0 && (
-                    <div className="space-y-1 text-[11.5px] text-red-600">
+                    <div className="space-y-1 text-[11.5px] text-destructive">
                       <p className="font-bold">Requisitos não atendidos:</p>
                       <ul className="list-inside list-disc">
                         {passwordErrors.map((error: string, i: number) => (
@@ -833,27 +899,31 @@ function CompanyProfileContent() {
                     placeholder="Digite a nova senha novamente"
                   />
                   <div className="flex gap-2">
-                    <CompactButton
+                    <Button
                       variant="outline"
+                      size="sm"
+                      className="h-8 flex-1 rounded-[9px] text-xs font-bold"
                       onClick={() => {
                         setIsChangingPassword(false);
                         resetPasswordForm();
                       }}
-                      className="flex-1"
                     >
                       <span className="flex items-center justify-center gap-1.5">
                         <X className="h-3.5 w-3.5" />
                         Cancelar
                       </span>
-                    </CompactButton>
+                    </Button>
                     <GradientButton
                       onClick={handleChangePassword}
                       size="sm"
                       disabled={passwordErrors.length > 0}
                       className="h-8 flex-1 rounded-[9px] text-xs"
                     >
-                      <Save className="h-3.5 w-3.5" />
-                      Alterar Senha
+                      <div className="flex gap-2">
+                        {" "}
+                        <Save className="h-3.5 w-3.5" />
+                        Alterar Senha
+                      </div>
                     </GradientButton>
                   </div>
                 </div>

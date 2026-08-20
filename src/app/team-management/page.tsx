@@ -298,12 +298,12 @@ function TeamManagementContent() {
               Remover da equipe?
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2 text-sm text-[#8A8F99]">
-              <p>
+              <span className="block">
                 <strong className="text-[#14161A]">
                   {removeTarget?.name}
                 </strong>{" "}
                 vai perder o acesso ao painel da empresa.
-              </p>
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
 

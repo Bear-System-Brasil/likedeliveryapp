@@ -33,7 +33,7 @@ type SidebarProps = {
 const navGroups = [
   {
     label: "Principal",
-    links: [{ href: "/", label: "home", icon: House }],
+    links: [{ href: "/", label: "Início", icon: House }],
   },
   {
     label: "Gestão",

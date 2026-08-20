@@ -1,5 +1,5 @@
 import { useFavoritesStore } from "@/stores";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRestaurants } from "./use-restaurants";
 import { useSearchParams } from "next/navigation";
 import { Restaurant, UserLocation } from "@/types/restaurant";
@@ -15,7 +15,18 @@ export const useRestaurantFilters = (userLocation?: UserLocation) => {
   const searchParams = useSearchParams();
   const selectedCategory = searchParams.get("category");
 
-  const [searchQuery, setSearchQuery] = useState("");
+  // Busca inicial vem da URL (ex: header manda pra /restaurants?search=pizza),
+  // mas depois vira estado local editável na própria página.
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.get("search") ?? "",
+  );
+
+  useEffect(() => {
+    const searchFromUrl = searchParams.get("search");
+    if (searchFromUrl !== null) {
+      setSearchQuery(searchFromUrl);
+    }
+  }, [searchParams]);
   const [sortBy, setSortBy] = useState<"name" | "rating" | "deliveryTime">("name");
 
   const filteredRestaurants = useMemo(() => {

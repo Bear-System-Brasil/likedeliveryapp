@@ -29,6 +29,7 @@ import {
 } from "@/hooks";
 import { useAuthStore } from "@/stores/auth-store";
 import { formatCurrency } from "@/utils/format-currency";
+import { toast } from "sonner";
 
 function getProductCategoryName(
   productCategory: any,
@@ -56,7 +57,7 @@ export default function RestaurantPage() {
   const companyId = params.id as string;
 
   const { totalItems, totalPrice } = useCartActions();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   const {
     data: restaurant,
@@ -133,6 +134,17 @@ export default function RestaurantPage() {
   const handleOpenModal = (item: any) => {
     if (!isAuthenticated) {
       router.push("/cart");
+      return;
+    }
+
+    // Fazer pedido é uma ação exclusiva de conta de cliente - contas de
+    // restaurante (owner/admin/manager/cook/delivery) esbarram num 403 no
+    // backend ao tentar abrir carrinho, então bloqueia aqui com uma
+    // mensagem clara em vez de deixar o erro confuso acontecer.
+    if (user?.role && user.role !== "client") {
+      toast.error(
+        "Contas de restaurante não podem fazer pedidos - entre com uma conta de cliente.",
+      );
       return;
     }
 
