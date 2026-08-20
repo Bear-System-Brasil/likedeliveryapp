@@ -798,8 +798,8 @@ function CompanyProfileContent() {
                           <Checkbox
                             id="isDefault"
                             checked={newAddress.isDefault}
-                            onChange={(e) =>
-                              updateAddressField("isDefault", e.target.checked)
+                            onCheckedChange={(checked) =>
+                              updateAddressField("isDefault", checked === true)
                             }
                             className="h-4 w-4 border-border data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                           />
