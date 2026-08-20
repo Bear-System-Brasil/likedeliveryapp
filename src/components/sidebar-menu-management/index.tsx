@@ -2,7 +2,6 @@
 
 import { cn } from "@/lib/utils";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
-import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import {
   ClipboardList,
   CreditCard,
@@ -182,7 +181,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         </button>
       </div>
 
-      <div className="shrink-0 border-t border-[#E9EAEE] px-[18px] py-[14px] text-center text-[10.5px] font-semibold text-[#A2A7B0]">
+      <div className="shrink-0 border-t border-[#E9EAEE] px-[18px] py-3.5 text-center text-[10.5px] font-semibold text-[#A2A7B0]">
         v1.0.0
       </div>
     </div>
@@ -229,7 +228,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           )}
         >
           <SheetPrimitive.Title asChild>
-            <VisuallyHidden.Root>Menu de navegação</VisuallyHidden.Root>
+            <span className="sr-only">Menu de navegação</span>
           </SheetPrimitive.Title>
           <SidebarContent onClose={onClose} />
         </SheetPrimitive.Content>
