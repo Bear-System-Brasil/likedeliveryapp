@@ -73,6 +73,13 @@ export function MainHeader({
     if (searchOpen) searchInputRef.current?.focus();
   }, [searchOpen]);
 
+  const handleSearchSubmit = () => {
+    const query = searchQuery.trim();
+    if (!query) return;
+    router.push(`/restaurants?search=${encodeURIComponent(query)}`);
+    setSearchOpen(false);
+  };
+
   const saveLocation = (location: {
     lat: number;
     lng: number;
@@ -414,7 +421,13 @@ export function MainHeader({
           >
             {/* Search */}
             {showSearch && (
-              <div className="flex items-center max-md:flex-1 max-md:min-w-0">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSearchSubmit();
+                }}
+                className="flex items-center max-md:flex-1 max-md:min-w-0"
+              >
                 {/* Input expande para a ESQUERDA do botão */}
                 <div
                   className={clsx(
@@ -426,7 +439,7 @@ export function MainHeader({
                 >
                   <Input
                     ref={searchInputRef}
-                    placeholder="Buscar comida..."
+                    placeholder="Buscar restaurante..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
@@ -436,22 +449,39 @@ export function MainHeader({
                   />
                 </div>
 
-                {/* Botão SEMPRE fica na direita */}
+                {/* Botão SEMPRE fica na direita. Fechado -> abre o campo.
+                    Aberto e vazio -> fecha (X). Aberto com texto -> busca. */}
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
                   className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-xl border-0 bg-gray-50/50"
-                  onClick={() => setSearchOpen((open) => !open)}
-                  aria-label={searchOpen ? "Fechar busca" : "Buscar"}
+                  onClick={() => {
+                    if (!searchOpen) {
+                      setSearchOpen(true);
+                      return;
+                    }
+                    if (searchQuery.trim()) {
+                      handleSearchSubmit();
+                      return;
+                    }
+                    setSearchOpen(false);
+                  }}
+                  aria-label={
+                    !searchOpen
+                      ? "Buscar"
+                      : searchQuery.trim()
+                        ? "Buscar restaurante"
+                        : "Fechar busca"
+                  }
                 >
-                  {searchOpen ? (
+                  {searchOpen && !searchQuery.trim() ? (
                     <X className="h-4 w-4" />
                   ) : (
                     <Search className="h-4 w-4" />
                   )}
                 </Button>
-              </div>
+              </form>
             )}
 
             {/* Carrinho */}

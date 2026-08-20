@@ -833,16 +833,16 @@ function MenuManagementContent() {
               Atenção!
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2 text-sm font-medium text-[#5F6673]">
-              <p>
+              <span className="block">
                 Você está prestes a remover{" "}
                 <strong className="text-[#14161A]">
                   &quot;{deleteTarget?.name}&quot;
                 </strong>{" "}
                 do seu cardápio.
-              </p>
-              <p className="font-bold text-[#D64545]">
+              </span>
+              <span className="block font-bold text-[#D64545]">
                 Esta ação não poderá ser desfeita.
-              </p>
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
 

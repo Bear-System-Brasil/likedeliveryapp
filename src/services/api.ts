@@ -1060,7 +1060,12 @@ export const apiService = {
     ),
 
   // Speciality endpoints (restaurant types)
-  getAllSpecialities: () => apiRequest<Speciality[]>("GET", "/specialities"),
+  // Apesar do doc dizer que é rota pública, o backend real exige token aqui
+  // (confirmado: 401 "Token inválido ou ausente." mesmo sem nenhum guard
+  // documentado). Único caller hoje é /company-profile (owner/admin, sempre
+  // autenticado), então é seguro exigir auth.
+  getAllSpecialities: () =>
+    apiRequest<Speciality[]>("GET", "/specialities", undefined, true),
 
   getCompaniesBySpeciality: (specialityId: string) =>
     apiRequest<Company[]>("GET", `/specialities/${specialityId}/companies`),

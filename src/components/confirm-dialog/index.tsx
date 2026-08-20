@@ -73,9 +73,9 @@ export function ConfirmDialog({
           </div>
 
           {currentRestaurant && newRestaurant ? (
-            <DialogDescription className="text-base text-gray-600 leading-relaxed pt-2">
+            <DialogDescription className="text-base text-gray-600 leading-relaxed pt-2" asChild>
               <div className="space-y-3">
-                <p>Você já tem itens no carrinho:</p>
+                <span className="block">Você já tem itens no carrinho:</span>
                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                   <div className="flex items-center gap-2 text-sm">
                     <ShoppingCart className="w-4 h-4 text-gray-500" />
@@ -84,11 +84,11 @@ export function ConfirmDialog({
                     </span>
                   </div>
                 </div>
-                <p className="text-sm">
+                <span className="block text-sm">
                   Deseja{" "}
                   <strong className="text-red-600">limpar o carrinho</strong> e
                   adicionar itens de:
-                </p>
+                </span>
                 <div className="bg-linear-to-r from-orange-50 to-orange-50 rounded-lg p-3 border border-orange-200">
                   <div className="flex items-center gap-2 text-sm">
                     <ShoppingCart className="w-4 h-4 text-orange-600" />
