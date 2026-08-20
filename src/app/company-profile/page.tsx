@@ -268,7 +268,7 @@ function CompanyProfileContent() {
     <AdminPageLayout
       title="Perfil da Empresa"
       icon={Building2}
-      mainClassName="p-4 pb-20 sm:p-6 md:pb-10 lg:pl-64 lg:pr-8"
+      mainClassName="p-4 sm:p-6 lg:pl-64 lg:pr-8"
       actions={
         <Badge className="border-0 bg-primary/10 text-primary">
           {userRoleLabel}
@@ -798,8 +798,8 @@ function CompanyProfileContent() {
                           <Checkbox
                             id="isDefault"
                             checked={newAddress.isDefault}
-                            onCheckedChange={(checked) =>
-                              updateAddressField("isDefault", checked === true)
+                            onChange={(e) =>
+                              updateAddressField("isDefault", e.target.checked)
                             }
                             className="h-4 w-4 border-border data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                           />
