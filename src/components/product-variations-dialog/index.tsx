@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StockQuantityInput } from "@/components/ui/stock-quantity-input";
 import { useConfirm } from "@/contexts/confirm-provider";
+import { cn } from "@/lib/utils";
 import {
   useCreateProductVariation,
   useDeleteProductVariation,
@@ -66,6 +67,13 @@ export function ProductVariationsDialog({
 
   const isSaving = createVariation.isPending || updateVariation.isPending;
 
+  const trimmedName = form.name.trim();
+  const isDuplicateName = variations.some(
+    (v) =>
+      v.id !== editingId &&
+      v.name.trim().toLowerCase() === trimmedName.toLowerCase(),
+  );
+
   const resetForm = () => {
     setEditingId(null);
     setForm(emptyForm);
@@ -84,6 +92,7 @@ export function ProductVariationsDialog({
   const handleSubmit = async () => {
     if (!productId) return;
     if (!form.name.trim() || form.priceModifier === undefined) return;
+    if (isDuplicateName) return;
 
     const data = {
       name: form.name.trim(),
@@ -149,8 +158,17 @@ export function ProductVariationsDialog({
                   }
                   placeholder="Ex: Grande"
                   maxLength={100}
-                  className={fieldClassName}
+                  className={cn(
+                    fieldClassName,
+                    isDuplicateName &&
+                      "border-red-400 focus-visible:ring-red-400",
+                  )}
                 />
+                {isDuplicateName && (
+                  <p className="text-[10.5px] font-semibold text-red-500">
+                    Já existe um tamanho com esse nome
+                  </p>
+                )}
               </div>
               <div className="grid gap-1">
                 <Label className="text-[11px] font-bold text-[#3D4149]">
@@ -214,7 +232,10 @@ export function ProductVariationsDialog({
                   type="button"
                   onClick={handleSubmit}
                   disabled={
-                    isSaving || !form.name.trim() || form.priceModifier === undefined
+                    isSaving ||
+                    !form.name.trim() ||
+                    form.priceModifier === undefined ||
+                    isDuplicateName
                   }
                   className="h-8 cursor-pointer rounded-[8px] bg-[#FF6B00] px-2.5 text-[11.5px] font-extrabold text-white hover:bg-[#E05A00]"
                 >

@@ -72,7 +72,6 @@ export function StockQuantityInput({
 }: StockQuantityInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [displayValue, setDisplayValue] = useState("")
-  const isInitializedRef = useRef(false)
 
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
     const char = e.key
@@ -131,13 +130,24 @@ export function StockQuantityInput({
     setDisplayValue(digits)
   }
 
-  // Inicializar com valor da prop se fornecido
+  // Sincroniza com a prop `value` sempre que ela mudar externamente (ex: o
+  // form pai resetando o campo pra undefined depois de salvar, ou
+  // preenchendo pra editar um registro existente). Sem isso o campo ficava
+  // com o número antigo na tela mesmo depois do form pai já ter zerado o
+  // valor real.
   useEffect(() => {
-    if (value !== undefined && !isInitializedRef.current) {
-      isInitializedRef.current = true
+    if (value === undefined) {
+      setDisplayValue("")
+      return
+    }
+
+    const currentDigits = displayValue.replace(/\D/g, "")
+    const currentNumeric = currentDigits ? parseInt(currentDigits, 10) : undefined
+    if (currentNumeric !== value) {
       setDisplayValue(formatWithThousandsSeparator(value))
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
 
   return (
     <Input

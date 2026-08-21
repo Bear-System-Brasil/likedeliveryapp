@@ -81,7 +81,6 @@ export function CurrencyCentsInput({
 }: CurrencyCentsInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [displayValue, setDisplayValue] = useState("")
-  const isInitializedRef = useRef(false)
 
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
     const char = e.key
@@ -144,13 +143,24 @@ export function CurrencyCentsInput({
     }
   }
 
-  // Inicializar com valor da prop se fornecido
+  // Sincroniza com a prop `value` sempre que ela mudar externamente (ex: o
+  // form pai resetando os campos pra undefined depois de salvar, ou
+  // preenchendo pra editar um registro existente). Sem isso o campo ficava
+  // com o texto antigo na tela mesmo depois do form pai já ter zerado o
+  // valor real, fazendo o usuário reenviar achando que o preço ainda tava
+  // preenchido.
   useEffect(() => {
-    if (value !== undefined && !isInitializedRef.current) {
-      isInitializedRef.current = true
+    if (value === undefined) {
+      setDisplayValue("")
+      return
+    }
+
+    const { numericValue: currentNumeric } = processMonetaryInput(displayValue, false)
+    if (currentNumeric !== value) {
       setDisplayValue(formatCurrency(value))
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
 
   return (
     <Input
