@@ -908,24 +908,31 @@ export const apiService = {
 
   // Product add-on endpoints ("Complementos")
   productAddOns: {
-    // O backend ignora o filtro `productId` da query e devolve TODOS os
-    // complementos de TODAS as empresas - o filtro por produto é feito no
-    // hook (use-product-add-ons.ts).
-    getAll: () =>
+    // O backend filtra por empresa (via JWT ou ?companyId=), não por
+    // produto - o filtro por productId é feito no hook
+    // (use-product-add-ons.ts). Staff sempre tem companyId no token; para
+    // client (JWT sem companyId) o backend exige o query param, por isso
+    // aceita companyId aqui mesmo no getAll "normal".
+    getAll: (companyId?: string) =>
       apiRequest<ProductAddOn[]>(
         "GET",
-        "/product-add-ons",
+        companyId
+          ? `/product-add-ons?companyId=${companyId}`
+          : "/product-add-ons",
         undefined,
         true,
       ),
 
     // Usado pelo modal de personalização do prato, acessível a visitante
-    // não-logado navegando o cardápio - um 401 aí é "ainda não logou", não
-    // "sessão expirada", então não deve abrir o popup global de login.
-    getAllPublic: () =>
+    // não-logado navegando o cardápio - um 401/403 aí não deve abrir o
+    // popup global de login (isso hoje sempre falha pra role client - o
+    // backend só libera leitura pra admin/owner/manager/cook).
+    getAllPublic: (companyId?: string) =>
       apiRequest<ProductAddOn[]>(
         "GET",
-        "/product-add-ons",
+        companyId
+          ? `/product-add-ons?companyId=${companyId}`
+          : "/product-add-ons",
         undefined,
         true,
         true,
@@ -955,21 +962,28 @@ export const apiService = {
 
   // Product variation endpoints ("Tamanhos")
   productVariations: {
-    // Mesma limitação do productAddOns: o backend ignora o filtro
-    // `productId` da query.
-    getAll: () =>
+    // Ver comentário em productAddOns.getAll - mesmo esquema de
+    // companyId via JWT (staff) ou query (client, cujo JWT não tem
+    // companyId).
+    getAll: (companyId?: string) =>
       apiRequest<ProductVariation[]>(
         "GET",
-        "/product-variation",
+        companyId
+          ? `/product-variation?companyId=${companyId}`
+          : "/product-variation",
         undefined,
         true,
       ),
 
-    // Ver comentário em productAddOns.getAllPublic.
-    getAllPublic: () =>
+    // Diferente de productAddOns, o backend já libera leitura pra role
+    // client aqui - só precisa do companyId via query já que o JWT do
+    // client não carrega companyId.
+    getAllPublic: (companyId?: string) =>
       apiRequest<ProductVariation[]>(
         "GET",
-        "/product-variation",
+        companyId
+          ? `/product-variation?companyId=${companyId}`
+          : "/product-variation",
         undefined,
         true,
         true,

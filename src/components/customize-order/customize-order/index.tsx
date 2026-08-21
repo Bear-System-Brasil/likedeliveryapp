@@ -79,8 +79,12 @@ export function CustomizeOrder({
 
   const { data: variations = [] } = usePublicProductVariations(
     productData.id,
+    productData.companyId,
   );
-  const { data: addOns = [] } = usePublicProductAddOns(productData.id);
+  const { data: addOns = [] } = usePublicProductAddOns(
+    productData.id,
+    productData.companyId,
+  );
 
   const extraGroups: ExtraGroup[] = useMemo(() => {
     const groups: ExtraGroup[] = [];

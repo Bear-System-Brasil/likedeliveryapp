@@ -27,12 +27,20 @@ export const useProductAddOns = (productId: string | null) => {
  * Variante pro modal de personalização do prato (visível a visitante
  * não-logado navegando o cardápio) - não dispara o popup global de login
  * quando o backend exige token e o visitante ainda não tem um.
+ *
+ * `companyId` é obrigatório pro backend quando quem chama é role client
+ * (o JWT de client não carrega companyId, diferente do staff).
  */
-export const usePublicProductAddOns = (productId: string | null) => {
+export const usePublicProductAddOns = (
+  productId: string | null,
+  companyId?: string | null,
+) => {
   return useQuery({
-    queryKey: ["product-add-ons", "public", productId],
+    queryKey: ["product-add-ons", "public", productId, companyId],
     queryFn: async () => {
-      const response = await apiService.productAddOns.getAllPublic();
+      const response = await apiService.productAddOns.getAllPublic(
+        companyId ?? undefined,
+      );
       if (!response.success || !response.data) return [];
       return response.data.filter((addOn) => addOn.productId === productId);
     },
