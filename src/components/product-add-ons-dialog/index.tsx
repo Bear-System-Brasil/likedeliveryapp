@@ -194,7 +194,9 @@ export function ProductAddOnsDialog({
                   type="button"
                   onClick={handleSubmit}
                   disabled={
-                    isSaving || !form.name.trim() || form.priceModifier === undefined
+                    isSaving ||
+                    !form.name.trim() ||
+                    form.priceModifier === undefined
                   }
                   className="h-8 cursor-pointer rounded-[8px] bg-[#FF6B00] px-2.5 text-[11.5px] font-extrabold text-white hover:bg-[#E05A00]"
                 >
@@ -238,10 +240,7 @@ export function ProductAddOnsDialog({
 
             {!isLoading &&
               addOns.map((addOn) => (
-                <div
-                  key={addOn.id}
-                  className="flex items-center gap-2 py-2.5"
-                >
+                <div key={addOn.id} className="flex items-center gap-2 py-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12.5px] font-bold text-[#14161A]">
                       {addOn.name}

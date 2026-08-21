@@ -29,12 +29,22 @@ export const useProductVariations = (productId: string | null) => {
  * Variante pro modal de personalização do prato (visível a visitante
  * não-logado navegando o cardápio) - não dispara o popup global de login
  * quando o backend exige token e o visitante ainda não tem um.
+ *
+ * `companyId` é obrigatório pro backend quando quem chama é role client
+ * (o JWT de client não carrega companyId, diferente do staff) - é
+ * exatamente o caso de uso real deste hook, já que client tem leitura
+ * liberada aqui (diferente de productAddOns).
  */
-export const usePublicProductVariations = (productId: string | null) => {
+export const usePublicProductVariations = (
+  productId: string | null,
+  companyId?: string | null,
+) => {
   return useQuery({
-    queryKey: ["product-variations", "public", productId],
+    queryKey: ["product-variations", "public", productId, companyId],
     queryFn: async () => {
-      const response = await apiService.productVariations.getAllPublic();
+      const response = await apiService.productVariations.getAllPublic(
+        companyId ?? undefined,
+      );
       if (!response.success || !response.data) return [];
       return response.data.filter(
         (variation) => variation.productId === productId,

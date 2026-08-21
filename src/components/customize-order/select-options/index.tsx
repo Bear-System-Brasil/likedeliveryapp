@@ -10,6 +10,17 @@ type Props = {
   onChange: (groupId: string, selectedIds: string[]) => void;
 };
 
+// Badge único de "OPCIONAL" - antes o grupo de tamanho (single-select)
+// usava um estilo (pílula maiúscula) e o de complementos (multi-select)
+// usava outro (texto simples minúsculo). Padronizado nos dois.
+function OptionalBadge() {
+  return (
+    <span className="rounded-md bg-[#F4F5F7] px-[7px] py-[1px] text-[9.5px] font-extrabold tracking-wide text-[#8A8F99]">
+      OPCIONAL
+    </span>
+  );
+}
+
 export function SelectOptions({ group, selectedIds, onChange }: Props) {
   const handleSelectSingle = (id: string) => {
     // Clicar na opção já selecionada desmarca - o grupo é opcional.
@@ -33,9 +44,7 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
           <span className="text-xs font-extrabold tracking-tight text-[#14161A]">
             {group.title}
           </span>
-          <span className="rounded-md bg-[#F4F5F7] px-[7px] py-[1px] text-[9.5px] font-extrabold tracking-wide text-[#8A8F99]">
-            OPCIONAL
-          </span>
+          <OptionalBadge />
         </div>
 
         <div className="mt-[7px] grid grid-cols-3 gap-1.5">
@@ -82,13 +91,11 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
 
   return (
     <div>
-      <div className="flex items-baseline justify-between gap-2.5">
+      <div className="flex items-center gap-2">
         <span className="text-xs font-extrabold tracking-tight text-[#14161A]">
           {group.title}
         </span>
-        <span className="whitespace-nowrap text-[10.5px] font-semibold text-[#A2A7B0]">
-          Opcional
-        </span>
+        <OptionalBadge />
       </div>
 
       <div className="mt-[7px] grid grid-cols-2 gap-1.5">
