@@ -67,16 +67,35 @@ export const useCartActions = () => {
             });
           }
 
-          const cartItems = backendCart.orderedItems.map((item: any) => ({
-            id: item.productId,
-            name: item.product?.name || "Produto",
-            price: item.unitPrice,
-            quantity: item.quantity,
-            imageUrl: item.product?.imageURL?.[0]?.url,
-            restaurantId: backendCart.companyId,
-            restaurantName: restaurant?.name || "Restaurante",
-            customizations: item.addIngredient || undefined,
-          }));
+          const cartItems = backendCart.orderedItems.map((item: any) => {
+            // item.unitPrice é só o preço base do produto - os extras de
+            // tamanho/complemento vêm à parte, em addOns[]/variations[]
+            // (cada um com seu priceSnapshot). Sem somar isso aqui, o
+            // carrinho "esquece" o valor adicionado assim que sincroniza
+            // com o backend (ex: ao entrar em /cart), voltando pro preço
+            // original do prato.
+            const addOnsTotal = (item.addOns || []).reduce(
+              (sum: number, addOn: any) =>
+                sum + (addOn.priceSnapshot || 0) * (addOn.quantity || 1),
+              0,
+            );
+            const variationsTotal = (item.variations || []).reduce(
+              (sum: number, variation: any) =>
+                sum + (variation.priceSnapshot || 0),
+              0,
+            );
+
+            return {
+              id: item.productId,
+              name: item.product?.name || "Produto",
+              price: item.unitPrice + addOnsTotal + variationsTotal,
+              quantity: item.quantity,
+              imageUrl: item.product?.imageURL?.[0]?.url,
+              restaurantId: backendCart.companyId,
+              restaurantName: restaurant?.name || "Restaurante",
+              customizations: item.addIngredient || undefined,
+            };
+          });
           setItems(cartItems);
         } else { 
           setRestaurant(null);
