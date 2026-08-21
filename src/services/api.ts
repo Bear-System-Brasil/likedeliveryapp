@@ -659,9 +659,9 @@ export interface Payment {
 export interface CreatePaymentRequest {
   amount: number;
   orderId: string;
-  customerId: string;
+  // customerId: string;
   paymentMethod: PaymentMethod;
-  status: PaymentStatus;
+  // status: PaymentStatus;
 }
 
 export interface UpdatePaymentRequest {
