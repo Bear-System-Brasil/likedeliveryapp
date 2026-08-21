@@ -434,7 +434,7 @@ export const useCheckoutProcess = () => {
         try {
           const paymentData = {
             orderId: finalOrderId,
-            customerId: user.id,
+            // customerId: user.id,
             paymentMethod:
               paymentMethod === "credit"
                 ? PaymentMethod.CREDIT_CARD
@@ -450,7 +450,7 @@ export const useCheckoutProcess = () => {
                           ? PaymentMethod.CASH
                           : PaymentMethod.BANK_TRANSFER,
             amount: total,
-            status: PaymentStatus.PENDING,
+            // status: PaymentStatus.PENDING,
           };
 
           const paymentResponse = await apiService.payments.create(paymentData);
