@@ -167,6 +167,15 @@ export function CustomizeOrder({
       const selectedVariationId = selections.variation?.[0];
       const selectedAddOnIds = selections.addon || [];
 
+      const variationGroup = extraGroups.find((g) => g.id === "variation");
+      const addOnGroup = extraGroups.find((g) => g.id === "addon");
+      const variationLabel = variationGroup?.options.find(
+        (o) => o.id === selectedVariationId,
+      )?.label;
+      const addOnLabels = addOnGroup?.options
+        .filter((o) => selectedAddOnIds.includes(o.id))
+        .map((o) => o.label);
+
       const success = await addToCart({
         id: productData.id.toString(),
         name: productData.name,
@@ -185,6 +194,8 @@ export function CustomizeOrder({
               quantity: 1,
             }))
           : undefined,
+        variationLabel,
+        addOnLabels: addOnLabels?.length ? addOnLabels : undefined,
       });
 
       if (success) {

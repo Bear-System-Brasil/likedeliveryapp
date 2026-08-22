@@ -12,6 +12,48 @@ import { toast } from "sonner";
  * Sincroniza estado local com carrinho no backend
  */
 
+// Escopo de módulo (compartilhado entre TODAS as instâncias do hook) - evita
+// que MainHeader + BottomBar + a página em si, todos montando useCartActions
+// ao mesmo tempo, disparem 3 fetches simultâneos toda navegação.
+let lastSyncAttempt = 0;
+const SYNC_THROTTLE_MS = 3000;
+
+// Promessas de "add ao carrinho" ainda em voo (POST em background, não
+// esperado por quem chamou handleAddToCart - é o que dá a sensação de
+// instantâneo). Se o usuário navegar pra /cart logo em seguida, o sync-on-
+// mount da página pode rodar ANTES desse POST terminar de persistir no
+// backend, ler o carrinho ainda sem o item novo e sobrescrever o estado
+// otimista - o carrinho aparece vazio até um reload. O sync-on-mount espera
+// essas promessas assentarem antes de confiar numa leitura do backend.
+let pendingAddPromises: Promise<unknown>[] = [];
+
+const waitForPendingAdds = async () => {
+  if (!pendingAddPromises.length) return;
+  await Promise.allSettled(pendingAddPromises);
+};
+
+/**
+ * Chave de LINHA do carrinho: produto + combinação exata de tamanho/
+ * complementos escolhida. Sem isso, "Burger Pequeno" e "Burger Médio"
+ * colidiam no mesmo `id` (o productId), então viravam uma linha só com
+ * quantidade somada e o preço/tamanho do primeiro que foi adicionado.
+ */
+const buildCartItemKey = (
+  productId: string,
+  variations?: { productVariationId: string }[],
+  addOns?: { productAddOnsId: string; quantity: number }[],
+) => {
+  const variationPart = (variations || [])
+    .map((v) => v.productVariationId)
+    .sort()
+    .join(",");
+  const addOnPart = (addOns || [])
+    .map((a) => a.productAddOnsId)
+    .sort()
+    .join(",");
+  return `${productId}::${variationPart}::${addOnPart}`;
+};
+
 export const useCartActions = () => {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -85,8 +127,34 @@ export const useCartActions = () => {
               0,
             );
 
+            const variations = (item.variations || []).map((v: any) => ({
+              productVariationId: v.productVariationId,
+            }));
+            const addOns = (item.addOns || []).map((a: any) => ({
+              productAddOnsId: a.productAddOnsId,
+              quantity: a.quantity || 1,
+            }));
+
+            // Nome pode vir aninhado de formas diferentes dependendo do
+            // include do backend - tenta os formatos conhecidos e ignora
+            // o que não bater, em vez de quebrar a linha do carrinho.
+            const variationLabel = (item.variations || [])
+              .map(
+                (v: any) =>
+                  v.variation?.name || v.productVariation?.name || v.name,
+              )
+              .filter(Boolean)
+              .join(", ");
+            const addOnLabels = (item.addOns || [])
+              .map(
+                (a: any) =>
+                  a.productAddOn?.name || a.addOn?.name || a.name,
+              )
+              .filter(Boolean);
+
             return {
-              id: item.productId,
+              id: buildCartItemKey(item.productId, variations, addOns),
+              productId: item.productId,
               name: item.product?.name || "Produto",
               price: item.unitPrice + addOnsTotal + variationsTotal,
               quantity: item.quantity,
@@ -94,6 +162,10 @@ export const useCartActions = () => {
               restaurantId: backendCart.companyId,
               restaurantName: restaurant?.name || "Restaurante",
               customizations: item.addIngredient || undefined,
+              variationLabel: variationLabel || undefined,
+              addOnLabels: addOnLabels.length ? addOnLabels : undefined,
+              variations: variations.length ? variations : undefined,
+              addOns: addOns.length ? addOns : undefined,
             };
           });
           setItems(cartItems);
@@ -121,6 +193,8 @@ export const useCartActions = () => {
     specialInstructions?: string;
     addOns?: { productAddOnsId: string; quantity: number }[];
     variations?: { productVariationId: string }[];
+    variationLabel?: string;
+    addOnLabels?: string[];
   }) => {
     if (!user?.id) {
       toast.error("Você precisa estar logado para adicionar itens ao carrinho");
@@ -190,8 +264,15 @@ export const useCartActions = () => {
 
       // ===== OPTIMISTIC UPDATE =====
       // Adicionar item localmente ANTES da API responder (melhor UX)
+      const cartItemKey = buildCartItemKey(
+        item.id,
+        item.variations,
+        item.addOns,
+      );
+
       const optimisticItem = {
-        id: item.id,
+        id: cartItemKey,
+        productId: item.id,
         name: item.name,
         price: item.price,
         quantity: item.quantity || 1,
@@ -199,10 +280,15 @@ export const useCartActions = () => {
         specialInstructions: item.specialInstructions,
         restaurantId: item.restaurantId,
         restaurantName: item.restaurantName,
+        variationLabel: item.variationLabel,
+        addOnLabels: item.addOnLabels,
+        variations: item.variations,
+        addOns: item.addOns,
       };
 
-      // Verificar se item já existe no carrinho
-      const existingItemIndex = items.findIndex((i) => i.id === item.id);
+      // Verificar se essa MESMA combinação (produto + tamanho + complementos)
+      // já existe no carrinho - combinações diferentes viram linhas separadas
+      const existingItemIndex = items.findIndex((i) => i.id === cartItemKey);
       let newItems;
 
       if (existingItemIndex >= 0) {
@@ -230,19 +316,19 @@ export const useCartActions = () => {
       // SEM syncCartFromBackend() - economiza 1-2s por operação
 
       // CONTRAMEDIDA: Cancelar requisição anterior se houver
-      if (pendingRequests.current.has(item.id)) {
-        pendingRequests.current.get(item.id)?.abort();
+      if (pendingRequests.current.has(cartItemKey)) {
+        pendingRequests.current.get(cartItemKey)?.abort();
       }
 
       const abortController = new AbortController();
-      pendingRequests.current.set(item.id, abortController);
+      pendingRequests.current.set(cartItemKey, abortController);
 
       // Timeout de 10 segundos (previne requisições travadas)
       const timeoutId = setTimeout(() => abortController.abort(), 10000);
 
       const revertAddToCart = (message?: string) => {
         const currentItems = useCartStore.getState().items;
-        const revertedItems = currentItems.filter((i) => i.id !== item.id);
+        const revertedItems = currentItems.filter((i) => i.id !== cartItemKey);
         setItems(revertedItems);
         toast.error(message || "Erro ao adicionar item. Tente novamente.");
       };
@@ -286,10 +372,10 @@ export const useCartActions = () => {
         return response;
       };
 
-      addItemToBackend()
+      const backgroundAdd = addItemToBackend()
         .then((response) => {
           clearTimeout(timeoutId);
-          pendingRequests.current.delete(item.id);
+          pendingRequests.current.delete(cartItemKey);
 
           // A requisição pode resolver normalmente mesmo quando o backend
           // recusa (ex: 403 de permissão) - sem checar `success` o app
@@ -300,7 +386,7 @@ export const useCartActions = () => {
         })
         .catch((error) => {
           clearTimeout(timeoutId);
-          pendingRequests.current.delete(item.id);
+          pendingRequests.current.delete(cartItemKey);
 
           // Ignorar erros de abort (esperado)
           if (error.name === "AbortError") return;
@@ -308,6 +394,16 @@ export const useCartActions = () => {
           console.error("Erro ao adicionar item:", error);
           revertAddToCart();
         });
+
+      // Registrado pra quem for sincronizar do backend (ex: ao entrar em
+      // /cart) esperar essa escrita assentar antes de ler - ver
+      // waitForPendingAdds.
+      pendingAddPromises.push(backgroundAdd);
+      backgroundAdd.finally(() => {
+        pendingAddPromises = pendingAddPromises.filter(
+          (p) => p !== backgroundAdd,
+        );
+      });
 
       // Retornar true imediatamente (optimistic)
       return true;
@@ -349,8 +445,10 @@ export const useCartActions = () => {
     toast.success("Item removido do carrinho");
 
     // ===== API CALL EM BACKGROUND =====
+    // Backend só entende productId, não a linha específica (produto +
+    // tamanho/complemento) - ver nota em buildCartItemKey.
     apiService.orderItems
-      .removeProductFromCart(user.id, orderId, itemId, item.quantity)
+      .removeProductFromCart(user.id, orderId, item.productId, item.quantity)
       .catch((error) => {
         const currentItems = useCartStore.getState().items;
         setItems([...currentItems, item]);
@@ -413,18 +511,20 @@ export const useCartActions = () => {
 
       const timeoutId = setTimeout(() => abortController.abort(), 10000);
 
+      // Backend só entende productId, não a linha específica (produto +
+      // tamanho/complemento) - ver nota em buildCartItemKey.
       const apiCall =
         diff > 0
           ? apiService.orderItems.addProductToCart(
               orderId,
-              itemId,
+              item.productId,
               user.id,
               diff,
             )
           : apiService.orderItems.removeProductFromCart(
               user.id,
               orderId,
-              itemId,
+              item.productId,
               Math.abs(diff),
             );
 
@@ -506,27 +606,47 @@ export const useCartActions = () => {
   };
 
   /**
-   * Verifica se um item está no carrinho
+   * Verifica se um produto (qualquer combinação de tamanho/complemento)
+   * está no carrinho
    */
-  const isItemInCart = (itemId: string): boolean => {
-    return items.some((item) => item.id === itemId);
+  const isItemInCart = (productId: string): boolean => {
+    return items.some((item) => item.productId === productId);
   };
 
   /**
-   * Retorna a quantidade de um item no carrinho
+   * Retorna a quantidade total de um produto no carrinho, somando todas
+   * as combinações de tamanho/complemento
    */
-  const getItemQuantity = (itemId: string): number => {
-    const item = items.find((i) => i.id === itemId);
-    return item?.quantity || 0;
+  const getItemQuantity = (productId: string): number => {
+    return items
+      .filter((item) => item.productId === productId)
+      .reduce((total, item) => total + item.quantity, 0);
   };
 
-  // Sync cart on mount (non-blocking)
+  // Sync cart on mount (non-blocking).
+  // Antes só rodava se `items` estivesse vazio - como `items` não é
+  // persistido (só `orderId` é, ver cart-store.ts), isso fazia o carrinho
+  // só se auto-corrigir depois de um reload de página (que zera `items`).
+  // Dentro da mesma sessão (navegação SPA), um estado local desalinhado do
+  // backend nunca era corrigido. Agora sempre resincroniza ao montar,
+  // com um throttle de módulo pra não disparar 1 fetch por componente
+  // (MainHeader, BottomBar, página) montando o hook ao mesmo tempo.
   useEffect(() => {
-    if (user?.id && !items.length) {
+    if (!user?.id) return;
+
+    const now = Date.now();
+    if (now - lastSyncAttempt < SYNC_THROTTLE_MS) return;
+    lastSyncAttempt = now;
+
+    // Espera qualquer "add ao carrinho" que ainda esteja em voo terminar de
+    // persistir antes de ler do backend - senão essa leitura chega primeiro
+    // e sobrescreve o item que acabou de ser adicionado otimisticamente
+    // (ex: tocar "Adicionar" e ir direto pra /cart em seguida).
+    waitForPendingAdds().then(() => {
       syncCartFromBackend().catch(() => {
         // Ignore errors - doesn't block UX
       });
-    }
+    });
   }, [user?.id]);
 
   // CLEANUP: Cancelar todas requisições e timers ao desmontar

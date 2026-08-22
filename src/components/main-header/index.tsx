@@ -55,6 +55,9 @@ export function MainHeader({
   const [hasHydrated, setHasHydrated] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Só usado no mobile (abaixo de sm): controla se o ícone de busca virou
+  // campo de texto, escondendo a logo/endereço pra abrir espaço. A partir
+  // de sm a busca é uma pill sempre visível e esse estado é ignorado.
   const [searchOpen, setSearchOpen] = useState(false);
   const [locationLabel, setLocationLabel] = useState(DEFAULT_LOCATION_LABEL);
   const [locationOpen, setLocationOpen] = useState(false);
@@ -64,13 +67,14 @@ export function MainHeader({
   const [locationError, setLocationError] = useState("");
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    if (searchOpen) searchInputRef.current?.focus();
+    if (searchOpen) mobileSearchInputRef.current?.focus();
   }, [searchOpen]);
 
   const handleSearchSubmit = () => {
@@ -78,6 +82,8 @@ export function MainHeader({
     if (!query) return;
     router.push(`/restaurants?search=${encodeURIComponent(query)}`);
     setSearchOpen(false);
+    searchInputRef.current?.blur();
+    mobileSearchInputRef.current?.blur();
   };
 
   const saveLocation = (location: {
@@ -263,8 +269,8 @@ export function MainHeader({
           {/* ===== LADO ESQUERDO (Logo + Endereço) ===== */}
           <div
             className={clsx(
-              "flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 transition-all duration-200",
-              searchOpen && "max-md:hidden",
+              "flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2",
+              searchOpen && "max-sm:hidden",
             )}
           >
             <Link href="/" className="shrink-0">
@@ -415,73 +421,113 @@ export function MainHeader({
           {/* ===== ACTIONS ===== */}
           <div
             className={clsx(
-              "flex items-center gap-1.5 sm:gap-2 transition-all duration-200",
-              searchOpen ? "max-md:flex-1 max-md:min-w-0" : "shrink-0",
+              "flex items-center gap-1.5 sm:gap-2",
+              searchOpen ? "max-sm:min-w-0 max-sm:flex-1" : "shrink-0",
             )}
           >
-            {/* Search */}
             {showSearch && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSearchSubmit();
-                }}
-                className="flex items-center max-md:flex-1 max-md:min-w-0"
-              >
-                {/* Input expande para a ESQUERDA do botão */}
-                <div
-                  className={clsx(
-                    "overflow-hidden transition-all duration-200 ease-out",
-                    searchOpen
-                      ? "mr-1.5 w-full opacity-100 max-md:flex-1 sm:w-36 md:w-40 lg:w-48 xl:w-56"
-                      : "w-0 opacity-0",
+              <>
+                {/* Mobile (<sm): ícone que vira campo, escondendo a
+                    logo/endereço pra abrir espaço. Fecha sozinho ao perder
+                    foco vazio, ou ao apertar Esc/enviar a busca. */}
+                <div className="sm:hidden">
+                  {!searchOpen ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 rounded-xl border-0 bg-gray-50/50"
+                      onClick={() => setSearchOpen(true)}
+                      aria-label="Buscar"
+                    >
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSearchSubmit();
+                      }}
+                      className="relative flex min-w-0 flex-1 items-center"
+                    >
+                      <Search className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-gray-400" />
+                      <Input
+                        ref={mobileSearchInputRef}
+                        placeholder="Buscar..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            if (searchQuery) setSearchQuery("");
+                            else setSearchOpen(false);
+                          }
+                        }}
+                        onBlur={() => {
+                          if (!searchQuery.trim()) setSearchOpen(false);
+                        }}
+                        className={clsx(
+                          "h-9 w-full rounded-xl border-0 bg-gray-50/50 pl-8 text-sm focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-orange-400",
+                          searchQuery ? "pr-7" : "pr-2",
+                        )}
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery("");
+                            mobileSearchInputRef.current?.focus();
+                          }}
+                          aria-label="Limpar busca"
+                          className="absolute right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </form>
                   )}
+                </div>
+
+                {/* sm+: pill sempre visível, sem toggle - já cabe ao lado
+                    da logo/endereço sem precisar esconder nada. */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSearchSubmit();
+                  }}
+                  className="relative hidden items-center sm:flex"
                 >
+                  <Search className="pointer-events-none absolute left-3 h-4 w-4 text-gray-400" />
                   <Input
                     ref={searchInputRef}
-                    placeholder="Buscar restaurante..."
+                    placeholder="Buscar..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Escape") setSearchOpen(false);
+                      if (e.key === "Escape") {
+                        if (searchQuery) setSearchQuery("");
+                        else searchInputRef.current?.blur();
+                      }
                     }}
-                    className="h-9 sm:h-10 w-full rounded-xl border-0 bg-gray-50/50 text-sm"
+                    className={clsx(
+                      "h-10 w-36 rounded-xl border-0 bg-gray-50/50 pl-9 text-sm focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-orange-400 md:w-44 lg:w-56",
+                      searchQuery ? "pr-7" : "pr-2",
+                    )}
                   />
-                </div>
-
-                {/* Botão SEMPRE fica na direita. Fechado -> abre o campo.
-                    Aberto e vazio -> fecha (X). Aberto com texto -> busca. */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-xl border-0 bg-gray-50/50"
-                  onClick={() => {
-                    if (!searchOpen) {
-                      setSearchOpen(true);
-                      return;
-                    }
-                    if (searchQuery.trim()) {
-                      handleSearchSubmit();
-                      return;
-                    }
-                    setSearchOpen(false);
-                  }}
-                  aria-label={
-                    !searchOpen
-                      ? "Buscar"
-                      : searchQuery.trim()
-                        ? "Buscar restaurante"
-                        : "Fechar busca"
-                  }
-                >
-                  {searchOpen && !searchQuery.trim() ? (
-                    <X className="h-4 w-4" />
-                  ) : (
-                    <Search className="h-4 w-4" />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery("");
+                        searchInputRef.current?.focus();
+                      }}
+                      aria-label="Limpar busca"
+                      className="absolute right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   )}
-                </Button>
-              </form>
+                </form>
+              </>
             )}
 
             {/* Carrinho */}
@@ -515,7 +561,7 @@ export function MainHeader({
 
             {/* Menu / Entrar */}
             {canShowAuthUI && (
-              <>
+              <div className={clsx(searchOpen && "max-sm:hidden")}>
                 {isAuthenticated ? (
                   <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                     <SheetTrigger asChild>
@@ -622,7 +668,7 @@ export function MainHeader({
                     Entrar
                   </Button>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
