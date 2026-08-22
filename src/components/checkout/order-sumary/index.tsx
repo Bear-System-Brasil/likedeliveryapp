@@ -40,19 +40,31 @@ export function OrderSummary({
       {detailsOpen && (
         <div className="mx-auto max-h-[44vh] max-w-[640px] overflow-y-auto px-4 pt-3 sm:px-5">
           <div className="space-y-2 border-b border-[#F0F1F4] pb-3">
-            {cartItems.map((item) => (
-              <div key={item.id} className="flex items-center gap-2">
-                <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-[#F4F5F7] px-1.5 text-xs font-extrabold text-gray-700">
-                  {item.quantity}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800">
-                  {item.name}
-                </span>
-                <span className="shrink-0 text-sm font-bold text-gray-950">
-                  {formatCurrency(item.price * item.quantity)}
-                </span>
-              </div>
-            ))}
+            {cartItems.map((item) => {
+              const extrasParts = [
+                item.variationLabel,
+                item.addOnLabels?.length ? item.addOnLabels.join(", ") : null,
+              ].filter(Boolean);
+
+              return (
+                <div key={item.id} className="flex items-center gap-2">
+                  <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-[#F4F5F7] px-1.5 text-xs font-extrabold text-gray-700">
+                    {item.quantity}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800">
+                    {item.name}
+                    {extrasParts.length > 0 && (
+                      <span className="ml-1 truncate text-xs font-bold text-orange-600">
+                        {extrasParts.join(" · ")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-sm font-bold text-gray-950">
+                    {formatCurrency(item.price * item.quantity)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="space-y-1.5 py-3">

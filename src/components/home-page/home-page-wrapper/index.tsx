@@ -9,7 +9,6 @@ import { AnimatedBackground } from "@/components/ui/custom";
 import { TrendingRestaurantsSection } from "@/components/home-page/trending-restaurants-section";
 import { CouponBanner } from "@/components/home-page/coupon-banner";
 import { MainHeader } from "@/components/main-header";
-import { MobileSearchTrigger } from "@/components/main-header/mobile-search-trigger";
 import { Footer } from "@/components/footer";
 import { Coords } from "@/types/restaurant";
 import { BannerCarousel } from "../banner-carousel";

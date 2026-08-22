@@ -21,14 +21,22 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCartActions, useRestaurant } from "@/hooks";
-import { useAuthStore } from "@/stores/auth-store";
 import { formatCurrency } from "@/utils/format-currency";
 
 function getItemImage(item: any) {
   return item.imageUrl || item.image || "/placeholder.svg";
 }
 
-function getItemCustomization(item: any) {
+// Tamanho + complementos escolhidos - o que distingue essa linha de outra
+// do mesmo prato com uma combinação diferente (ver buildCartItemKey).
+function getItemExtrasLabel(item: any) {
+  const parts: string[] = [];
+  if (item.variationLabel) parts.push(item.variationLabel);
+  if (item.addOnLabels?.length) parts.push(item.addOnLabels.join(", "));
+  return parts.join(" · ");
+}
+
+function getItemNote(item: any) {
   const instructions =
     item.specialInstructions ||
     item.customizations?.instructions ||
@@ -45,7 +53,6 @@ function getItemCustomization(item: any) {
 
 export default function CartPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
   const {
     items,
     totalItems,
@@ -53,7 +60,6 @@ export default function CartPage() {
     handleUpdateQuantity,
     handleRemoveFromCart,
     handleGoToCheckout,
-    syncCartFromBackend,
   } = useCartActions();
 
   const [promoCode, setPromoCode] = useState("");
@@ -68,11 +74,11 @@ export default function CartPage() {
     setIsMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated && items.length > 0) {
-      syncCartFromBackend().catch(() => {});
-    }
-  }, [isAuthenticated, items.length]);
+  // O próprio useCartActions já resincroniza com o backend ao montar
+  // (throttled, e esperando qualquer "add" em voo terminar - ver
+  // use-cart-actions.ts). Um segundo useEffect aqui só duplicava a chamada
+  // e, por não respeitar esse throttle/espera, corria na frente do POST de
+  // "adicionar" e sobrescrevia o item otimista com uma leitura desatualizada.
 
   const restaurantName =
     restaurantData?.tradeName || items[0]?.restaurantName || "Restaurante";
@@ -223,7 +229,8 @@ export default function CartPage() {
               </Card>
 
               {items.map((item) => {
-                const customization = getItemCustomization(item);
+                const extrasLabel = getItemExtrasLabel(item);
+                const note = getItemNote(item);
                 const itemTotal = item.price * item.quantity;
 
                 return (
@@ -258,9 +265,15 @@ export default function CartPage() {
                         </button>
                       </div>
 
-                      {customization && (
-                        <p className="mt-1 truncate text-xs font-medium text-[#8a8f99]">
-                          {customization}
+                      {extrasLabel && (
+                        <p className="mt-1 truncate text-xs font-bold text-orange-600">
+                          {extrasLabel}
+                        </p>
+                      )}
+
+                      {note && (
+                        <p className="mt-0.5 truncate text-xs font-medium text-[#8a8f99]">
+                          {note}
                         </p>
                       )}
 

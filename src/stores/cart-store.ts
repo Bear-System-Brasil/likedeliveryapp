@@ -28,7 +28,14 @@ import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 
 export interface CartItem {
+  // Identifica a LINHA do carrinho (produto + combinação exata de tamanho/
+  // complementos escolhida) - não o produto em si. Duas linhas do mesmo
+  // prato com tamanhos diferentes têm `id`s diferentes, então aparecem
+  // separadas e cada uma soma sua própria quantidade.
   id: string;
+  // Id real do produto no backend - usado nas chamadas de add/remove/
+  // atualizar quantidade, que só entendem productId (não a linha).
+  productId: string;
   name: string;
   price: number;
   quantity: number;
@@ -36,6 +43,10 @@ export interface CartItem {
   restaurantId: string;
   restaurantName: string;
   customizations?: Record<string, any>;
+  variationLabel?: string;
+  addOnLabels?: string[];
+  variations?: { productVariationId: string }[];
+  addOns?: { productAddOnsId: string; quantity: number }[];
 }
 
 export interface Restaurant {

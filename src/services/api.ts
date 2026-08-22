@@ -307,7 +307,20 @@ async function apiRequest<T>(
         endpoint.includes("/order/") &&
         method === "GET";
 
-      if (!is404OnViewOrder && process.env.NODE_ENV !== "production") {
+      // Skip 404 logging on addProductToCart - expected when the orderId
+      // persisted in localStorage points to a cart that already expired/
+      // foi finalizado no backend. handleAddToCart já trata esse caso:
+      // recria o carrinho e reenvia o item automaticamente.
+      const is404OnAddToCart =
+        response.status === 404 &&
+        endpoint.includes("/order-item/cart") &&
+        method === "POST";
+
+      if (
+        !is404OnViewOrder &&
+        !is404OnAddToCart &&
+        process.env.NODE_ENV !== "production"
+      ) {
         // `serverMessage` e o corpo bruto do erro: sem eles o log so diz "400"
         // e a validacao que falhou fica invisivel.
         console.error("API Error:", {
