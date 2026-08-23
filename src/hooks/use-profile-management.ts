@@ -279,6 +279,19 @@ export const useProfileManagement = () => {
    * Salvar endereço (cria ou atualiza)
    */
   const handleAddAddress = async (data: AddressFormData) => {
+    // No PATCH (diferente do POST), complement exige mínimo de 5 caracteres
+    // quando preenchido (ver adress.md) - um endereço criado com complemento
+    // curto (ex: "301") ficaria impossível de editar sem esse aviso.
+    const trimmedComplement = data.complement?.trim() ?? "";
+    if (
+      editingAddressId &&
+      trimmedComplement.length > 0 &&
+      trimmedComplement.length < 5
+    ) {
+      toast.error("Complemento deve ter pelo menos 5 caracteres (ou ficar vazio)");
+      return;
+    }
+
     setIsSavingAddress(true);
     try {
       const payload = {
