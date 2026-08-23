@@ -27,6 +27,17 @@ async function withStoreCoordinates<T extends AddressFormData>(address: T) {
   return { ...address, latitude: coords.lat, longitude: coords.lng };
 }
 
+/**
+ * complement/reference no formulário sempre são string ("" quando vazio),
+ * mas o backend trata "" como valor presente - no update, isso viola o
+ * mínimo de 5 caracteres (ver adress.md) e o PATCH cai em 400. Só a
+ * ausência do campo (undefined, nunca enviado) satisfaz @IsOptional().
+ */
+function sanitizeOptionalText(value: string): string | undefined {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 interface CompanyFormData {
   tradeName: string;
   legalName: string;
@@ -415,6 +426,11 @@ export const useCompanyProfileManagement = () => {
         zipCode: newAddress.zipCode.replace(/\D/g, ""),
         isDefault: newAddress.isDefault ?? false,
       });
+      const payload = {
+        ...addressData,
+        complement: sanitizeOptionalText(addressData.complement),
+        reference: sanitizeOptionalText(addressData.reference),
+      };
 
       // Se o novo endereço for padrão, desmarcar todos os outros no backend
       if (addressData.isDefault) {
@@ -436,8 +452,8 @@ export const useCompanyProfileManagement = () => {
                 neighborhood: addr.neighborhood,
                 street: addr.street,
                 number: addr.number,
-                complement: addr.complement,
-                reference: addr.reference,
+                complement: sanitizeOptionalText(addr.complement ?? ""),
+                reference: sanitizeOptionalText(addr.reference ?? ""),
                 latitude: addr.latitude,
                 longitude: addr.longitude,
                 isDefault: false,
@@ -450,7 +466,7 @@ export const useCompanyProfileManagement = () => {
       }
 
       const response =
-        await apiService.address.createCompanyAddress(addressData);
+        await apiService.address.createCompanyAddress(payload);
 
       if (response.success && response.data) {
         toast.success("Endereço adicionado com sucesso!");
@@ -575,12 +591,31 @@ export const useCompanyProfileManagement = () => {
       return;
     }
 
+    // No PATCH (diferente do POST), complement/reference exigem mínimo de 5
+    // caracteres quando preenchidos (ver adress.md) - avisa antes de mandar
+    // pro backend em vez de deixar cair em 400 sem explicação.
+    const trimmedComplement = newAddress.complement.trim();
+    const trimmedReference = newAddress.reference.trim();
+    if (trimmedComplement.length > 0 && trimmedComplement.length < 5) {
+      toast.error("Complemento deve ter pelo menos 5 caracteres (ou ficar vazio)");
+      return;
+    }
+    if (trimmedReference.length > 0 && trimmedReference.length < 5) {
+      toast.error("Referência deve ter pelo menos 5 caracteres (ou ficar vazia)");
+      return;
+    }
+
     try {
       const addressData = await withStoreCoordinates({
         ...newAddress,
         zipCode: newAddress.zipCode.replace(/\D/g, ""),
         isDefault: newAddress.isDefault ?? false,
       });
+      const payload = {
+        ...addressData,
+        complement: sanitizeOptionalText(addressData.complement),
+        reference: sanitizeOptionalText(addressData.reference),
+      };
 
       // Se o endereço editado virar padrão, desmarcar todos os outros
       if (addressData.isDefault) {
@@ -602,8 +637,8 @@ export const useCompanyProfileManagement = () => {
                 neighborhood: addr.neighborhood,
                 street: addr.street,
                 number: addr.number,
-                complement: addr.complement,
-                reference: addr.reference,
+                complement: sanitizeOptionalText(addr.complement ?? ""),
+                reference: sanitizeOptionalText(addr.reference ?? ""),
                 latitude: addr.latitude,
                 longitude: addr.longitude,
                 isDefault: false,
@@ -617,7 +652,7 @@ export const useCompanyProfileManagement = () => {
 
       const response = await apiService.address.updateCompanyAddress(
         editingAddressId,
-        addressData,
+        payload,
       );
 
       if (response.success) {
