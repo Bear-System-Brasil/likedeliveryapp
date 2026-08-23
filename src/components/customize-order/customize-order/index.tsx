@@ -71,20 +71,27 @@ export function CustomizeOrder({
     initialCustomOrder(),
   );
 
-  const { data: restaurant } = useRestaurant(productData.companyId);
+  const { data: restaurant, isLoading: restaurantLoading } = useRestaurant(
+    productData.companyId,
+  );
 
   const { handleAddToCart: addToCart } = useCartActions();
 
   const { data: categories } = useAllCategories();
 
-  const { data: variations = [] } = usePublicProductVariations(
-    productData.id,
-    productData.companyId,
-  );
-  const { data: addOns = [] } = usePublicProductAddOns(
-    productData.id,
-    productData.companyId,
-  );
+  const { data: variations = [], isLoading: variationsLoading } =
+    usePublicProductVariations(productData.id, productData.companyId);
+  const { data: addOns = [], isLoading: addOnsLoading } =
+    usePublicProductAddOns(productData.id, productData.companyId);
+
+  // Enquanto isso ainda tá carregando, `extraGroups` fica vazio e nada
+  // aparece pra clicar - mas se o clique em "Adicionar" cair bem nessa
+  // janela (antes de tamanhos/complementos chegarem), o pedido sai sem eles
+  // ou a função aborta em silêncio (restaurant ainda undefined). Trava o
+  // botão até tudo estar pronto, em vez de deixar o usuário adicionar algo
+  // incompleto que o backend depois rejeita (some do carrinho).
+  const isCustomizationLoading =
+    variationsLoading || addOnsLoading || restaurantLoading;
 
   const extraGroups: ExtraGroup[] = useMemo(() => {
     const groups: ExtraGroup[] = [];
@@ -159,7 +166,7 @@ export function CustomizeOrder({
   };
 
   const handleConfirmAddToCart = async () => {
-    if (!productData || !restaurant) return;
+    if (!productData || !restaurant || isCustomizationLoading) return;
 
     setIsAddingToCart(true);
 
@@ -286,14 +293,25 @@ export function CustomizeOrder({
           </div>
 
           <div className="mt-3.5 flex flex-col gap-3.5">
-            {extraGroups.map((group) => (
-              <SelectOptions
-                key={group.id}
-                group={group}
-                selectedIds={selections[group.id] || []}
-                onChange={handleSelectionChange}
-              />
-            ))}
+            {isCustomizationLoading ? (
+              <div className="flex flex-col gap-1.5">
+                <div className="h-3 w-24 animate-pulse rounded bg-[#EDEEF1]" />
+                <div className="grid grid-cols-3 gap-1.5">
+                  <div className="h-[50px] animate-pulse rounded-[10px] bg-[#EDEEF1]" />
+                  <div className="h-[50px] animate-pulse rounded-[10px] bg-[#EDEEF1]" />
+                  <div className="h-[50px] animate-pulse rounded-[10px] bg-[#EDEEF1]" />
+                </div>
+              </div>
+            ) : (
+              extraGroups.map((group) => (
+                <SelectOptions
+                  key={group.id}
+                  group={group}
+                  selectedIds={selections[group.id] || []}
+                  onChange={handleSelectionChange}
+                />
+              ))
+            )}
           </div>
 
           <div className="mt-3">
@@ -349,10 +367,15 @@ export function CustomizeOrder({
 
           <Button
             onClick={handleConfirmAddToCart}
-            disabled={isAddingToCart}
-            className="h-10 flex-1 rounded-[10px] bg-orange-500 text-[13.5px] font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,.3)] hover:bg-orange-600"
+            disabled={isAddingToCart || isCustomizationLoading}
+            className="h-10 flex-1 rounded-[10px] bg-orange-500 text-[13.5px] font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,.3)] hover:bg-orange-600 disabled:opacity-60"
           >
-            {isAddingToCart ? (
+            {isCustomizationLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+                Carregando...
+              </span>
+            ) : isAddingToCart ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
                 Adicionando...

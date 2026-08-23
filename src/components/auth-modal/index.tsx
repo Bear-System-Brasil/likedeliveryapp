@@ -61,14 +61,14 @@ export default function AuthModal({
     password: "",
   });
 
-  // Forgot password state
+  // Forgot password state - backend identifica pelo telefone, não email
   const [forgotPasswordData, setForgotPasswordData] = useState({
-    email: "",
+    phone: "",
   });
 
   // Reset password state
   const [resetPasswordData, setResetPasswordData] = useState({
-    email: "",
+    phone: "",
     code: "",
     newPassword: "",
     confirmPassword: "",
@@ -360,26 +360,25 @@ export default function AuthModal({
     setSubmitMessage(null);
 
     try {
-      const response = await apiService.forgotPassword({
-        email: forgotPasswordData.email,
-      });
+      const phone = forgotPasswordData.phone.replace(/\D/g, "");
+      const response = await apiService.forgotPassword({ phone });
 
       if (response.success) {
         setResetPasswordData((prev) => ({
           ...prev,
-          email: forgotPasswordData.email,
+          phone,
         }));
         setStep("reset-password");
         setSubmitMessage({
           type: "success",
-          text: "Código de recuperação enviado para seu email!",
+          text: "Código de recuperação enviado para seu telefone!",
         });
       } else {
         setSubmitMessage({
           type: "error",
           text:
             response.message ||
-            "Email não encontrado. Verifique e tente novamente.",
+            "Telefone não encontrado. Verifique e tente novamente.",
         });
       }
     } catch (error) {
@@ -418,7 +417,7 @@ export default function AuthModal({
 
     try {
       const response = await apiService.resetPassword({
-        email: resetPasswordData.email,
+        phone: resetPasswordData.phone,
         code: resetPasswordData.code,
         newPassword: resetPasswordData.newPassword,
       });
@@ -426,13 +425,23 @@ export default function AuthModal({
       if (response.success) {
         setSubmitMessage({
           type: "success",
-          text: "Senha redefinida com sucesso! Você já pode fazer login.",
+          text: "Senha redefinida com sucesso! Entrando na sua conta...",
         });
 
+        // O reset já cria a sessão (cookie httpOnly) no BFF - busca o
+        // usuário completo pra popular o Zustand, igual o boot da app faz,
+        // em vez de mandar o usuário logar de novo com a senha nova.
+        const { authenticated, user } = await apiService.getSession();
+
         setTimeout(() => {
+          if (authenticated && user) {
+            onAuthSuccess?.(user);
+            onClose();
+          } else {
+            setActiveTab("login");
+          }
           resetForm();
-          setActiveTab("login");
-        }, 2000);
+        }, 1500);
       } else {
         setSubmitMessage({
           type: "error",
@@ -464,9 +473,9 @@ export default function AuthModal({
       role: "client",
     });
     setOtpData({ phone: "", code: "" });
-    setForgotPasswordData({ email: "" });
+    setForgotPasswordData({ phone: "" });
     setResetPasswordData({
-      email: "",
+      phone: "",
       code: "",
       newPassword: "",
       confirmPassword: "",
@@ -907,28 +916,31 @@ export default function AuthModal({
                     Esqueceu sua senha?
                   </h3>
                   <p className="text-sm text-gray-600">
-                    Digite seu email e enviaremos um código para redefinir sua
-                    senha
+                    Digite seu telefone e enviaremos um código para redefinir
+                    sua senha
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label
-                    htmlFor="forgot-email"
+                    htmlFor="forgot-phone"
                     className="text-sm font-semibold text-gray-700"
                   >
-                    Email
+                    Telefone
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
-                      id="forgot-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={forgotPasswordData.email}
+                      id="forgot-phone"
+                      type="tel"
+                      placeholder="(11) 99999-9999"
+                      value={formatPhone(forgotPasswordData.phone)}
                       onChange={(e) =>
-                        setForgotPasswordData({ email: e.target.value })
+                        setForgotPasswordData({
+                          phone: e.target.value.replace(/\D/g, ""),
+                        })
                       }
+                      maxLength={15}
                       className="pl-10 rounded-xl border-2 border-gray-200 focus:border-orange-400"
                     />
                   </div>
@@ -948,7 +960,9 @@ export default function AuthModal({
 
                 <Button
                   onClick={handleForgotPasswordSubmit}
-                  disabled={isLoading || !forgotPasswordData.email}
+                  disabled={
+                    isLoading || forgotPasswordData.phone.length !== 11
+                  }
                   className="w-full h-12 rounded-xl bg-linear-to-r from-orange-500 to-orange-500 hover:from-orange-600 hover:to-orange-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all cursor-pointer"
                 >
                   {isLoading ? (
@@ -958,7 +972,7 @@ export default function AuthModal({
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4" />
+                      <Phone className="h-4 w-4" />
                       <span>Enviar Código</span>
                     </div>
                   )}
@@ -987,7 +1001,7 @@ export default function AuthModal({
                   </h3>
                   <p className="text-sm text-gray-600">
                     Digite o código enviado para{" "}
-                    <strong>{resetPasswordData.email}</strong>
+                    <strong>{formatPhone(resetPasswordData.phone)}</strong>
                   </p>
                 </div>
 
@@ -1002,11 +1016,12 @@ export default function AuthModal({
                     <Input
                       id="reset-code"
                       placeholder="123456"
+                      inputMode="numeric"
                       value={resetPasswordData.code}
                       onChange={(e) =>
                         setResetPasswordData((prev) => ({
                           ...prev,
-                          code: e.target.value,
+                          code: e.target.value.replace(/\D/g, ""),
                         }))
                       }
                       className="text-center text-xl font-mono rounded-xl border-2 border-gray-200 focus:border-orange-400"

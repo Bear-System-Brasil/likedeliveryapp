@@ -209,8 +209,8 @@ export const useCheckoutProcess = () => {
         state: deliveryInfo.state,
         city: deliveryInfo.city,
         neighborhood: deliveryInfo.neighborhood,
-        longitude: String(deliveryInfo.longitude),
-        latitude: String(deliveryInfo.latitude),
+        longitude: Number(deliveryInfo.longitude),
+        latitude: Number(deliveryInfo.latitude),
         street: deliveryInfo.street,
         number: deliveryInfo.number,
         complement: deliveryInfo.complement || undefined,
@@ -356,8 +356,8 @@ export const useCheckoutProcess = () => {
             neighborhood: deliveryInfo.neighborhood,
             city: deliveryInfo.city,
             state: deliveryInfo.state,
-            latitude: String(deliveryInfo.latitude),
-            longitude: String(deliveryInfo.longitude),
+            latitude: Number(deliveryInfo.latitude),
+            longitude: Number(deliveryInfo.longitude),
             isDefault: false,
           };
 

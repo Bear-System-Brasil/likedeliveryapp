@@ -197,7 +197,9 @@ export const useCompanyProfileManagement = () => {
 
       if (response.success && response.data) {
         const addressesData = Array.isArray(response.data) ? response.data : [];
-        setAddresses(addressesData);
+        // DELETE agora é soft delete (isActive: false) - filtra pra não
+        // reaparecer endereço "removido" depois de um fetch.
+        setAddresses(addressesData.filter((addr) => addr.isActive !== false));
       } else if (!response.success) {
         setAddresses([]);
       }
