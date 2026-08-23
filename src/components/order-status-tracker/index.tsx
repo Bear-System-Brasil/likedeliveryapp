@@ -1,9 +1,18 @@
 "use client";
 
 import { OrderInfo, OrderStatus } from "@/hooks";
-import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { DeliveringMap } from "./steps-components/delivering";
+import {
+  Stepper,
+  StepperIndicator,
+  StepperItem,
+  StepperNav,
+  StepperSeparator,
+  StepperTitle,
+  StepperTrigger,
+} from "@/components/reui/stepper";
+import { CheckIcon } from "lucide-react";
 
 import { Socket, io } from "socket.io-client";
 
@@ -111,49 +120,38 @@ export function OrderStatusTracker({ data }: Props) {
 
   return (
     <div>
-      <div className="flex items-start">
-        {stepLabels.map((label, index) => {
-          const isDone = index < currentIndex;
-          const isCurrent = index === currentIndex;
-
-          return (
-            <div
-              key={label}
-              className="relative flex flex-1 flex-col items-center"
-            >
-              {/* Conector entre os marcos */}
-              <span
-                className={cn(
-                  "absolute left-0 right-0 top-[14px] z-0 h-0.5",
-                  isDone ? "bg-[#1b7f4c]" : "bg-[#e9eaee]",
-                )}
-              />
-
-              <span
-                className={cn(
-                  "relative z-10 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full border-2 text-sm transition-colors duration-500",
-                  isDone && "border-[#1b7f4c] bg-[#1b7f4c] text-white",
-                  isCurrent && "border-[#1b7f4c] bg-white text-[#1b7f4c]",
-                  !isDone && !isCurrent && "border-[#e4e6ea] bg-white",
-                )}
+      {/* Marco atual conta como "alcançado" - mesma leitura da versão
+          anterior, que já marcava o passo em andamento com check. */}
+      <Stepper
+        value={currentIndex + 1}
+        indicators={{
+          completed: <CheckIcon className="size-3.5" />,
+          active: <CheckIcon className="size-3.5" />,
+        }}
+      >
+        <StepperNav>
+          {stepLabels.map((label, index) => {
+            const step = index + 1;
+            return (
+              <StepperItem
+                key={label}
+                step={step}
+                className="relative flex-1 flex-col items-center"
               >
-                {(isDone || isCurrent) && "✓"}
-              </span>
+                <StepperSeparator className="absolute inset-x-0 top-3.5 z-0 m-0 h-0.5 w-full bg-[#e9eaee] data-[state=completed]:bg-success" />
 
-              <span
-                className={cn(
-                  "mt-1.5 text-center text-[10.5px]",
-                  isCurrent && "font-extrabold text-[#1b7f4c]",
-                  isDone && "font-bold text-[#3d4149]",
-                  !isDone && !isCurrent && "font-semibold text-[#a2a7b0]",
-                )}
-              >
-                {label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+                <StepperTrigger className="flex flex-col items-center gap-1.5">
+                  <StepperIndicator className="relative z-10 size-[30px] border-2 border-[#e4e6ea] bg-white text-transparent duration-500 data-[state=active]:border-success data-[state=active]:bg-white data-[state=active]:text-success data-[state=completed]:border-success data-[state=completed]:bg-success data-[state=completed]:text-white" />
+
+                  <StepperTitle className="text-center text-[10.5px] font-semibold text-[#a2a7b0] data-[state=active]:font-extrabold data-[state=active]:text-success data-[state=completed]:font-bold data-[state=completed]:text-[#3d4149]">
+                    {label}
+                  </StepperTitle>
+                </StepperTrigger>
+              </StepperItem>
+            );
+          })}
+        </StepperNav>
+      </Stepper>
 
       <div className="mt-4 rounded-[10px] bg-[#fff7ed] px-[13px] py-[11px]">
         <p className="text-[12.5px] font-bold text-[#7a4a16]">

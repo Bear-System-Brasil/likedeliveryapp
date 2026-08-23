@@ -289,9 +289,12 @@ export const useMenuManagement = () => {
         if (finalCategoryId && finalCategoryId !== oldCategoryId) {
           // Remove old category link if it exists
           const oldLink = editingProduct.productCategories?.[0];
-          if (oldLink?.id) {
+          if (oldLink?.productId && oldLink?.categoryId) {
             try {
-              await apiService.unlinkCategoryFromProduct(oldLink.id);
+              await apiService.unlinkCategoryFromProduct(
+                oldLink.productId,
+                oldLink.categoryId,
+              );
             } catch (e) {
               console.error("Erro ao remover categoria antiga:", e);
             }
@@ -385,7 +388,10 @@ export const useMenuManagement = () => {
       const categoryLinks = deleteTarget.productCategories || [];
       for (const link of categoryLinks) {
         try {
-          await apiService.unlinkCategoryFromProduct(link.id);
+          await apiService.unlinkCategoryFromProduct(
+            link.productId,
+            link.categoryId,
+          );
         } catch (e) {
           console.warn("Erro ao desvincular categoria:", link.id, e);
         }

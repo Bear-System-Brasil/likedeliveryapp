@@ -17,15 +17,10 @@ export const useUserAddresses = () => {
         return [];
       }
 
-      // Backend agora sempre retorna array
-      const addressesData = Array.isArray(response.data) ? response.data : [];
-
-      // Filtro por usuário
-      const userAddresses = addressesData.filter(
-        (addr: Address) => addr.customerId === user?.id,
-      );
-
-      return userAddresses;
+      // GET /address/me já é escopado ao usuário autenticado pelo JWT no
+      // backend (ver adress.md) - o response nem carrega customerId. Filtrar
+      // de novo aqui por addr.customerId === user.id zerava a lista sempre.
+      return Array.isArray(response.data) ? response.data : [];
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutos

@@ -55,6 +55,19 @@ async function handler(
   const contentType = upstream.headers.get("content-type");
   if (contentType) responseHeaders.set("content-type", contentType);
 
+  // GET sem token (wantsAuth=false, logo nada de Authorization foi enviado
+  // upstream) não pode conter dado pessoal/específico de usuário - seguro
+  // pro browser guardar por alguns segundos. Some caso o wantsAuth mude
+  // de resposta pra resposta, corta o risco de vazar dado autenticado.
+  if (request.method === "GET" && !wantsAuth && upstream.ok) {
+    responseHeaders.set(
+      "Cache-Control",
+      "public, max-age=20, stale-while-revalidate=100",
+    );
+  } else {
+    responseHeaders.set("Cache-Control", "no-store");
+  }
+
   return new NextResponse(upstream.body, {
     status: upstream.status,
     headers: responseHeaders,

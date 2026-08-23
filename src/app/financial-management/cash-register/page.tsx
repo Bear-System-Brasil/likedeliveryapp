@@ -2,6 +2,7 @@
 
 import { AdminPageLayout } from "@/components/admin-page-layout";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -16,7 +17,7 @@ import {
 } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { PaymentMethod } from "@/services/api";
-import { useAuthStore } from "@/stores";
+import { useAuthStore, useFinancialPreferencesStore } from "@/stores";
 import { formatCurrency } from "@/utils";
 import { Banknote, RefreshCw } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -130,6 +131,8 @@ function FieldLabel({ children }: { children: ReactNode }) {
 
 export default function CashRegisterPage() {
   const { user } = useAuthStore();
+  const { defaultPaymentMethod, confirmBeforeCloseRegister } =
+    useFinancialPreferencesStore();
   const {
     data: register,
     isLoading: registerLoading,
@@ -156,17 +159,17 @@ export default function CashRegisterPage() {
   const [countedTotal, setCountedTotal] = useState("");
   const [closeObs, setCloseObs] = useState("");
   const [amount, setAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    PaymentMethod.CASH,
-  );
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethod>(defaultPaymentMethod);
   const [description, setDescription] = useState("");
+  const [closeConfirmed, setCloseConfirmed] = useState(false);
 
   const isRegisterOpen = !!register;
 
   const resetMovementForm = () => {
     setAmount("");
     setDescription("");
-    setPaymentMethod(PaymentMethod.CASH);
+    setPaymentMethod(defaultPaymentMethod);
   };
 
   const closeDialog = () => {
@@ -194,12 +197,14 @@ export default function CashRegisterPage() {
   const handleCloseRegister = async () => {
     const counted = parseFloat(countedTotal.replace(",", "."));
     if (isNaN(counted) || counted < 0) return;
+    if (confirmBeforeCloseRegister && !closeConfirmed) return;
     await closeMutation.mutateAsync({
       countedTotal: counted,
       observations: closeObs || undefined,
     });
     setCountedTotal("");
     setCloseObs("");
+    setCloseConfirmed(false);
   };
 
   const openMovementDialog = (type: MovementType) => {
@@ -544,9 +549,27 @@ export default function CashRegisterPage() {
                   className={cn(fieldClass, "mt-2.5 bg-white")}
                 />
 
+                {confirmBeforeCloseRegister && (
+                  <label className="mt-2.5 flex cursor-pointer items-start gap-2">
+                    <Checkbox
+                      checked={closeConfirmed}
+                      onCheckedChange={(checked) =>
+                        setCloseConfirmed(checked === true)
+                      }
+                      className="mt-0.5 h-4 w-4"
+                    />
+                    <span className="text-[11.5px] font-semibold text-[#3D4149]">
+                      Confirmo que conferi o dinheiro físico da gaveta
+                    </span>
+                  </label>
+                )}
+
                 <Button
                   onClick={handleCloseRegister}
-                  disabled={closeMutation.isPending}
+                  disabled={
+                    closeMutation.isPending ||
+                    (confirmBeforeCloseRegister && !closeConfirmed)
+                  }
                   className="mt-3 h-10 w-full rounded-[10px] bg-[#14161A] text-[13px] font-extrabold text-white transition-colors hover:bg-[#2A2D33] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {closeMutation.isPending ? "Fechando..." : "Fechar caixa"}

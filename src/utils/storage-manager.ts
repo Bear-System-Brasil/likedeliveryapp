@@ -42,6 +42,7 @@ export const STORAGE_KEYS = {
 
   // User preferences
   PREFERENCES: 'user-preferences',
+  FINANCIAL_PREFERENCES: 'financial-preferences',
 
   // Favorites (gerenciado por Zustand)
   FAVORITES: 'like-delivery-favorites',
