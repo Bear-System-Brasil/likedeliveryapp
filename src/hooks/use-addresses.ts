@@ -18,9 +18,13 @@ export const useUserAddresses = () => {
       }
 
       // GET /address/me já é escopado ao usuário autenticado pelo JWT no
-      // backend (ver adress.md) - o response nem carrega customerId. Filtrar
-      // de novo aqui por addr.customerId === user.id zerava a lista sempre.
-      return Array.isArray(response.data) ? response.data : [];
+      // backend (ver adress.md) - filtrar de novo por customerId aqui zerava
+      // a lista sempre. DELETE agora é soft delete (isActive: false, não
+      // some do banco) - não dá pra confiar que a listagem já exclui os
+      // inativos, então filtra aqui (isActive ausente = trata como ativo,
+      // pra não quebrar em respostas antigas sem esse campo).
+      const addresses = Array.isArray(response.data) ? response.data : [];
+      return addresses.filter((addr) => addr.isActive !== false);
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutos

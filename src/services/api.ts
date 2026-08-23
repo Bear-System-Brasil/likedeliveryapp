@@ -506,6 +506,9 @@ export interface Address {
   userId?: string; // Mantido para compatibilidade
   companyId?: string;
   isDefault: boolean;
+  // Soft delete - DELETE /address/me/:id só marca isActive: false, não
+  // apaga o registro. Ausente = tratar como ativo (respostas antigas/mock).
+  isActive?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -519,8 +522,10 @@ export interface CreateAddressRequest {
   number: string;
   complement?: string;
   reference?: string;
-  latitude?: number | string;
-  longitude?: number | string;
+  // Breaking change do backend: agora exige number (@IsLatitude/@IsLongitude
+  // rejeitam string). Nunca enviar como string.
+  latitude?: number;
+  longitude?: number;
   isDefault: boolean;
 }
 
@@ -533,8 +538,8 @@ export interface UpdateAddressRequest {
   number?: string;
   complement?: string;
   reference?: string;
-  latitude?: number | string;
-  longitude?: number | string;
+  latitude?: number;
+  longitude?: number;
   isDefault?: boolean;
 }
 
@@ -848,12 +853,29 @@ export const apiService = {
   completeLogin: (data: { phone: string; code: string }) =>
     apiRequest<LoginResponse>("POST", "/auth/login/complet", data),
 
-  // Password recovery endpoints
-  forgotPassword: (data: { email: string }) =>
+  // Password recovery endpoints - o backend identifica o usuário por
+  // telefone (não email) nesses dois endpoints.
+  forgotPassword: (data: { phone: string }) =>
     apiRequest<{ message: string }>("POST", "/auth/forgot-password", data),
 
-  resetPassword: (data: { email: string; code: string; newPassword: string }) =>
-    apiRequest<{ message: string }>("POST", "/auth/reset-password", data),
+  // reset-password devolve um token novo (login automático) - por isso,
+  // diferente de forgotPassword, passa pelo BFF de auth (como login/register)
+  // pra virar cookie de sessão httpOnly, em vez do proxy genérico.
+  resetPassword: async (data: {
+    phone: string;
+    code: string;
+    newPassword: string;
+  }): Promise<ApiResponse<AuthBffResponse>> => {
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json().catch(() => null);
+    return res.ok
+      ? { success: true, data: result.data as AuthBffResponse }
+      : { success: false, message: result?.message, status: res.status };
+  },
 
   // Product endpoints
   getAllProducts: () => apiRequest<Product[]>("GET", "/product"),
@@ -1413,39 +1435,41 @@ export const apiService = {
   },
 
   // Address endpoints
-  // Contrato oficial (doc do backend): listar/criar são em /address/me,
-  // mas atualizar/deletar são direto em /address/:id (sem /me). Chamar
-  // /address/me/:id pra update/delete não bate com nenhuma rota real.
+  // Contrato oficial (doc do backend): TUDO vive sob /address/me agora -
+  // listar, criar, atualizar (/address/me/:id) e deletar (/address/me/:id).
+  // Antes atualizar/deletar eram direto em /address/:id (sem /me); o back
+  // mudou isso.
   address: {
     // User addresses
     getUserAddresses: () =>
       apiRequest<Address[]>("GET", "/address/me", undefined, true),
 
     createUserAddress: (addressData: CreateAddressRequest) =>
-      apiRequest<Address>("POST", "/address", addressData, true),
+      apiRequest<Address>("POST", "/address/me", addressData, true),
 
     updateUserAddress: (id: string, addressData: UpdateAddressRequest) =>
-      apiRequest<Address>("PATCH", `/address/${id}`, addressData, true),
+      apiRequest<Address>("PATCH", `/address/me/${id}`, addressData, true),
 
+    // Soft delete - backend marca isActive: false, não remove o registro.
     deleteUserAddress: (id: string) =>
-      apiRequest<Address>("DELETE", `/address/${id}`, undefined, true),
+      apiRequest<Address>("DELETE", `/address/me/${id}`, undefined, true),
 
     // Backward compatibility alias
     deleteAddress: (id: string) =>
-      apiRequest<Address>("DELETE", `/address/${id}`, undefined, true),
+      apiRequest<Address>("DELETE", `/address/me/${id}`, undefined, true),
 
     // Company addresses
     getCompanyAddresses: () =>
       apiRequest<Address[]>("GET", "/address/me", undefined, true),
 
     createCompanyAddress: (addressData: CreateAddressRequest) =>
-      apiRequest<Address>("POST", "/address", addressData, true),
+      apiRequest<Address>("POST", "/address/me", addressData, true),
 
     updateCompanyAddress: (id: string, addressData: UpdateAddressRequest) =>
-      apiRequest<Address>("PATCH", `/address/${id}`, addressData, true),
+      apiRequest<Address>("PATCH", `/address/me/${id}`, addressData, true),
 
     deleteCompanyAddress: (id: string) =>
-      apiRequest<Address>("DELETE", `/address/${id}`, undefined, true),
+      apiRequest<Address>("DELETE", `/address/me/${id}`, undefined, true),
   },
 
   // Order endpoints

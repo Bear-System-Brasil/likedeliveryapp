@@ -117,6 +117,9 @@ export const useProfileManagement = () => {
         const addressesData = Array.isArray(response.data) ? response.data : [];
 
         const userAddresses = addressesData.filter((addr) => {
+          // Soft delete: isActive: false não some do banco, então precisa
+          // ser filtrado aqui pra não reaparecer endereço "removido".
+          if (addr.isActive === false) return false;
           if (addr.customerId === user.id) return true;
           if (!addr.customerId && !addr.companyId) return true;
           return false;
