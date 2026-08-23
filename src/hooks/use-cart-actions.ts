@@ -138,17 +138,31 @@ export const useCartActions = () => {
             // Nome pode vir aninhado de formas diferentes dependendo do
             // include do backend - tenta os formatos conhecidos e ignora
             // o que não bater, em vez de quebrar a linha do carrinho.
+            // GET /order/company (order.md) aninha em `productAddOns`
+            // (plural) com `.description`, não `.name` - sem esse fallback
+            // o label sumia assim que o sync rodava (item somava certo na
+            // hora de adicionar, via extraGroups do modal, e perdia o rótulo
+            // no primeiro resync com o backend).
             const variationLabel = (item.variations || [])
               .map(
                 (v: any) =>
-                  v.variation?.name || v.productVariation?.name || v.name,
+                  v.variation?.name ||
+                  v.productVariation?.name ||
+                  v.productVariation?.description ||
+                  v.name ||
+                  v.description,
               )
               .filter(Boolean)
               .join(", ");
             const addOnLabels = (item.addOns || [])
               .map(
                 (a: any) =>
-                  a.productAddOn?.name || a.addOn?.name || a.name,
+                  a.productAddOn?.name ||
+                  a.productAddOns?.name ||
+                  a.productAddOns?.description ||
+                  a.addOn?.name ||
+                  a.name ||
+                  a.description,
               )
               .filter(Boolean);
 
