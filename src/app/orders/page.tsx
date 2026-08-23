@@ -20,6 +20,15 @@ import ProtectedRoute from "@/components/protected-route";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AnimatedBackground } from "@/components/ui/animated-background";
+import {
+  Stepper,
+  StepperIndicator,
+  StepperItem,
+  StepperNav,
+  StepperSeparator,
+  StepperTitle,
+  StepperTrigger,
+} from "@/components/reui/stepper";
 import { useCartActions, useOrderHistory, useRestaurants } from "@/hooks";
 import { useAuthStore } from "@/stores/auth-store";
 import { apiService } from "@/services/api";
@@ -379,40 +388,36 @@ function ActiveOrderCard({
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-4 gap-1">
-        {ORDER_STEPS.map((label, index) => {
-          const done = index <= step;
-          const current = index === step;
-
-          return (
-            <div key={label} className="relative text-center">
+      <Stepper
+        value={step + 1}
+        indicators={{
+          completed: <Check className="size-3" />,
+          active: <Check className="size-3" />,
+        }}
+        className="mt-5"
+      >
+        <StepperNav>
+          {ORDER_STEPS.map((label, index) => (
+            <StepperItem
+              key={label}
+              step={index + 1}
+              className="relative flex-1 flex-col items-center"
+            >
               {index < ORDER_STEPS.length - 1 && (
-                <span
-                  className={`absolute left-1/2 top-2.5 h-px w-full ${
-                    index < step ? "bg-orange-500" : "bg-[#e9eaee]"
-                  }`}
-                />
+                <StepperSeparator className="absolute left-1/2 top-2.5 z-0 m-0 h-px w-full bg-[#e9eaee] data-[state=completed]:bg-success" />
               )}
-              <span
-                className={`relative z-10 mx-auto flex h-5 w-5 items-center justify-center rounded-full border-2 bg-white ${
-                  done
-                    ? "border-orange-500 bg-orange-500 text-white"
-                    : "border-[#d6d8dd] text-transparent"
-                } ${current ? "ring-4 ring-orange-50" : ""}`}
-              >
-                {done && <Check className="h-3 w-3" />}
-              </span>
-              <span
-                className={`mt-2 block whitespace-nowrap text-[9px] font-semibold sm:text-[10px] ${
-                  done ? "text-[#3d4149]" : "text-[#a2a6ae]"
-                }`}
-              >
-                {label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+
+              <StepperTrigger className="flex flex-col items-center gap-2">
+                <StepperIndicator className="relative z-10 size-5 border-2 border-[#d6d8dd] bg-white text-transparent data-[state=active]:border-success data-[state=active]:bg-success data-[state=active]:text-white data-[state=active]:ring-4 data-[state=active]:ring-success/10 data-[state=completed]:border-success data-[state=completed]:bg-success data-[state=completed]:text-white" />
+
+                <StepperTitle className="whitespace-nowrap text-[9px] font-semibold text-[#a2a6ae] sm:text-[10px] data-[state=active]:text-[#3d4149] data-[state=completed]:text-[#3d4149]">
+                  {label}
+                </StepperTitle>
+              </StepperTrigger>
+            </StepperItem>
+          ))}
+        </StepperNav>
+      </Stepper>
 
       <div className="mt-4 flex flex-col gap-3 border-t border-[#e9eaee] pt-3 sm:flex-row sm:items-center sm:justify-between">
         {/* So mostra o prazo quando existe de verdade - o texto generico

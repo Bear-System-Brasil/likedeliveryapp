@@ -1078,10 +1078,12 @@ export const apiService = {
       true,
     ),
 
-  unlinkCategoryFromProduct: (categoryProductId: string) =>
+  // Rota exige productId + categoryId juntos (não o id da relação
+  // productCategories) - ver category-product.md.
+  unlinkCategoryFromProduct: (productId: string, categoryId: string) =>
     apiRequest<any>(
       "DELETE",
-      `/category-product/${categoryProductId}`,
+      `/category-product/${productId}/${categoryId}`,
       undefined,
       true,
     ),
@@ -1411,36 +1413,39 @@ export const apiService = {
   },
 
   // Address endpoints
+  // Contrato oficial (doc do backend): listar/criar são em /address/me,
+  // mas atualizar/deletar são direto em /address/:id (sem /me). Chamar
+  // /address/me/:id pra update/delete não bate com nenhuma rota real.
   address: {
     // User addresses
     getUserAddresses: () =>
       apiRequest<Address[]>("GET", "/address/me", undefined, true),
 
     createUserAddress: (addressData: CreateAddressRequest) =>
-      apiRequest<Address>("POST", "/address/me", addressData, true),
+      apiRequest<Address>("POST", "/address", addressData, true),
 
     updateUserAddress: (id: string, addressData: UpdateAddressRequest) =>
-      apiRequest<Address>("PATCH", `/address/me/${id}`, addressData, true),
+      apiRequest<Address>("PATCH", `/address/${id}`, addressData, true),
 
     deleteUserAddress: (id: string) =>
-      apiRequest<Address>("DELETE", `/address/me/${id}`, undefined, true),
+      apiRequest<Address>("DELETE", `/address/${id}`, undefined, true),
 
     // Backward compatibility alias
     deleteAddress: (id: string) =>
-      apiRequest<Address>("DELETE", `/address/me/${id}`, undefined, true),
+      apiRequest<Address>("DELETE", `/address/${id}`, undefined, true),
 
     // Company addresses
     getCompanyAddresses: () =>
       apiRequest<Address[]>("GET", "/address/me", undefined, true),
 
     createCompanyAddress: (addressData: CreateAddressRequest) =>
-      apiRequest<Address>("POST", "/address/me", addressData, true),
+      apiRequest<Address>("POST", "/address", addressData, true),
 
     updateCompanyAddress: (id: string, addressData: UpdateAddressRequest) =>
-      apiRequest<Address>("PATCH", `/address/me/${id}`, addressData, true),
+      apiRequest<Address>("PATCH", `/address/${id}`, addressData, true),
 
     deleteCompanyAddress: (id: string) =>
-      apiRequest<Address>("DELETE", `/address/me/${id}`, undefined, true),
+      apiRequest<Address>("DELETE", `/address/${id}`, undefined, true),
   },
 
   // Order endpoints
@@ -1639,16 +1644,24 @@ export const apiService = {
         true,
       ),
 
+    // Aprovar/rejeitar/estornar passam por /financial/... - as rotas
+    // equivalentes em /payment/... são legadas e agora restritas no backend
+    // para evitar bypass de regra de negócio (ver financial.md).
     approve: (id: string, transaction?: string) =>
       apiRequest<Payment>(
         "PATCH",
-        `/payment/${id}/approve`,
+        `/financial/payment/${id}/approve`,
         transaction ? { transaction } : undefined,
         true,
       ),
 
     reject: (id: string) =>
-      apiRequest<Payment>("PATCH", `/payment/${id}/reject`, undefined, true),
+      apiRequest<Payment>(
+        "PATCH",
+        `/financial/payment/${id}/reject`,
+        undefined,
+        true,
+      ),
 
     update: (id: string, paymentData: UpdatePaymentRequest) =>
       apiRequest<Payment>("PATCH", `/payment/${id}`, paymentData, true),
@@ -1656,8 +1669,8 @@ export const apiService = {
       apiRequest<Payment>("DELETE", `/payment/${id}`, undefined, true),
     financialRefund: (id: string) =>
       apiRequest<Payment>(
-        "POST",
-        `/payment/${id}/financial-refund`,
+        "PATCH",
+        `/financial/payment/${id}/refund`,
         undefined,
         true,
       ),
@@ -1676,11 +1689,11 @@ export const apiService = {
     updateStatus: (id: string, status: string) =>
       apiRequest<Delivery>("PATCH", `/delivery/${id}/status`, { status }, true),
 
-    cancel: (id: string, reason: string) =>
+    cancel: (id: string, reason: string, observations?: string) =>
       apiRequest<Delivery>(
         "PATCH",
-        `/delivery/${id}/status`,
-        { status: "CANCELED", cancelReason: reason },
+        `/delivery/${id}/cancel`,
+        { reason, ...(observations ? { observations } : {}) },
         true,
       ),
 
@@ -1730,7 +1743,7 @@ export const apiService = {
     getSummary: () =>
       apiRequest<CashMovementSummary>(
         "GET",
-        "/cash-movement/summary",
+        "/cash-movement/summary/current",
         undefined,
         true,
       ),
@@ -1748,7 +1761,7 @@ export const apiService = {
     getCurrentOpen: () =>
       apiRequest<CashRegister>(
         "GET",
-        "/cash-register/current",
+        "/cash-register/open/current",
         undefined,
         true,
       ),
