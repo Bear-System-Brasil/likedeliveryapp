@@ -1761,6 +1761,24 @@ export const apiService = {
         undefined,
         true,
       ),
+
+    // Delivery-person endpoints (authenticated, role delivery)
+    // Devolve PENDING (disponíveis pra aceitar) + as próprias, qualquer status.
+    getMyDeliveries: () =>
+      apiRequest<Delivery[]>(
+        "GET",
+        "/delivery/delivery-person/me",
+        undefined,
+        true,
+      ),
+
+    getMyDeliveriesByStatus: (status: string) =>
+      apiRequest<Delivery[]>(
+        "GET",
+        `/delivery/delivery-person/me/status/${status}`,
+        undefined,
+        true,
+      ),
   },
   // Cash Movement endpoints
   cashMovement: {

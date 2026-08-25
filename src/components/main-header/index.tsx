@@ -13,6 +13,7 @@ import { useAuthStore } from "@/stores";
 import { isCompanyRole } from "@/utils/role-helpers";
 import clsx from "clsx";
 import {
+  Bike,
   ChevronDown,
   LogOut,
   MapPin,
@@ -633,6 +634,20 @@ export function MainHeader({
                             </Button>
                           )}
 
+                          {user?.role === "client" && (
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start rounded-xl"
+                              onClick={() => {
+                                router.push("/restaurant-landing-page");
+                                setMobileMenuOpen(false);
+                              }}
+                            >
+                              <Store className="h-4 w-4 mr-2" />
+                              Cadastrar meu restaurante
+                            </Button>
+                          )}
+
                           {user?.role === "owner" && (
                             <Button
                               variant="outline"
@@ -644,6 +659,20 @@ export function MainHeader({
                             >
                               <Store className="h-4 w-4 mr-2" />
                               Gestão
+                            </Button>
+                          )}
+
+                          {user?.role === "delivery" && (
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start rounded-xl"
+                              onClick={() => {
+                                router.push("/delivery-dashboard");
+                                setMobileMenuOpen(false);
+                              }}
+                            >
+                              <Bike className="h-4 w-4 mr-2" />
+                              Minhas entregas
                             </Button>
                           )}
 
@@ -659,14 +688,25 @@ export function MainHeader({
                     </SheetContent>
                   </Sheet>
                 ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl border-0 bg-orange-50 text-orange-600 hover:bg-orange-100 font-medium"
-                    onClick={() => showAuthModal("login")}
-                  >
-                    Entrar
-                  </Button>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="hidden rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-orange-600 sm:inline-flex"
+                      onClick={() => router.push("/restaurant-landing-page")}
+                    >
+                      <Store className="mr-1.5 h-3.5 w-3.5" />
+                      Tem um restaurante?
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl border-0 bg-orange-50 text-orange-600 hover:bg-orange-100 font-medium"
+                      onClick={() => showAuthModal("login")}
+                    >
+                      Entrar
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
