@@ -3,6 +3,7 @@ import { useSound } from "@/hooks/use-sound";
 import { apiService } from "@/services/api";
 import { useCartStore } from "@/stores";
 import { useAuthStore } from "@/stores/auth-store";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -59,6 +60,7 @@ export const useCartActions = () => {
   const { user } = useAuthStore();
   const { confirm } = useConfirm();
   const { play } = useSound("customer");
+  const queryClient = useQueryClient();
   const {
     items,
     restaurant,
@@ -109,6 +111,59 @@ export const useCartActions = () => {
             });
           }
 
+          // Antes de sobrescrever `items`, guarda o que já tínhamos por
+          // chave de linha - se a releitura do backend não conseguir
+          // reconstruir o rótulo (formato aninhado incerto/variável), o
+          // item mantém o que já estava certo em vez de perder o texto de
+          // tamanho/complemento a cada sync.
+          const currentItemsById = new Map(
+            useCartStore.getState().items.map((i) => [i.id, i]),
+          );
+
+          // O carrinho ainda vive no Redis (antes do checkout) e essa
+          // leitura pode devolver só os IDs de tamanho/complemento, sem
+          // nome/descrição resolvidos - diferente do pedido já persistido
+          // no Postgres (GET /order/company), que vem com o nome aninhado.
+          // Busca o catálogo da empresa (mesma fonte que o modal de
+          // personalização usa) e resolve o nome pelo ID como último
+          // recurso. Via queryClient (não apiService direto) pra reaproveitar
+          // o cache de 5min entre syncs em vez de rebuscar tudo a cada vez
+          // que o carrinho sincroniza (throttled a 1x/3s, mas ainda assim
+          // gerava 2 requests novos por sync sem necessidade).
+          let addOnNameById = new Map<string, string>();
+          let variationNameById = new Map<string, string>();
+          if (backendCart.companyId) {
+            const companyId = backendCart.companyId;
+            const [addOnsRes, variationsRes] = await Promise.all([
+              queryClient.fetchQuery({
+                queryKey: ["product-add-ons", "public", "company", companyId],
+                queryFn: () => apiService.productAddOns.getAllPublic(companyId),
+                staleTime: 5 * 60 * 1000,
+              }),
+              queryClient.fetchQuery({
+                queryKey: [
+                  "product-variations",
+                  "public",
+                  "company",
+                  companyId,
+                ],
+                queryFn: () =>
+                  apiService.productVariations.getAllPublic(companyId),
+                staleTime: 5 * 60 * 1000,
+              }),
+            ]);
+            if (addOnsRes.success && addOnsRes.data) {
+              addOnNameById = new Map(
+                addOnsRes.data.map((a) => [a.id, a.name]),
+              );
+            }
+            if (variationsRes.success && variationsRes.data) {
+              variationNameById = new Map(
+                variationsRes.data.map((v) => [v.id, v.name]),
+              );
+            }
+          }
+
           const cartItems = backendCart.orderedItems.map((item: any) => {
             // item.unitPrice é só o preço base do produto - os extras de
             // tamanho/complemento vêm à parte, em addOns[]/variations[]
@@ -150,7 +205,8 @@ export const useCartActions = () => {
                   v.productVariation?.name ||
                   v.productVariation?.description ||
                   v.name ||
-                  v.description,
+                  v.description ||
+                  variationNameById.get(v.productVariationId),
               )
               .filter(Boolean)
               .join(", ");
@@ -162,12 +218,16 @@ export const useCartActions = () => {
                   a.productAddOns?.description ||
                   a.addOn?.name ||
                   a.name ||
-                  a.description,
+                  a.description ||
+                  addOnNameById.get(a.productAddOnsId),
               )
               .filter(Boolean);
 
+            const id = buildCartItemKey(item.productId, variations, addOns);
+            const existing = currentItemsById.get(id);
+
             return {
-              id: buildCartItemKey(item.productId, variations, addOns),
+              id,
               productId: item.productId,
               name: item.product?.name || "Produto",
               price: item.unitPrice + addOnsTotal + variationsTotal,
@@ -176,8 +236,10 @@ export const useCartActions = () => {
               restaurantId: backendCart.companyId,
               restaurantName: restaurant?.name || "Restaurante",
               customizations: item.addIngredient || undefined,
-              variationLabel: variationLabel || undefined,
-              addOnLabels: addOnLabels.length ? addOnLabels : undefined,
+              variationLabel: variationLabel || existing?.variationLabel,
+              addOnLabels: addOnLabels.length
+                ? addOnLabels
+                : existing?.addOnLabels,
               variations: variations.length ? variations : undefined,
               addOns: addOns.length ? addOns : undefined,
             };

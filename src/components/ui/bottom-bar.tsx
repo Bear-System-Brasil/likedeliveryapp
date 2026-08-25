@@ -40,9 +40,10 @@ const managementRoutes = [
   "/financial-management",
 ];
 
-// Fluxos focados que ja possuem barra de acao fixa no rodape.
-// Sem isso a nav fica por cima do botao de confirmar do checkout.
-const hiddenRoutes = ["/checkout"];
+// Fluxos focados que ja possuem barra de acao fixa no rodape (checkout) ou
+// cabecalho proprio com as acoes do papel (entregador) - a nav do cliente
+// (carrinho, pedidos de cliente etc.) nao faz sentido sobreposta ali.
+const hiddenRoutes = ["/checkout", "/delivery-dashboard"];
 
 function getActiveTab(pathname: string): BottomTabId {
   if (pathname === "/cart" || pathname.startsWith("/checkout")) return "cart";
@@ -132,20 +133,22 @@ export function BottomBar({ activeTab }: BottomBarProps) {
     },
   ];
 
-  // Visitante anônimo: mesmas abas de navegação do cliente, mas "Perfil"
-  // não faz sentido sem conta - vira "Entrar" e abre o login direto (sem
-  // navegar/redirecionar), em vez de simular uma aba que só existe pra
-  // mandar de volta pro login ao clicar.
-  const guestTabs: Tab[] = clientTabs.map((tab) =>
-    tab.id === "profile"
-      ? {
-          id: "login" as const,
-          label: "Entrar",
-          icon: LogIn,
-          onSelect: () => showAuthModal("login"),
-        }
-      : tab,
-  );
+  // Visitante anônimo: mesmas abas de navegação do cliente, menos as que só
+  // fazem sentido com conta. "Pedidos" some (não existe pedido sem login) e
+  // "Perfil" vira "Entrar", abrindo o login direto (sem navegar/redirecionar)
+  // em vez de simular uma aba que só existe pra mandar de volta pro login.
+  const guestTabs: Tab[] = clientTabs
+    .filter((tab) => tab.id !== "orders")
+    .map((tab) =>
+      tab.id === "profile"
+        ? {
+            id: "login" as const,
+            label: "Entrar",
+            icon: LogIn,
+            onSelect: () => showAuthModal("login"),
+          }
+        : tab,
+    );
 
   const tabs = isOwner ? ownerTabs : isAuthenticated ? clientTabs : guestTabs;
   const gridCols = tabs.length === 4 ? "grid-cols-4" : "grid-cols-3";
