@@ -1,4 +1,4 @@
-import { apiService } from "@/services/api";
+import { apiService, MAX_PAGE_LIMIT } from "@/services/api";
 import { useAuthStore } from "@/stores";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -22,8 +22,11 @@ function invalidateCategoryQueries(
 
 /**
  * Hook para buscar categorias da empresa autenticada (per-restaurant)
- * Nota: Backend tem bug de ordem de rotas. GET /categories/me nunca é alcançado
- * Workaround: Buscamos GET /categories (com auth) e filtramos por companyId no frontend
+ * GET /categories/me já é escopado por empresa no backend - o filtro por
+ * companyId aqui é só uma rede de segurança extra.
+ * Sem paginação de verdade (ver pagination.md): pede o limite máximo (100)
+ * numa página só - nenhum restaurante real chega perto disso em categorias,
+ * então cobre o caso todo sem precisar de Prev/Next na tela.
  */
 export const useCategories = () => {
   const { user } = useAuthStore();
@@ -32,19 +35,24 @@ export const useCategories = () => {
   return useQuery({
     queryKey: ["categories", "my", companyIdToMatch],
     queryFn: async () => {
-      const response = await apiService.getMyCategories();
+      const response = await apiService.getMyCategories({
+        page: 1,
+        limit: MAX_PAGE_LIMIT,
+      });
       if (!response.success || !response.data) {
         throw new Error("Falha ao carregar categorias");
       }
 
+      const categories = response.data.data;
+
       // Filtrar categorias pela empresa autenticada
-      if (companyIdToMatch && Array.isArray(response.data)) {
-        return response.data.filter(
+      if (companyIdToMatch) {
+        return categories.filter(
           (category) => category.companyId === companyIdToMatch,
         );
       }
 
-      return response.data;
+      return categories;
     },
     enabled: !!user?.id,
     staleTime: 10 * 60 * 1000, // 10 min

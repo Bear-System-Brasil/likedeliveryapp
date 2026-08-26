@@ -106,6 +106,40 @@ export interface ApiResponse<T> {
   status?: number;
 }
 
+/**
+ * Envelope das listas paginadas (ver pagination.md). `apiRequest` não
+ * desembrulha isso - o corpo bruto `{data, meta}` cai inteiro em
+ * `ApiResponse.data`, então quem consome precisa ler `.data.data`/`.data.meta`.
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+}
+
+/** Máximo aceito pelo backend (ver pagination.md) - usar quando a tela
+ * precisa do conjunto quase-completo numa única chamada (ex: Kanban ao vivo)
+ * em vez de paginação de verdade. */
+export const MAX_PAGE_LIMIT = 100;
+
+function withPagination(endpoint: string, params?: PaginationParams): string {
+  if (!params?.page && !params?.limit) return endpoint;
+  const qs = new URLSearchParams();
+  if (params.page) qs.set("page", String(params.page));
+  if (params.limit) qs.set("limit", String(params.limit));
+  const separator = endpoint.includes("?") ? "&" : "?";
+  return `${endpoint}${separator}${qs.toString()}`;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -794,6 +828,15 @@ export const apiService = {
   verifyOtp: (otpData: VerifyOtpRequest) =>
     apiRequest<string>("POST", "/user/complet", otpData),
 
+  // Clientes vinculados à empresa autenticada (ver pagination.md)
+  getCompanyCustomers: (params?: PaginationParams) =>
+    apiRequest<PaginatedResponse<User>>(
+      "GET",
+      withPagination("/user/company/customers", params),
+      undefined,
+      true,
+    ),
+
   // /user/me devolve o hash bcrypt da senha no corpo - nunca deixar isso
   // chegar no Zustand (persiste em localStorage via updateUser).
   getMe: async (): Promise<ApiResponse<User>> => {
@@ -885,8 +928,11 @@ export const apiService = {
 
   getProduct: (id: string) => apiRequest<Product>("GET", `/product/${id}`),
 
-  getProductsByCompany: (companyId: string) =>
-    apiRequest<Product[]>("GET", `/product/company/${companyId}`),
+  getProductsByCompany: (companyId: string, params?: PaginationParams) =>
+    apiRequest<PaginatedResponse<Product>>(
+      "GET",
+      withPagination(`/product/company/${companyId}`, params),
+    ),
 
   createProduct: (productData: CreateProductRequest) =>
     apiRequest<Product>("POST", "/product", productData, true),
@@ -1057,8 +1103,13 @@ export const apiService = {
   getAllCategories: () => apiRequest<Category[]>("GET", "/categories"),
 
   // Listagem administrativa (Painel da Empresa) - Exige auth (Admin, Owner, Manager)
-  getMyCategories: () =>
-    apiRequest<Category[]>("GET", "/categories/me", undefined, true),
+  getMyCategories: (params?: PaginationParams) =>
+    apiRequest<PaginatedResponse<Category>>(
+      "GET",
+      withPagination("/categories/me", params),
+      undefined,
+      true,
+    ),
 
   getCategory: (id: string) => apiRequest<Category>("GET", `/categories/${id}`),
 
@@ -1527,13 +1578,18 @@ export const apiService = {
         true,
       ),
 
-    getCompanyOrders: () =>
-      apiRequest<Order[]>("GET", "/order/company", undefined, true),
-
-    getCompanyOrdersByStatus: (status: string) =>
-      apiRequest<Order[]>(
+    getCompanyOrders: (params?: PaginationParams) =>
+      apiRequest<PaginatedResponse<Order>>(
         "GET",
-        `/order/company/status/${status}`,
+        withPagination("/order/company", params),
+        undefined,
+        true,
+      ),
+
+    getCompanyOrdersByStatus: (status: string, params?: PaginationParams) =>
+      apiRequest<PaginatedResponse<Order>>(
+        "GET",
+        withPagination(`/order/company/status/${status}`, params),
         undefined,
         true,
       ),
@@ -1639,22 +1695,27 @@ export const apiService = {
     findById: (id: string) =>
       apiRequest<Payment>("GET", `/payment/${id}`, undefined, true),
 
-    findByFilters: (filters: {
-      id?: string;
-      orderId?: string;
-      customerId?: string;
-    }) =>
-      apiRequest<Payment[]>(
+    findByFilters: (
+      filters: { id?: string; orderId?: string; customerId?: string },
+      params?: PaginationParams,
+    ) =>
+      apiRequest<PaginatedResponse<Payment>>(
         "GET",
-        `/payment?${new URLSearchParams(filters as Record<string, string>).toString()}`,
+        withPagination(
+          `/payment?${new URLSearchParams(filters as Record<string, string>).toString()}`,
+          params,
+        ),
         undefined,
         true,
       ),
 
-    findByMethod: (paymentMethod: PaymentMethod) =>
-      apiRequest<Payment[]>(
+    findByMethod: (paymentMethod: PaymentMethod, params?: PaginationParams) =>
+      apiRequest<PaginatedResponse<Payment>>(
         "GET",
-        `/payment/filter/by-method?paymentMethod=${paymentMethod}`,
+        withPagination(
+          `/payment/filter/by-method?paymentMethod=${paymentMethod}`,
+          params,
+        ),
         undefined,
         true,
       ),
@@ -1663,10 +1724,14 @@ export const apiService = {
       startDate: string,
       endDate: string,
       customerId?: string,
+      params?: PaginationParams,
     ) =>
-      apiRequest<Payment[]>(
+      apiRequest<PaginatedResponse<Payment>>(
         "GET",
-        `/payment/filter/by-date?startDate=${startDate}&endDate=${endDate}${customerId ? `&customerId=${customerId}` : ""}`,
+        withPagination(
+          `/payment/filter/by-date?startDate=${startDate}&endDate=${endDate}${customerId ? `&customerId=${customerId}` : ""}`,
+          params,
+        ),
         undefined,
         true,
       ),

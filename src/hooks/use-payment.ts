@@ -3,9 +3,17 @@ import {
   Payment,
   PaymentMethod,
   PaymentStatus,
+  type PaginationParams,
 } from "@/services/api";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+
+interface PaymentsPageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 interface PaymentFilters {
   id?: string;
@@ -33,6 +41,9 @@ interface DateRangeFilter {
  */
 export const usePayment = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [paymentsMeta, setPaymentsMeta] = useState<PaymentsPageMeta | null>(
+    null,
+  );
   const [currentPayment, setCurrentPayment] = useState<Payment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,14 +76,18 @@ export const usePayment = () => {
    * Buscar pagamentos por filtros
    */
   const fetchPaymentsByFilters = useCallback(
-    async (filters: PaymentFilters) => {
+    async (filters: PaymentFilters, params?: PaginationParams) => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await apiService.payments.findByFilters(filters);
+        const response = await apiService.payments.findByFilters(
+          filters,
+          params,
+        );
         if (response.success && response.data) {
-          const paymentList = Array.isArray(response.data) ? response.data : [];
+          const paymentList = response.data.data;
           setPayments(paymentList);
+          setPaymentsMeta(response.data.meta);
           return paymentList;
         } else {
           throw new Error(response.message || "Nenhum pagamento encontrado");
@@ -81,6 +96,7 @@ export const usePayment = () => {
         const errorMessage = err.message || "Erro ao buscar pagamentos";
         setError(errorMessage);
         setPayments([]);
+        setPaymentsMeta(null);
         return [];
       } finally {
         setIsLoading(false);
@@ -113,14 +129,18 @@ export const usePayment = () => {
    * Buscar pagamentos por método de pagamento
    */
   const fetchPaymentsByMethod = useCallback(
-    async (paymentMethod: PaymentMethod) => {
+    async (paymentMethod: PaymentMethod, params?: PaginationParams) => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await apiService.payments.findByMethod(paymentMethod);
+        const response = await apiService.payments.findByMethod(
+          paymentMethod,
+          params,
+        );
         if (response.success && response.data) {
-          const paymentList = Array.isArray(response.data) ? response.data : [];
+          const paymentList = response.data.data;
           setPayments(paymentList);
+          setPaymentsMeta(response.data.meta);
           return paymentList;
         } else {
           throw new Error(response.message || "Nenhum pagamento encontrado");
@@ -130,6 +150,7 @@ export const usePayment = () => {
           err.message || "Erro ao buscar pagamentos por método";
         setError(errorMessage);
         setPayments([]);
+        setPaymentsMeta(null);
         return [];
       } finally {
         setIsLoading(false);
@@ -142,7 +163,7 @@ export const usePayment = () => {
    * Buscar pagamentos por período (data)
    */
   const fetchPaymentsByDateRange = useCallback(
-    async (filters: DateRangeFilter) => {
+    async (filters: DateRangeFilter, params?: PaginationParams) => {
       setIsLoading(true);
       setError(null);
       try {
@@ -150,10 +171,12 @@ export const usePayment = () => {
           filters.startDate,
           filters.endDate,
           filters.customerId,
+          params,
         );
         if (response.success && response.data) {
-          const paymentList = Array.isArray(response.data) ? response.data : [];
+          const paymentList = response.data.data;
           setPayments(paymentList);
+          setPaymentsMeta(response.data.meta);
           return paymentList;
         } else {
           throw new Error(response.message || "Nenhum pagamento encontrado");
@@ -163,6 +186,7 @@ export const usePayment = () => {
           err.message || "Erro ao buscar pagamentos por período";
         setError(errorMessage);
         setPayments([]);
+        setPaymentsMeta(null);
         return [];
       } finally {
         setIsLoading(false);
@@ -405,6 +429,7 @@ export const usePayment = () => {
   return {
     // State
     payments,
+    paymentsMeta,
     currentPayment,
     isLoading,
     error,

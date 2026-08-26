@@ -3,7 +3,7 @@
 import { AdminPageLayout } from "@/components/admin-page-layout";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiService, Order } from "@/services/api";
+import { apiService, MAX_PAGE_LIMIT, Order } from "@/services/api";
 import { formatCurrency } from "@/utils";
 import { useAuthStore } from "@/stores";
 import { useQuery } from "@tanstack/react-query";
@@ -35,9 +35,23 @@ export default function CustomersPage() {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["financial", "customers", "orders"],
     queryFn: async () => {
-      const response = await apiService.orders.getCompanyOrders();
-      if (!response.success || !response.data) return [];
-      return response.data;
+      // Essa tela agrega gasto/pedidos por cliente sobre a base inteira -
+      // não dá pra paginar de verdade sem falsear o total. Percorre todas as
+      // páginas (limite máximo por chamada) em vez de um fetch único sem
+      // limite como antes.
+      const allOrders: Order[] = [];
+      let page = 1;
+      while (true) {
+        const response = await apiService.orders.getCompanyOrders({
+          page,
+          limit: MAX_PAGE_LIMIT,
+        });
+        if (!response.success || !response.data) break;
+        allOrders.push(...response.data.data);
+        if (page >= response.data.meta.totalPages) break;
+        page += 1;
+      }
+      return allOrders;
     },
     enabled: !!isAuthenticated,
     staleTime: 60_000,
