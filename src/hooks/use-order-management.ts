@@ -5,7 +5,7 @@ import {
   ORDER_POLL_INTERVAL,
 } from '@/constants/order-management'
 import { useSound } from '@/hooks/use-sound'
-import { apiService } from '@/services/api'
+import { apiService, MAX_PAGE_LIMIT } from '@/services/api'
 import { useAuthStore } from '@/stores'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -82,7 +82,14 @@ export const useOrderManagement = () => {
   } = useQuery({
     queryKey: ['company-orders'],
     queryFn: async () => {
-      const response = await apiService.orders.getCompanyOrders()
+      // Kanban ao vivo: precisa ver TODOS os pedidos ativos de uma vez, não
+      // dá pra esconder metade atrás de um "próxima página" numa tela que
+      // atualiza sozinha a cada 15s. Sem paginação de verdade aqui - só o
+      // limite máximo (100) pra não pedir a lista inteira sem limite.
+      const response = await apiService.orders.getCompanyOrders({
+        page: 1,
+        limit: MAX_PAGE_LIMIT,
+      })
       if (!response.success) {
         throw new Error(response.message || 'Erro ao carregar pedidos')
       }
@@ -95,7 +102,7 @@ export const useOrderManagement = () => {
 
   const orders = useMemo<CompanyOrder[]>(() => {
     if (!ordersResponse?.success || !ordersResponse.data) return []
-    return ordersResponse.data as CompanyOrder[]
+    return ordersResponse.data.data as CompanyOrder[]
   }, [ordersResponse])
 
   // ─── Agrupamento em colunas ────────────────────────────────────────────────

@@ -91,7 +91,7 @@ export const useCompanyOrders = (_companyId?: string | null) => {
     queryFn: async () => {
       const response = await apiService.orders.getCompanyOrders()
       if (!response?.success || !response?.data) return []
-      return response.data
+      return response.data.data
     },
     enabled: !!isAuthenticated,
     staleTime: 1000 * 30,

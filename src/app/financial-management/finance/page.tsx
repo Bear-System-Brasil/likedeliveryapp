@@ -141,6 +141,7 @@ function RowActionButton({
 export default function FinancePage() {
   const {
     payments,
+    paymentsMeta,
     isLoading,
     fetchPaymentsByFilters,
     fetchPaymentsByMethod,
@@ -165,6 +166,8 @@ export default function FinancePage() {
   const [searchCustomerId, setSearchCustomerId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const [stats, setStats] = useState({
     total: 0,
@@ -189,26 +192,37 @@ export default function FinancePage() {
   }, [payments, isPending, isCompleted, isFailed]);
 
   useEffect(() => {
-    handleSearch();
+    handleSearch(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSearch = async () => {
+  // targetPage: por padrão mantém a página atual (ex: reload após aprovar
+  // um pagamento não deve chutar o usuário de volta pra página 1).
+  const handleSearch = async (targetPage: number = page) => {
+    setPage(targetPage);
+    const params = { page: targetPage, limit: PAGE_SIZE };
+
     if (dateFrom && dateTo) {
-      await fetchPaymentsByDateRange({
-        startDate: new Date(dateFrom).toISOString(),
-        endDate: new Date(dateTo).toISOString(),
-        customerId: searchCustomerId || undefined,
-      });
+      await fetchPaymentsByDateRange(
+        {
+          startDate: new Date(dateFrom).toISOString(),
+          endDate: new Date(dateTo).toISOString(),
+          customerId: searchCustomerId || undefined,
+        },
+        params,
+      );
     } else if (filterMethod !== "ALL") {
-      await fetchPaymentsByMethod(filterMethod);
+      await fetchPaymentsByMethod(filterMethod, params);
     } else {
       const filters: { orderId?: string; customerId?: string } = {};
       if (searchOrderId) filters.orderId = searchOrderId;
       if (searchCustomerId) filters.customerId = searchCustomerId;
-      await fetchPaymentsByFilters(filters);
+      await fetchPaymentsByFilters(filters, params);
     }
   };
+
+  // Nova busca/filtro sempre volta pra página 1 (ver pagination.md).
+  const handleNewSearch = () => handleSearch(1);
 
   const handleClearFilters = () => {
     setFilterMethod("ALL");
@@ -217,7 +231,8 @@ export default function FinancePage() {
     setSearchCustomerId("");
     setDateFrom("");
     setDateTo("");
-    fetchPaymentsByFilters({});
+    setPage(1);
+    fetchPaymentsByFilters({}, { page: 1, limit: PAGE_SIZE });
   };
 
   const handleApprove = async (payment: Payment) => {
@@ -352,7 +367,7 @@ export default function FinancePage() {
           <div className="mt-3.5 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={handleSearch}
+              onClick={handleNewSearch}
               className="flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] bg-[#14161A] px-4 text-xs font-bold text-white transition-colors hover:bg-[#2A2D33]"
             >
               <Search className="h-3.5 w-3.5" />
@@ -583,6 +598,29 @@ export default function FinancePage() {
               </div>
               </div>
             </>
+          )}
+
+          {paymentsMeta && paymentsMeta.totalPages > 1 && (
+            <div className="flex items-center justify-between gap-2 border-t border-[#E9EAEE] px-4 py-3">
+              <span className="text-[11.5px] font-semibold text-[#8A8F99]">
+                Página {paymentsMeta.page} de {paymentsMeta.totalPages} (
+                {paymentsMeta.total} pagamentos)
+              </span>
+              <div className="flex gap-1.5">
+                <CompactButton
+                  onClick={() => handleSearch(page - 1)}
+                  disabled={page <= 1 || isLoading}
+                >
+                  Anterior
+                </CompactButton>
+                <CompactButton
+                  onClick={() => handleSearch(page + 1)}
+                  disabled={page >= paymentsMeta.totalPages || isLoading}
+                >
+                  Próxima
+                </CompactButton>
+              </div>
+            </div>
           )}
         </div>
       </div>

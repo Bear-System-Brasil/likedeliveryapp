@@ -340,29 +340,32 @@ export const useMenuManagement = () => {
         }
       }
 
-      // Fazer upload das imagens, se fornecidas - uma de cada vez porque
-      // POST /product/image/:id adiciona uma imagem por chamada (não é
-      // upload em lote), igual o próprio nome do endpoint sugere.
+      // Fazer upload das imagens, se fornecidas. POST /product/image/:id
+      // aceita uma imagem por chamada (não é upload em lote), mas as
+      // chamadas em si são independentes - disparar todas em paralelo em
+      // vez de uma de cada vez é o que faz essa etapa não ficar arrastada
+      // quando o dono escolhe várias fotos de uma vez.
       if (selectedImages?.length && productId) {
+        const uploadResults = await Promise.allSettled(
+          selectedImages.map((image) =>
+            apiService.uploadProductImage(productId!, image),
+          ),
+        );
+
         let uploadedCount = 0;
-        for (const image of selectedImages) {
-          try {
-            const uploadResponse = await apiService.uploadProductImage(
-              productId,
-              image,
-            );
-            if (uploadResponse.success) {
-              uploadedCount += 1;
-            } else {
-              toast.error(
-                `Erro ao enviar "${image.name}": ${uploadResponse.message}`,
-              );
-            }
-          } catch (imageError) {
-            console.error("Erro ao fazer upload da imagem:", imageError);
-            toast.error(`Erro ao enviar "${image.name}"`);
+        uploadResults.forEach((result, index) => {
+          const image = selectedImages[index];
+          if (result.status === "fulfilled" && result.value.success) {
+            uploadedCount += 1;
+          } else {
+            const message =
+              result.status === "fulfilled"
+                ? result.value.message
+                : undefined;
+            console.error("Erro ao fazer upload da imagem:", result);
+            toast.error(`Erro ao enviar "${image.name}"${message ? `: ${message}` : ""}`);
           }
-        }
+        });
         if (uploadedCount > 0) {
           toast.success(
             uploadedCount === 1
@@ -409,30 +412,29 @@ export const useMenuManagement = () => {
 
     setIsDeleting(true);
     try {
-      // 1. Remover vínculos de categoria
+      // 1. Remover vínculos de categoria e imagens - independentes entre si
+      // e entre cada item, então disparados todos em paralelo em vez de um
+      // de cada vez (era a parte que mais atrasava o delete de um prato com
+      // várias fotos/categorias).
       const categoryLinks = deleteTarget.productCategories || [];
-      for (const link of categoryLinks) {
-        try {
-          await apiService.unlinkCategoryFromProduct(
-            link.productId,
-            link.categoryId,
-          );
-        } catch (e) {
-          console.warn("Erro ao desvincular categoria:", link.id, e);
-        }
-      }
-
-      // 2. Remover imagens
       const images = deleteTarget.imageURL || [];
-      for (const img of images) {
-        try {
-          await apiService.deleteProductImage(deleteTarget.id, img.id);
-        } catch (e) {
-          console.warn("Erro ao remover imagem:", img.id, e);
-        }
-      }
 
-      // 3. Deletar o produto
+      await Promise.all([
+        ...categoryLinks.map((link) =>
+          apiService
+            .unlinkCategoryFromProduct(link.productId, link.categoryId)
+            .catch((e) =>
+              console.warn("Erro ao desvincular categoria:", link.id, e),
+            ),
+        ),
+        ...images.map((img) =>
+          apiService
+            .deleteProductImage(deleteTarget.id, img.id)
+            .catch((e) => console.warn("Erro ao remover imagem:", img.id, e)),
+        ),
+      ]);
+
+      // 2. Deletar o produto
       await deleteProduct.mutateAsync(deleteTarget.id);
 
       // Remove do cache na hora - mesmo motivo do create: um GET disparado

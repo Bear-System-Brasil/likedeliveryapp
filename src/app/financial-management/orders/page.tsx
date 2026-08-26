@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { apiService } from "@/services/api"
+import { apiService, MAX_PAGE_LIMIT } from "@/services/api"
 import { Order } from "@/services/api"
 import { formatCurrency } from "@/utils"
 import { useAuthStore } from "@/stores"
@@ -54,9 +54,22 @@ export default function OrdersPage() {
   const { data: orders = [], isLoading, refetch } = useQuery({
     queryKey: ["financial", "orders"],
     queryFn: async () => {
-      const response = await apiService.orders.getCompanyOrders()
-      if (!response.success || !response.data) return []
-      return response.data
+      // Filtro de status e cards de resumo dependem da base inteira -
+      // percorre todas as páginas (limite máximo por chamada) em vez de um
+      // fetch único sem limite como antes.
+      const allOrders: Order[] = []
+      let page = 1
+      while (true) {
+        const response = await apiService.orders.getCompanyOrders({
+          page,
+          limit: MAX_PAGE_LIMIT,
+        })
+        if (!response.success || !response.data) break
+        allOrders.push(...response.data.data)
+        if (page >= response.data.meta.totalPages) break
+        page += 1
+      }
+      return allOrders
     },
     enabled: !!isAuthenticated,
     staleTime: 30_000,
