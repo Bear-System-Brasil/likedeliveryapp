@@ -71,7 +71,11 @@ export const useProfileManagement = () => {
    * Fetch user profile data
    */
   useEffect(() => {
-    if (!isMounted) return;
+    // Espera o Zustand persist hidratar - antes disso isAuthenticated
+    // começa em `false` mesmo pra quem tá logado, e esse redirect rodava
+    // cedo demais a cada F5 (correndo em paralelo com o efeito equivalente
+    // do ProfileWrapper).
+    if (!isMounted || !_hasHydrated) return;
 
     const fetchUserProfile = async () => {
       if (!isAuthenticated) {
@@ -102,7 +106,15 @@ export const useProfileManagement = () => {
     };
 
     fetchUserProfile();
-  }, [isAuthenticated, router, updateUser, user?.id, user?.role, isMounted]);
+  }, [
+    isAuthenticated,
+    router,
+    updateUser,
+    user?.id,
+    user?.role,
+    isMounted,
+    _hasHydrated,
+  ]);
 
   /**
    * Função para buscar endereços do backend

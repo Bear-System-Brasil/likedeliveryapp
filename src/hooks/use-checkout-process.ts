@@ -506,6 +506,19 @@ export const useCheckoutProcess = () => {
         }
       }
 
+      // O endereço precisa existir pra delivery referenciar deliveryAddressId
+      // - não dá pra pular a criação. Mas se o cliente desmarcou "Salvar este
+      // endereço para pedidos futuros", ele não pode sobrar em "meus
+      // endereços" depois - descarta (soft delete) o que acabou de ser criado
+      // só pra esse pedido.
+      if (!saveAddress && addressMode === "new" && deliveryAddressId) {
+        try {
+          await apiService.address.deleteUserAddress(deliveryAddressId);
+        } catch (error) {
+          console.error("Erro ao descartar endereço temporário:", error);
+        }
+      }
+
       // O motivo da marca por inteiro, terminando aberto: pico de alívio do
       // cliente e o momento mais raro e mais carregado da jornada dele.
       play("order-confirmed");
@@ -527,16 +540,20 @@ export const useCheckoutProcess = () => {
     }
   };
 
-  // Auto-select first address when addresses load
+  // Auto-select o endereço padrão quando os endereços carregam - antes
+  // pegava sempre userAddresses[0], ignorando qual o cliente marcou como
+  // padrão no perfil (isDefault), então o checkout pré-selecionava um
+  // endereço "aleatório" (ordem do backend) em vez do que o cliente escolheu.
   useEffect(() => {
     if (
       addressMode === "select" &&
       userAddresses.length > 0 &&
       !selectedAddressId
     ) {
-      const firstAddress = userAddresses[0];
-      setSelectedAddressId(firstAddress.id);
-      loadAddressData(firstAddress);
+      const defaultAddress =
+        userAddresses.find((a: Address) => a.isDefault) || userAddresses[0];
+      setSelectedAddressId(defaultAddress.id);
+      loadAddressData(defaultAddress);
     }
 
     if (userAddresses.length === 0 && !loadingAddresses) {

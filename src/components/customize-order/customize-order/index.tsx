@@ -1,4 +1,10 @@
 import { Button } from "@/components/ui/button";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -8,11 +14,12 @@ import {
   usePublicProductVariations,
   useRestaurant,
 } from "@/hooks";
+import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils";
 import { Minus, Plus, X } from "lucide-react";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SelectOptions } from "../select-options";
 
 type ImageURLType = {
@@ -66,6 +73,36 @@ export function CustomizeOrder({
     variation: [],
     addon: [],
   });
+
+  // O back já suporta várias fotos por prato (productData.imageURL é um
+  // array) - antes só a primeira era exibida. Sem foto nenhuma, cai no
+  // placeholder.
+  const images = productData.imageURL?.length
+    ? productData.imageURL
+    : [{ url: "/placeholder.svg" }];
+
+  const [imageApi, setImageApi] = useState<CarouselApi>();
+  const [currentImage, setCurrentImage] = useState(0);
+
+  const updateCurrentImage = useCallback((api: CarouselApi) => {
+    if (!api) return;
+    setCurrentImage(api.selectedScrollSnap());
+  }, []);
+
+  useEffect(() => {
+    if (!imageApi) return;
+
+    setCurrentImage(0);
+    updateCurrentImage(imageApi);
+    imageApi.on("select", updateCurrentImage);
+    imageApi.on("reInit", updateCurrentImage);
+
+    return () => {
+      imageApi.off("select", updateCurrentImage);
+      imageApi.off("reInit", updateCurrentImage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageApi, productData.id]);
 
   const [customOrder, setCustomOrder] = useState<CustomOrderType>(
     initialCustomOrder(),
@@ -243,17 +280,50 @@ export function CustomizeOrder({
       >
         {/* Header image */}
         <div className="relative h-[118px] shrink-0 bg-[#EDEEF1]">
-          <Image
-            width={440}
-            height={118}
-            src={productData.imageURL?.[0]?.url || "/placeholder.svg"}
-            alt={productData.name}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+          {images.length > 1 ? (
+            <Carousel setApi={setImageApi} className="h-full" opts={{ loop: true }}>
+              <CarouselContent className="ml-0 h-[118px]">
+                {images.map((image, index) => (
+                  <CarouselItem key={index} className="h-full pl-0">
+                    <Image
+                      width={440}
+                      height={118}
+                      src={image.url || "/placeholder.svg"}
+                      alt={`${productData.name} - foto ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          ) : (
+            <Image
+              width={440}
+              height={118}
+              src={images[0].url || "/placeholder.svg"}
+              alt={productData.name}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+
+          {images.length > 1 && (
+            <div className="pointer-events-none absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5">
+              {images.map((_, index) => (
+                <span
+                  key={index}
+                  className={cn(
+                    "h-1.5 rounded-full bg-white transition-all",
+                    currentImage === index ? "w-4 opacity-100" : "w-1.5 opacity-60",
+                  )}
+                />
+              ))}
+            </div>
+          )}
 
           {productTags.length > 0 && (
-            <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2.5 py-[3px] text-[10.5px] font-extrabold text-[#3D4149]">
+            <span className="absolute left-3 top-3 z-20 rounded-md bg-white/95 px-2.5 py-[3px] text-[10.5px] font-extrabold text-[#3D4149]">
               {productTags[0]}
             </span>
           )}
@@ -261,7 +331,7 @@ export function CustomizeOrder({
           <button
             type="button"
             onClick={() => handleModalClose(false)}
-            className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-[#3D4149] transition hover:bg-white"
+            className="absolute right-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-[#3D4149] transition hover:bg-white"
             aria-label="Fechar"
           >
             <X className="h-3.5 w-3.5" />

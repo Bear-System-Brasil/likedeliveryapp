@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/auth-provider";
+import { useAuthStore } from "@/stores";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -16,10 +17,17 @@ export default function ProtectedRoute({
   fallbackPath = "/unauthorized",
 }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuth();
+  // O Zustand persist hidrata a sessão do localStorage de forma assíncrona -
+  // isAuthenticated começa em `false` até isso terminar, mesmo pra quem tá
+  // logado. Sem esperar `_hasHydrated`, todo F5 numa rota protegida mandava
+  // o usuário de volta pro login e abria o modal por engano.
+  const hasHydrated = useAuthStore((s) => s._hasHydrated);
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
+    if (!hasHydrated) return;
+
     // Check authentication
     if (!isAuthenticated) {
       router.push("/?openAuth=true");
@@ -35,7 +43,7 @@ export default function ProtectedRoute({
     }
 
     setIsChecking(false);
-  }, [isAuthenticated, user, allowedRoles, router, fallbackPath]);
+  }, [hasHydrated, isAuthenticated, user, allowedRoles, router, fallbackPath]);
 
   // Show loading while checking
   if (isChecking) {

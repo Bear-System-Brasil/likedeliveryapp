@@ -72,7 +72,7 @@ interface PasswordFormData {
  */
 export const useCompanyProfileManagement = () => {
   const router = useRouter();
-  const { user, isAuthenticated, updateUser } = useAuthStore();
+  const { user, isAuthenticated, updateUser, _hasHydrated } = useAuthStore();
 
   // Company profile state
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
@@ -143,6 +143,11 @@ export const useCompanyProfileManagement = () => {
    * Carrega dados do perfil da empresa
    */
   useEffect(() => {
+    // Espera o Zustand persist hidratar a sessão do localStorage - antes
+    // disso isAuthenticated começa em `false` mesmo pra quem tá logado, e
+    // esse redirect rodava cedo demais a cada F5 em /company-profile.
+    if (!_hasHydrated) return;
+
     const fetchCompanyProfile = async () => {
       if (!isAuthenticated || !user?.id) {
         router.push("/?openAuth=true");
@@ -194,7 +199,7 @@ export const useCompanyProfileManagement = () => {
     };
 
     fetchCompanyProfile();
-  }, [isAuthenticated, user?.id, user?.companyId, router]);
+  }, [_hasHydrated, isAuthenticated, user?.id, user?.companyId, router]);
 
   /**
    * Função para buscar endereços da empresa (reutilizável)

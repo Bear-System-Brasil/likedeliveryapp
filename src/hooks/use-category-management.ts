@@ -14,7 +14,7 @@ interface CategoryFormData {
 }
 
 export const useCategoryManagement = () => {
-  const { data: categories = [], isLoading, refetch } = useCategories();
+  const { data: categories = [], isLoading } = useCategories();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
@@ -108,7 +108,6 @@ export const useCategoryManagement = () => {
       }
 
       handleCloseModal();
-      refetch();
     } catch (error) {
       console.error("Erro ao salvar categoria:", error);
     }
@@ -128,7 +127,6 @@ export const useCategoryManagement = () => {
     try {
       await deleteCategory.mutateAsync(deleteTarget.id);
       setDeleteTarget(null);
-      refetch();
     } catch (error) {
       console.error("Erro ao deletar categoria:", error);
     }
