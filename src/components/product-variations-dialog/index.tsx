@@ -91,7 +91,13 @@ export function ProductVariationsDialog({
 
   const handleSubmit = async () => {
     if (!productId) return;
-    if (!form.name.trim() || form.priceModifier === undefined) return;
+    if (
+      !form.name.trim() ||
+      form.priceModifier === undefined ||
+      form.stockQuantity === undefined
+    ) {
+      return;
+    }
     if (isDuplicateName) return;
 
     const data = {
@@ -186,7 +192,7 @@ export function ProductVariationsDialog({
               </div>
               <div className="grid gap-1">
                 <Label className="text-[11px] font-bold text-[#3D4149]">
-                  Estoque
+                  Estoque *
                 </Label>
                 <StockQuantityInput
                   value={form.stockQuantity}
@@ -235,6 +241,7 @@ export function ProductVariationsDialog({
                     isSaving ||
                     !form.name.trim() ||
                     form.priceModifier === undefined ||
+                    form.stockQuantity === undefined ||
                     isDuplicateName
                   }
                   className="h-8 cursor-pointer rounded-[8px] bg-[#FF6B00] px-2.5 text-[11.5px] font-extrabold text-white hover:bg-[#E05A00]"

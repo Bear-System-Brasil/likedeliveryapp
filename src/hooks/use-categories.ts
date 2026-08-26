@@ -96,6 +96,8 @@ export const useCategory = (categoryId: string | null) => {
  */
 export const useCreateCategory = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const companyIdToMatch = user?.companyId || user?.id;
 
   return useMutation({
     mutationFn: async (categoryData: any) => {
@@ -105,8 +107,21 @@ export const useCreateCategory = () => {
       }
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       invalidateCategoryQueries(queryClient);
+
+      // Insere direto no cache em vez de confiar só na invalidação - um GET
+      // disparado logo em seguida do POST às vezes ainda vem sem a categoria
+      // recém-criada (mesmo sintoma já visto em produtos: só aparecia depois
+      // de F5).
+      if (data) {
+        queryClient.setQueryData(
+          ["categories", "my", companyIdToMatch],
+          (old: any[] = []) =>
+            old.some((c) => c.id === data.id) ? old : [...old, data],
+        );
+      }
+
       toast.success("Categoria criada com sucesso!");
     },
     onError: (error: Error) => {
@@ -120,6 +135,8 @@ export const useCreateCategory = () => {
  */
 export const useUpdateCategory = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const companyIdToMatch = user?.companyId || user?.id;
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
@@ -129,8 +146,17 @@ export const useUpdateCategory = () => {
       }
       return response.data;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
       invalidateCategoryQueries(queryClient, { categoryId: variables.id });
+
+      queryClient.setQueryData(
+        ["categories", "my", companyIdToMatch],
+        (old: any[] = []) =>
+          old.map((c) =>
+            c.id === variables.id ? { ...c, ...(data || variables.data) } : c,
+          ),
+      );
+
       toast.success("Categoria atualizada com sucesso!");
     },
     onError: (error: Error) => {
@@ -144,6 +170,8 @@ export const useUpdateCategory = () => {
  */
 export const useDeleteCategory = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const companyIdToMatch = user?.companyId || user?.id;
 
   return useMutation({
     mutationFn: async (categoryId: string) => {
@@ -155,6 +183,12 @@ export const useDeleteCategory = () => {
     },
     onSuccess: (_data, categoryId) => {
       invalidateCategoryQueries(queryClient, { categoryId });
+
+      queryClient.setQueryData(
+        ["categories", "my", companyIdToMatch],
+        (old: any[] = []) => old.filter((c) => c.id !== categoryId),
+      );
+
       toast.success("Categoria deletada com sucesso!");
     },
     onError: (error: Error) => {

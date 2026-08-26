@@ -46,13 +46,11 @@ export function ProfileWrapper() {
     isLoadingCep,
   } = useProfileManagement();
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      router.push("/?openAuth=true");
-    }
-  }, [isAuthenticated, user, router]);
-
+  // Redirect if not authenticated - só depois que o Zustand persist hidratar
+  // (lê a sessão do localStorage de forma assíncrona). Antes disso
+  // isAuthenticated começa em `false` mesmo pra quem tá logado, então checar
+  // sem esperar `hasHydrated` mandava usuário logado de volta pro login a
+  // cada F5 em /profile.
   useEffect(() => {
     if (!hasHydrated) return;
 
@@ -60,7 +58,8 @@ export function ProfileWrapper() {
       router.push("/?openAuth=true");
     }
   }, [hasHydrated, isAuthenticated, user, router]);
-  if (!isMounted) {
+
+  if (!isMounted || !hasHydrated) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">

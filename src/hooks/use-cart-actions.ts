@@ -588,7 +588,11 @@ export const useCartActions = () => {
       const timeoutId = setTimeout(() => abortController.abort(), 10000);
 
       // Backend só entende productId, não a linha específica (produto +
-      // tamanho/complemento) - ver nota em buildCartItemKey.
+      // tamanho/complemento) - ver nota em buildCartItemKey. No incremento
+      // dá pra reduzir a ambiguidade mandando addOns/variations (o endpoint
+      // já aceita, é o mesmo usado em handleAddToCart); no decremento não -
+      // DELETE /order-item/cart/:orderId/products/:productId/:quantity não
+      // tem como receber extras.
       const apiCall =
         diff > 0
           ? apiService.orderItems.addProductToCart(
@@ -596,6 +600,7 @@ export const useCartActions = () => {
               item.productId,
               user.id,
               diff,
+              { addOns: item.addOns, variations: item.variations },
             )
           : apiService.orderItems.removeProductFromCart(
               user.id,

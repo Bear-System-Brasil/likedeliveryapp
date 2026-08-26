@@ -230,7 +230,7 @@ export const useMenuManagement = () => {
   /**
    * Salva o produto (criar ou atualizar) com upload de imagem
    */
-  const handleSaveProduct = async (selectedImage?: File) => {
+  const handleSaveProduct = async (selectedImages?: File[]) => {
     if (!validateForm()) return;
 
     setIsSaving(true);
@@ -325,25 +325,50 @@ export const useMenuManagement = () => {
 
         const result = await createProduct.mutateAsync(createData);
         productId = result?.id || null;
+
+        // Insere o produto novo direto no cache em vez de confiar só no
+        // refetch logo abaixo - um GET disparado bem em seguida do POST
+        // às vezes ainda devolve a lista sem o item recém-criado (o prato
+        // só aparecia depois de um F5). A imagem/categoria, se ainda
+        // pendentes, chegam no refetch de qualquer forma.
+        if (result) {
+          queryClient.setQueryData(
+            ["products", "company", user?.companyId || user?.id || null],
+            (old: Product[] = []) =>
+              old.some((p) => p.id === result.id) ? old : [...old, result],
+          );
+        }
       }
 
-      // Fazer upload da imagem se fornecida
-      if (selectedImage && productId) {
-        try {
-          const uploadResponse = await apiService.uploadProductImage(
-            productId,
-            selectedImage,
-          );
-          if (!uploadResponse.success) {
-            toast.error(
-              "Erro ao fazer upload da imagem: " + uploadResponse.message,
+      // Fazer upload das imagens, se fornecidas - uma de cada vez porque
+      // POST /product/image/:id adiciona uma imagem por chamada (não é
+      // upload em lote), igual o próprio nome do endpoint sugere.
+      if (selectedImages?.length && productId) {
+        let uploadedCount = 0;
+        for (const image of selectedImages) {
+          try {
+            const uploadResponse = await apiService.uploadProductImage(
+              productId,
+              image,
             );
-          } else {
-            toast.success("Imagem enviada com sucesso!");
+            if (uploadResponse.success) {
+              uploadedCount += 1;
+            } else {
+              toast.error(
+                `Erro ao enviar "${image.name}": ${uploadResponse.message}`,
+              );
+            }
+          } catch (imageError) {
+            console.error("Erro ao fazer upload da imagem:", imageError);
+            toast.error(`Erro ao enviar "${image.name}"`);
           }
-        } catch (imageError) {
-          console.error("Erro ao fazer upload da imagem:", imageError);
-          toast.error("Erro ao fazer upload da imagem");
+        }
+        if (uploadedCount > 0) {
+          toast.success(
+            uploadedCount === 1
+              ? "Imagem enviada com sucesso!"
+              : `${uploadedCount} imagens enviadas com sucesso!`,
+          );
         }
       }
 
@@ -409,15 +434,71 @@ export const useMenuManagement = () => {
 
       // 3. Deletar o produto
       await deleteProduct.mutateAsync(deleteTarget.id);
+
+      // Remove do cache na hora - mesmo motivo do create: um GET disparado
+      // logo após o DELETE às vezes ainda devolve o item removido (só
+      // sumia da tela quando outro prato era removido em seguida).
+      queryClient.setQueryData(
+        ["products", "company", user?.companyId || user?.id || null],
+        (old: Product[] = []) =>
+          old.filter((p) => p.id !== deleteTarget.id),
+      );
+
       toast.success("Prato removido com sucesso!");
       setDeleteTarget(null);
-      refetch();
     } catch (error: any) {
       console.error("Erro ao deletar produto:", error);
       const errorMessage = error?.errorMessage || error?.message || "";
       toast.error(errorMessage || "Não foi possível deletar este prato.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  /**
+   * Remove uma foto específica de um prato (sem mexer nas outras) -
+   * DELETE /product/image/:productId/:imageId, endpoint que já existia mas
+   * não tinha nenhuma UI usando.
+   */
+  const handleDeleteProductImage = async (
+    productId: string,
+    imageId: string,
+  ) => {
+    try {
+      const response = await apiService.deleteProductImage(
+        productId,
+        imageId,
+      );
+      if (!response.success) {
+        toast.error(response.message || "Erro ao remover imagem");
+        return;
+      }
+
+      // Reflete na hora tanto no modal aberto quanto na grade de pratos,
+      // sem esperar um refetch pra sumir a miniatura removida.
+      setEditingProduct((prev) =>
+        prev && prev.id === productId
+          ? {
+              ...prev,
+              imageURL: prev.imageURL?.filter((img) => img.id !== imageId),
+            }
+          : prev,
+      );
+
+      queryClient.setQueryData(
+        ["products", "company", user?.companyId || user?.id || null],
+        (old: Product[] = []) =>
+          old.map((p) =>
+            p.id === productId
+              ? { ...p, imageURL: p.imageURL?.filter((img) => img.id !== imageId) }
+              : p,
+          ),
+      );
+
+      toast.success("Imagem removida");
+    } catch (error) {
+      console.error("Erro ao remover imagem:", error);
+      toast.error("Erro ao remover imagem");
     }
   };
 
@@ -490,6 +571,7 @@ export const useMenuManagement = () => {
     handleConfirmDelete,
     handleCancelDelete,
     handleToggleAvailability,
+    handleDeleteProductImage,
     updateFormField,
     isCreatingCategory,
     setIsCreatingCategory,

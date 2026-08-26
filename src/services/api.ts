@@ -430,7 +430,10 @@ export interface ProductVariation {
 export interface SaveProductVariationRequest {
   name: string;
   priceModifier: number;
-  stockQuantity?: number;
+  // Sempre obrigatório e sempre controlado pro backend (diferente de
+  // AddOns, onde é opcional e null = ilimitado) - ver
+  // variations-and-addons.md.
+  stockQuantity: number;
   isAvailable?: boolean;
 }
 

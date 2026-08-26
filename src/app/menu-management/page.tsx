@@ -38,6 +38,7 @@ import {
   Search,
   TriangleAlert,
   UtensilsCrossed,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -58,8 +59,8 @@ const textareaClassName =
   "min-h-[64px] rounded-[10px] border-[#E9EAEE] bg-white text-xs sm:text-sm shadow-none resize-none focus-visible:ring-1 focus-visible:ring-[#FF6B00]";
 
 function MenuManagementContent() {
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [addOnsTarget, setAddOnsTarget] = useState<AdminDish | null>(null);
   const [variationsTarget, setVariationsTarget] = useState<AdminDish | null>(
     null,
@@ -98,6 +99,7 @@ function MenuManagementContent() {
     handleConfirmDelete,
     handleCancelDelete,
     handleToggleAvailability,
+    handleDeleteProductImage,
     updateFormField,
     isSaving,
     isDeleting,
@@ -335,8 +337,13 @@ function MenuManagementContent() {
   );
 
   const resetImageState = useCallback(() => {
-    setImagePreview(null);
-    setSelectedImage(null);
+    setImagePreviews((prev) => {
+      prev.forEach((url) => {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      });
+      return [];
+    });
+    setSelectedImages([]);
   }, []);
 
   const handleEditDish = (dish: AdminDish) => {
@@ -368,11 +375,12 @@ function MenuManagementContent() {
 
   useEffect(() => {
     return () => {
-      if (imagePreview?.startsWith("blob:")) {
-        URL.revokeObjectURL(imagePreview);
-      }
+      imagePreviews.forEach((url) => {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      });
     };
-  }, [imagePreview]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imagePreviews]);
 
   const handleClearForm = () => {
     if (editingProduct) {
@@ -565,49 +573,98 @@ function MenuManagementContent() {
                   htmlFor="productImage"
                   className="text-xs font-bold text-[#3D4149] sm:text-sm"
                 >
-                  Imagem do Prato
+                  Fotos do Prato
                 </Label>
                 <Input
                   id="productImage"
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
+                    const files = Array.from(e.target.files || []);
+                    if (!files.length) return;
+
+                    const validFiles: File[] = [];
+                    for (const file of files) {
                       if (file.size > 5 * 1024 * 1024) {
-                        toast.error("Imagem muito grande. Máximo 5MB");
-                        e.target.value = "";
-                        return;
+                        toast.error(`"${file.name}" é muito grande. Máximo 5MB`);
+                        continue;
                       }
-                      setSelectedImage(file);
-                      setImagePreview(URL.createObjectURL(file));
+                      validFiles.push(file);
                     }
+
+                    if (validFiles.length) {
+                      setSelectedImages((prev) => [...prev, ...validFiles]);
+                      setImagePreviews((prev) => [
+                        ...prev,
+                        ...validFiles.map((file) => URL.createObjectURL(file)),
+                      ]);
+                    }
+                    e.target.value = "";
                   }}
                   className={fieldClassName}
                 />
+                <p className="text-[10.5px] font-medium text-[#8A8F99]">
+                  Pode selecionar mais de uma foto de uma vez. Máx. 5MB cada.
+                </p>
 
-                {imagePreview && (
-                  <div className="mt-2">
-                    <img
-                      src={imagePreview}
-                      alt="Preview da imagem"
-                      className="h-24 w-24 rounded-[10px] border border-[#E9EAEE] object-cover"
-                    />
-                  </div>
-                )}
-
-                {selectedImage && (
-                  <p className="text-[11px] font-bold text-[#1B7F4C]">
-                    {selectedImage.name}
-                  </p>
-                )}
                 {editingProduct &&
                   editingProduct.imageURL &&
                   editingProduct.imageURL.length > 0 && (
-                    <p className="text-xs font-medium text-[#8A8F99]">
-                      Imagem atual: {editingProduct.imageURL.length} foto(s)
-                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {editingProduct.imageURL.map((img) => (
+                        <div key={img.id} className="relative h-16 w-16 shrink-0">
+                          <img
+                            src={img.url}
+                            alt="Foto do prato"
+                            className="h-full w-full rounded-[10px] border border-[#E9EAEE] object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDeleteProductImage(editingProduct.id, img.id)
+                            }
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#D64545] text-white shadow-sm transition hover:bg-[#B83232]"
+                            aria-label="Remover foto"
+                            title="Remover foto"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
+
+                {imagePreviews.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={preview} className="relative h-16 w-16 shrink-0">
+                        <img
+                          src={preview}
+                          alt={`Nova foto ${index + 1}`}
+                          className="h-full w-full rounded-[10px] border border-[#1B7F4C] object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            URL.revokeObjectURL(preview);
+                            setImagePreviews((prev) =>
+                              prev.filter((_, i) => i !== index),
+                            );
+                            setSelectedImages((prev) =>
+                              prev.filter((_, i) => i !== index),
+                            );
+                          }}
+                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#D64545] text-white shadow-sm transition hover:bg-[#B83232]"
+                          aria-label="Remover foto selecionada"
+                          title="Remover foto selecionada"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-1.5">
@@ -797,7 +854,7 @@ function MenuManagementContent() {
                 Cancelar
               </Button>
               <Button
-                onClick={() => handleSaveProduct(selectedImage || undefined)}
+                onClick={() => handleSaveProduct(selectedImages)}
                 disabled={isSaving}
                 className="h-9 w-full cursor-pointer rounded-[9px] bg-[#FF6B00] text-sm font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,0.25)] transition-colors hover:bg-[#E05A00] sm:w-auto"
               >
