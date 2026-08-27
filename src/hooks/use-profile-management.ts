@@ -2,9 +2,11 @@ import { apiService } from "@/services/api";
 import { useAuthStore } from "@/stores";
 import { onlyNumbers } from "@/utils";
 import { isCompanyRole } from "@/utils/role-helpers";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useUserAddresses } from "./use-addresses";
 import { useProfile } from "./use-api";
 import {
   AddressFormData,
@@ -25,17 +27,35 @@ interface Address extends AddressFormData {
  */
 export const useProfileManagement = () => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, isAuthenticated, updateUser, _hasHydrated } = useAuthStore();
   const { updateProfile } = useProfile();
 
-  // Profile state
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Address state
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
+  // Address state - useUserAddresses já é cacheado (staleTime 5min) e
+  // compartilhado com checkout/company-profile, então editar um endereço
+  // aqui reflete lá sem precisar de F5, e vice-versa.
+  const { data: rawAddresses = [], isLoading: isLoadingAddresses } =
+    useUserAddresses();
+  const addresses = useMemo<Address[]>(
+    () =>
+      rawAddresses.map((addr) => ({
+        id: addr.id,
+        type: "Endereço",
+        street: addr.street,
+        number: addr.number,
+        complement: addr.complement || "",
+        neighborhood: addr.neighborhood,
+        longitude: addr.longitude,
+        latitude: addr.latitude,
+        city: addr.city,
+        state: addr.state,
+        zipCode: addr.zipCode,
+        isDefault: (addr as any).isDefault ?? false,
+      })),
+    [rawAddresses],
+  );
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
@@ -68,108 +88,58 @@ export const useProfileManagement = () => {
   }, []);
 
   /**
-   * Fetch user profile data
+   * Redireciona quem não devia estar nessa tela. Espera o Zustand persist
+   * hidratar - antes disso isAuthenticated começa em `false` mesmo pra quem
+   * tá logado, e esse redirect rodava cedo demais a cada F5 (correndo em
+   * paralelo com o efeito equivalente do ProfileWrapper).
    */
   useEffect(() => {
-    // Espera o Zustand persist hidratar - antes disso isAuthenticated
-    // começa em `false` mesmo pra quem tá logado, e esse redirect rodava
-    // cedo demais a cada F5 (correndo em paralelo com o efeito equivalente
-    // do ProfileWrapper).
     if (!isMounted || !_hasHydrated) return;
 
-    const fetchUserProfile = async () => {
-      if (!isAuthenticated) {
-        router.push("/?auth=required");
-        return;
-      }
-
-      if (isCompanyRole(user?.role)) {
-        router.push("/company-profile");
-        return;
-      }
-
-      setIsLoadingProfile(true);
-      setProfileError(null);
-
-      try {
-        const response = await apiService.getMe();
-        if (response.success && response.data) {
-          updateUser(response.data);
-        } else {
-          setProfileError(response.message || "Erro ao carregar perfil");
-        }
-      } catch (error) {
-        setProfileError("Erro de conexão ao carregar perfil");
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-
-    fetchUserProfile();
-  }, [
-    isAuthenticated,
-    router,
-    updateUser,
-    user?.id,
-    user?.role,
-    isMounted,
-    _hasHydrated,
-  ]);
-
-  /**
-   * Função para buscar endereços do backend
-   */
-  const fetchAddresses = useCallback(async () => {
-    if (!isAuthenticated || !user) return;
-
-    setIsLoadingAddresses(true);
-    try {
-      const response = await apiService.address.getUserAddresses();
-      if (response.success && response.data) {
-        const addressesData = Array.isArray(response.data) ? response.data : [];
-
-        const userAddresses = addressesData.filter((addr) => {
-          // Soft delete: isActive: false não some do banco, então precisa
-          // ser filtrado aqui pra não reaparecer endereço "removido".
-          if (addr.isActive === false) return false;
-          if (addr.customerId === user.id) return true;
-          if (!addr.customerId && !addr.companyId) return true;
-          return false;
-        });
-
-        setAddresses(
-          userAddresses.map((addr) => ({
-            id: addr.id,
-            type: "Endereço",
-            street: addr.street,
-            number: addr.number,
-            complement: addr.complement || "",
-            neighborhood: addr.neighborhood,
-            longitude: addr.longitude,
-            latitude: addr.latitude,
-            city: addr.city,
-            state: addr.state,
-            zipCode: addr.zipCode,
-            isDefault: (addr as any).isDefault ?? false,
-          })),
-        );
-      } else if (!response.success) {
-        setAddresses([]);
-      }
-    } catch (error) {
-      setAddresses([]);
-    } finally {
-      setIsLoadingAddresses(false);
+    if (!isAuthenticated) {
+      router.push("/?auth=required");
+      return;
     }
-  }, [isAuthenticated, user]);
+
+    if (isCompanyRole(user?.role)) {
+      router.push("/company-profile");
+    }
+  }, [isMounted, _hasHydrated, isAuthenticated, user?.role, router]);
 
   /**
-   * Fetch user addresses on mount
+   * Dados da conta autenticada (GET /user/me), cacheados - antes era um
+   * useEffect cru que refazia essa chamada toda vez que /profile montava,
+   * mesmo revisitando a tela poucos segundos depois.
    */
+  const {
+    data: profileData,
+    isLoading: isLoadingProfile,
+    error: profileQueryError,
+  } = useQuery({
+    queryKey: ["profile", "me", user?.id],
+    queryFn: async () => {
+      const response = await apiService.getMe();
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Erro ao carregar perfil");
+      }
+      return response.data;
+    },
+    enabled:
+      isMounted &&
+      _hasHydrated &&
+      isAuthenticated &&
+      !isCompanyRole(user?.role),
+    staleTime: 5 * 60 * 1000, // 5 min
+  });
+
+  const profileError = profileQueryError
+    ? (profileQueryError as Error).message
+    : null;
+
   useEffect(() => {
-    if (!isMounted) return;
-    fetchAddresses();
-  }, [isMounted, fetchAddresses]);
+    if (profileData) updateUser(profileData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileData]);
 
   /**
    * Auto-fetch CEP when complete (8 digits)
@@ -361,7 +331,9 @@ export const useProfileManagement = () => {
       }
 
       if (response.success) {
-        await fetchAddresses();
+        queryClient.invalidateQueries({
+          queryKey: ["addresses", "user", user?.id],
+        });
         addressForm.reset();
         setEditingAddressId(null);
         addingAddressState.close();
@@ -410,7 +382,9 @@ export const useProfileManagement = () => {
     try {
       const response = await apiService.address.deleteUserAddress(addressId);
       if (response.success) {
-        setAddresses((prev) => prev.filter((addr) => addr.id !== addressId));
+        queryClient.invalidateQueries({
+          queryKey: ["addresses", "user", user?.id],
+        });
         toast.success("Endereço excluído com sucesso!");
       } else {
         toast.error(response.message || "Erro ao excluir endereço");

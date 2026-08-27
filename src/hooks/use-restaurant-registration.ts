@@ -148,6 +148,9 @@ export const useRestaurantRegistration = () => {
       const cleanCPF = onlyNumbers(registerData.cpf)
 
       // Step 1: Register user account via POST /auth/register
+      // role precisa ir explícito - sem isso o backend assume 'client' por
+      // padrão (ver CreateUserRequest.role em api.ts), e toda conta criada
+      // por esse formulário nascia como cliente comum em vez de dono.
       const registerResponse = await apiService.register({
         name: registerData.tradeName,
         email: registerData.email,
@@ -155,6 +158,7 @@ export const useRestaurantRegistration = () => {
         phone: cleanPhone,
         password: registerData.password,
         birthDate: registerData.birthDate,
+        role: "owner",
       })
 
       if (!registerResponse.success || !registerResponse.data) {
