@@ -2,20 +2,44 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useProfileManagement } from "@/hooks";
-import { User } from "lucide-react";
+import { ArrowLeft, User } from "lucide-react";
+import { useCartActions, useProfileManagement } from "@/hooks";
 import { GradientButton } from "@/components/ui/custom";
+import { AnimatedBackground } from "@/components/ui/animated-background";
+import { MainHeader } from "@/components/main-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataCard } from "@/components/data-card";
-import { PageHeader } from "@/components/page-header";
 import { Addresses } from "@/components/profile/addresses";
 import { OrderHistory } from "@/components/profile/order-history";
 import { PersonalInformation } from "@/components/profile/personal-information";
 import { Security } from "@/components/profile/security";
 import { UserPhotoUpload } from "@/components/user-photo-upload";
 
+function ProfileShell({
+  cartItems,
+  children,
+}: {
+  cartItems: number;
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+
+  return (
+    <AnimatedBackground showBlobs={false} className="min-h-screen bg-gray-50 py-0">
+      <MainHeader
+        cartItems={cartItems}
+        onCartClick={() => router.push("/cart")}
+        showSearch={false}
+        showNav={true}
+      />
+      {children}
+    </AnimatedBackground>
+  );
+}
+
 export function ProfileWrapper() {
   const router = useRouter();
+  const { totalItems } = useCartActions();
   const {
     // Auth & Loading
     user,
@@ -94,30 +118,43 @@ export function ProfileWrapper() {
 
   if (profileError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md p-6">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Erro ao Carregar Perfil
-          </h2>
-          <p className="text-gray-600 mb-4">{profileError}</p>
-          <GradientButton onClick={() => router.refresh()}>
-            Tentar Novamente
-          </GradientButton>
+      <ProfileShell cartItems={totalItems}>
+        <div className="flex min-h-[70vh] items-center justify-center pt-24">
+          <div className="text-center max-w-md p-6">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Erro ao Carregar Perfil
+            </h2>
+            <p className="text-gray-600 mb-4">{profileError}</p>
+            <GradientButton onClick={() => router.refresh()}>
+              Tentar Novamente
+            </GradientButton>
+          </div>
         </div>
-      </div>
+      </ProfileShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PageHeader
-        title="Meu Perfil"
-        description="Gerencie suas informações pessoais"
-        showBackButton
-      />
+    <ProfileShell cartItems={totalItems}>
+      <div className="max-w-4xl mx-auto px-4 pb-8 pt-24 space-y-8">
+        {/* Título + voltar (mesmo padrão de /orders) */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition hover:border-gray-300"
+            aria-label="Voltar"
+            title="Voltar"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Meu Perfil</h1>
+            <p className="text-gray-600">Gerencie suas informações pessoais</p>
+          </div>
+        </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         {/* Profile Picture */}
         <DataCard title="Foto de Perfil" icon={<User className="h-5 w-5" />}>
           <UserPhotoUpload
@@ -166,6 +203,6 @@ export function ProfileWrapper() {
         {/* Security */}
         <Security />
       </div>
-    </div>
+    </ProfileShell>
   );
 }
