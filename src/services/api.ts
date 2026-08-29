@@ -1195,8 +1195,47 @@ export const apiService = {
   companies: {
     // O cookie de sessão já foi setado pelo /api/auth/register - o proxy
     // injeta o Bearer sozinho, não precisa mais de token explícito aqui.
-    create: (companyData: CreateCompanyRequest) =>
-      apiRequest<Company>("POST", "/company", companyData, true),
+    // POST /company exige multipart/form-data (ver company.md) - mandar
+    // JSON aqui fazia o cadastro de empresa falhar silenciosamente logo
+    // após criar a conta, deixando o usuário preso como 'client' pra
+    // sempre (a promoção pra 'owner' só acontece dentro desse POST).
+    create: async (
+      companyData: CreateCompanyRequest,
+    ): Promise<ApiResponse<Company>> => {
+      try {
+        const formData = new FormData();
+
+        Object.entries(companyData).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, String(value));
+          }
+        });
+
+        const config: RequestInit = {
+          method: "POST",
+          headers: { "X-Auth-Required": "1" },
+          body: formData, // Não definir Content-Type - deixa o browser definir com boundary
+        };
+
+        const response = await fetch(`${API_BASE_URL}/company`, config);
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          return {
+            success: false,
+            message: result?.message || `Erro ${response.status}`,
+            status: response.status,
+          };
+        }
+
+        return { success: true, data: result, status: response.status };
+      } catch (error: any) {
+        return {
+          success: false,
+          message: error.message || "Erro ao cadastrar empresa",
+        };
+      }
+    },
 
     getAll: (userLocation?: Coords) =>
       apiRequest<Restaurant[]>(

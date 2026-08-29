@@ -87,6 +87,14 @@ export function Footer() {
                   Minha conta
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/restaurant-landing-page"
+                  className="text-sm text-gray-400 transition-colors hover:text-orange-400"
+                >
+                  Registar meu restaurante
+                </Link>
+              </li>
             </ul>
           </div>
 
