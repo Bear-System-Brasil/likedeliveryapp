@@ -52,18 +52,22 @@ export function toKitchenErrorMessage(error: unknown): string {
 interface FetchParams {
   page: number;
   limit: number;
-  /** Intervalo do dia selecionado (ISO 8601, inclusivo) - ver kitchen-orders.md. */
-  startDate: string;
-  endDate: string;
+  /**
+   * Intervalo do dia/período selecionado (ISO 8601, inclusivo) - ver
+   * kitchen-orders.md. Omitido para Novos/Em Preparo/Prontos, que sempre
+   * mostram todos os pedidos em aberto, sem corte de data - um pedido de
+   * ontem ainda em preparo precisa continuar visível hoje. Só Concluídos e
+   * Cancelados enviam isso, pra não acumular o histórico inteiro da empresa.
+   */
+  startDate?: string;
+  endDate?: string;
 }
 
 /**
- * `GET /order/company/status/:status?page&limit&startDate&endDate`
+ * `GET /order/company/status/:status?page&limit[&startDate&endDate]`
  *
  * A resposta chega no envelope `{ data, meta }` dentro de `ApiResponse.data`
  * (ver pagination.md) — desembrulhamos aqui para o hook receber a página pronta.
- * `startDate`/`endDate` evitam que Concluídos e Cancelados acumulem o
- * histórico inteiro da empresa.
  */
 export async function fetchKitchenOrdersByStatus(
   status: KitchenStatus,

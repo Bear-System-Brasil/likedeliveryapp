@@ -5,9 +5,11 @@ const SESSION_COOKIE = "like_session";
 
 /** Config central: rota nova entra aqui e já fica coberta. */
 const PROTECTED: { prefix: string; roles?: string[] }[] = [
-  // Área do cliente: aberta pra qualquer role autenticada — o cozinheiro
-  // (e demais papéis da empresa) também compra como cliente final.
-  { prefix: "/orders" },
+  // Pedidos do cliente logado: GET /order/customer/me é exclusivo de role
+  // client no backend, então abrir esta rota pra outras roles não resolveria
+  // nada — elas continuam usando o carrinho/checkout normalmente, só o
+  // histórico de pedidos é que é uma tela de cliente de verdade.
+  { prefix: "/orders", roles: ["client"] },
   { prefix: "/profile" },
   { prefix: "/menu-management", roles: ["owner", "admin", "manager"] },
   { prefix: "/category-management", roles: ["owner", "admin", "manager"] },

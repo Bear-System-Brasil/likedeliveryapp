@@ -32,6 +32,20 @@ export type KitchenStatus = (typeof KITCHEN_STATUSES)[number];
 /** Fonte da verdade para entrega vs. retirada — não deduzir pela relação `delivery`. */
 export type KitchenFulfillmentType = "DELIVERY" | "PICKUP";
 
+/**
+ * Período do filtro de data — só se aplica a Concluídos e Cancelados
+ * (`PAGINATED_STATUSES`, mais abaixo). Novos/Em Preparo/Prontos nunca usam
+ * isso: eles sempre mostram todo pedido em aberto, sem corte de data.
+ */
+export type KitchenPeriod = "today" | "7d" | "all" | "custom";
+
+export const KITCHEN_PERIOD_LABELS: Record<KitchenPeriod, string> = {
+  today: "Hoje",
+  "7d": "7 dias",
+  all: "Tudo",
+  custom: "Data específica",
+};
+
 /** Status da entrega que a cozinha precisa ler — só informativo, nunca acionável. */
 export type KitchenDeliveryStatus = "PENDING" | "ACCEPTED" | "PICKED_UP";
 
@@ -246,7 +260,12 @@ export const KITCHEN_COLUMN_BY_STATUS = KITCHEN_COLUMNS.reduce(
   {} as Record<KitchenStatus, KitchenColumnConfig>,
 );
 
-/** Concluídos e Cancelados são estados finais: paginam com "ver mais" em vez de drenar tudo. */
+/**
+ * Concluídos e Cancelados são estados finais: paginam com "ver mais" em vez
+ * de drenar tudo, e são os únicos que levam o filtro de período — sem isso
+ * eles acumulariam o histórico inteiro da empresa. Novos/Em Preparo/Prontos
+ * nunca aparecem aqui.
+ */
 export const PAGINATED_STATUSES: KitchenStatus[] = ["COMPLETED", "CANCELED"];
 
 export const KITCHEN_PAGE_LIMIT = 20;

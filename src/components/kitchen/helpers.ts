@@ -4,6 +4,7 @@ import {
   type KitchenDeliveryStatus,
   type KitchenOrder,
   type KitchenOrderItem,
+  type KitchenPeriod,
 } from "./types";
 
 /**
@@ -128,6 +129,31 @@ export function getDayRange(date: Date = new Date()): { startDate: string; endDa
 /** Valor pro `<input type="date">`, no fuso local (não `toISOString`, que vira UTC). */
 export function toDateInputValue(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/**
+ * `startDate`/`endDate` do período selecionado — só usado por Concluídos e
+ * Cancelados. `"all"` some com o filtro por completo (o backend recebe a
+ * chamada sem esses params).
+ */
+export function getPeriodRange(
+  period: KitchenPeriod,
+  customDate: Date,
+): { startDate?: string; endDate?: string } {
+  if (period === "all") return {};
+
+  if (period === "today") return getDayRange(new Date());
+
+  if (period === "7d") {
+    const start = new Date();
+    start.setDate(start.getDate() - 6);
+    return {
+      startDate: getDayRange(start).startDate,
+      endDate: getDayRange(new Date()).endDate,
+    };
+  }
+
+  return getDayRange(customDate);
 }
 
 export function isSameLocalDay(a: Date, b: Date): boolean {

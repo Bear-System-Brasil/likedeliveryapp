@@ -21,9 +21,10 @@ import {
   type KitchenColumnState,
   type KitchenOrder,
   type KitchenOrdersPage,
+  type KitchenPeriod,
   type KitchenStatus,
 } from "@/components/kitchen/types";
-import { getDayRange, isSameLocalDay } from "@/components/kitchen/helpers";
+import { getPeriodRange, isSameLocalDay } from "@/components/kitchen/helpers";
 import { useSound } from "@/hooks/use-sound";
 import {
   advanceKitchenOrderStatus,
@@ -43,6 +44,11 @@ import { io, type Socket } from "socket.io-client";
 import { toast } from "sonner";
 
 type PagedCache = InfiniteData<KitchenOrdersPage, number>;
+
+interface PeriodRange {
+  startDate?: string;
+  endDate?: string;
+}
 
 const KITCHEN_SOCKET_URL = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL}${KITCHEN_SOCKET_NAMESPACE}`
@@ -65,24 +71,33 @@ function flatten(cache?: PagedCache): KitchenOrder[] {
   return cache?.pages.flatMap((page) => page.data) ?? [];
 }
 
-interface DayRange {
-  startDate: string;
-  endDate: string;
+/**
+ * Única fonte da chave de cache por coluna — usada tanto pela query quanto
+ * pelas operações de cache (otimista e eventos de socket), pra elas nunca
+ * divergirem. Só Concluídos/Cancelados carregam o período na chave; Novos/Em
+ * Preparo/Prontos têm uma chave fixa, porque nunca levam filtro de data.
+ */
+function kitchenQueryKey(status: KitchenStatus, range: PeriodRange) {
+  if (!PAGINATED_STATUSES.includes(status)) {
+    return ["kitchen-orders", status] as const;
+  }
+  return ["kitchen-orders", status, range.startDate ?? "all", range.endDate ?? "all"] as const;
 }
 
 /**
- * Uma coluna = uma query paginada em `/order/company/status/:status`, sempre
- * filtrada pelo intervalo do dia selecionado. `pollingEnabled` só é `true`
- * quando o socket está fora do ar — enquanto conectado, o cache vive dos
- * eventos `orderCreated`/`orderStatusUpdated`.
+ * Uma coluna = uma query paginada em `/order/company/status/:status`.
+ * `pollingEnabled` só é `true` quando o socket está fora do ar — enquanto
+ * conectado, o cache vive dos eventos `orderCreated`/`orderStatusUpdated`.
  */
 function useKitchenColumnQuery(
   status: KitchenStatus,
   staggerIndex: number,
   enabled: boolean,
-  dayRange: DayRange,
+  range: PeriodRange,
   pollingEnabled: boolean,
 ) {
+  const isDateFiltered = PAGINATED_STATUSES.includes(status);
+
   return useInfiniteQuery<
     KitchenOrdersPage,
     Error,
@@ -90,13 +105,13 @@ function useKitchenColumnQuery(
     readonly unknown[],
     number
   >({
-    queryKey: ["kitchen-orders", status, dayRange.startDate, dayRange.endDate],
+    queryKey: kitchenQueryKey(status, range),
     queryFn: ({ pageParam }) =>
       fetchKitchenOrdersByStatus(status, {
         page: pageParam,
         limit: KITCHEN_PAGE_LIMIT,
-        startDate: dayRange.startDate,
-        endDate: dayRange.endDate,
+        startDate: isDateFiltered ? range.startDate : undefined,
+        endDate: isDateFiltered ? range.endDate : undefined,
       }),
     initialPageParam: 1,
     getNextPageParam: (last) =>
@@ -151,20 +166,25 @@ export function useKitchenOrders() {
   const [activeStatus, setActiveStatus] = useState<KitchenStatus>("ORDERED");
   const [highlighted, setHighlighted] = useState<string[]>([]);
   const [showCanceled, setShowCanceled] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  // Período do filtro de data — só afeta Concluídos/Cancelados (ver kitchenQueryKey).
+  const [period, setPeriod] = useState<KitchenPeriod>("today");
+  const [customDate, setCustomDate] = useState(() => new Date());
   const [isLive, setIsLive] = useState(false);
   const seenIdsRef = useRef<Set<string> | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
-  const isToday = isSameLocalDay(selectedDate, new Date());
-  const dayRange = getDayRange(selectedDate);
+  const range = getPeriodRange(period, customDate);
+  // Um evento chegando "agora" só pertence à janela de Concluídos/Cancelados
+  // que está sendo exibida quando essa janela inclui o presente — senão um
+  // pedido concluído neste instante ia parar, errado, dentro de uma data
+  // específica no passado.
+  const coversNow = period !== "custom" || isSameLocalDay(customDate, new Date());
 
   useElapsedTicker();
 
   const queryKeyFor = useCallback(
-    (status: KitchenStatus) =>
-      ["kitchen-orders", status, dayRange.startDate, dayRange.endDate] as const,
-    [dayRange.startDate, dayRange.endDate],
+    (status: KitchenStatus) => kitchenQueryKey(status, range),
+    [range.startDate, range.endDate],
   );
 
   // ─── Uma query por coluna ─────────────────────────────────────────────────
@@ -172,16 +192,16 @@ export function useKitchenOrders() {
   // é consultado quando `showCanceled` está ligado. Nenhum outro valor do enum
   // de Order é consultado, então nada além destes cinco chega à tela.
   const enabled = !!isAuthenticated;
-  const pollingEnabled = isToday && !isLive;
-  const orderedQuery = useKitchenColumnQuery("ORDERED", 0, enabled, dayRange, pollingEnabled);
-  const productionQuery = useKitchenColumnQuery("IN_PRODUCTION", 1, enabled, dayRange, pollingEnabled);
-  const readyQuery = useKitchenColumnQuery("READY_FOR_PICKUP", 2, enabled, dayRange, pollingEnabled);
-  const completedQuery = useKitchenColumnQuery("COMPLETED", 3, enabled, dayRange, pollingEnabled);
+  const pollingEnabled = !isLive;
+  const orderedQuery = useKitchenColumnQuery("ORDERED", 0, enabled, range, pollingEnabled);
+  const productionQuery = useKitchenColumnQuery("IN_PRODUCTION", 1, enabled, range, pollingEnabled);
+  const readyQuery = useKitchenColumnQuery("READY_FOR_PICKUP", 2, enabled, range, pollingEnabled);
+  const completedQuery = useKitchenColumnQuery("COMPLETED", 3, enabled, range, pollingEnabled);
   const canceledQuery = useKitchenColumnQuery(
     "CANCELED",
     4,
     enabled && showCanceled,
-    dayRange,
+    range,
     pollingEnabled,
   );
 
@@ -324,22 +344,31 @@ export function useKitchenOrders() {
     [queryClient, queryKeyFor],
   );
 
-  /** Aplica o snapshot de um evento de socket: tira de onde estava, põe onde está agora. */
+  /**
+   * Aplica o snapshot de um evento de socket: tira de onde estava, põe onde
+   * está agora. Colunas com filtro de período (Concluídos/Cancelados) só são
+   * tocadas quando o período exibido cobre o presente — ver `coversNow`.
+   */
   const applyOrderSnapshot = useCallback(
     (order: KitchenOrder) => {
       KITCHEN_STATUSES.forEach((status) => {
-        if (status !== order.status) removeFromColumn(status, order.id);
+        if (status === order.status) return;
+        if (PAGINATED_STATUSES.includes(status) && !coversNow) return;
+        removeFromColumn(status, order.id);
       });
+      if (PAGINATED_STATUSES.includes(order.status) && !coversNow) return;
       insertIntoColumn(order.status, order);
     },
-    [removeFromColumn, insertIntoColumn],
+    [removeFromColumn, insertIntoColumn, coversNow],
   );
 
   // ─── Tempo real: Socket.IO no namespace /orders ────────────────────────────
-  // Só conecta olhando o dia de hoje — histórico não muda, não precisa de socket.
+  // Sempre conectado enquanto autenticado: Novos/Em Preparo/Prontos são
+  // sempre ao vivo, não importa qual período esteja selecionado pra
+  // Concluídos/Cancelados.
 
   useEffect(() => {
-    if (!isAuthenticated || !isToday || !KITCHEN_SOCKET_URL) {
+    if (!isAuthenticated || !KITCHEN_SOCKET_URL) {
       setIsLive(false);
       return;
     }
@@ -382,7 +411,7 @@ export function useKitchenOrders() {
       setIsLive(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isToday]);
+  }, [isAuthenticated]);
 
   // ─── Avançar status ───────────────────────────────────────────────────────
 
@@ -423,7 +452,9 @@ export function useKitchenOrders() {
       await queryClient.cancelQueries({ queryKey: ["kitchen-orders"] });
       const previous = snapshot([order.status, "CANCELED"]);
       removeFromColumn(order.status, order.id);
-      if (showCanceled) insertIntoColumn("CANCELED", { ...order, status: "CANCELED" });
+      if (showCanceled && coversNow) {
+        insertIntoColumn("CANCELED", { ...order, status: "CANCELED" });
+      }
       return { previous };
     },
 
@@ -485,9 +516,10 @@ export function useKitchenOrders() {
     toggleSound,
     showCanceled,
     toggleCanceled,
-    selectedDate,
-    setSelectedDate,
-    isToday,
+    period,
+    setPeriod,
+    customDate,
+    setCustomDate,
     isLive,
     advanceOrder,
     cancelOrder,

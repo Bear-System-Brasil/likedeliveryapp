@@ -11,7 +11,6 @@ import {
   BellOff,
   CheckCircle,
   ChefHat,
-  History,
   Package,
   RefreshCw,
   Store,
@@ -21,7 +20,15 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { CancelKitchenOrderDialog } from "./cancel-kitchen-order-dialog";
 import { KitchenColumn } from "./kitchen-column";
-import type { KitchenColumnConfig, KitchenOrder, KitchenStatus } from "./types";
+import {
+  KITCHEN_PERIOD_LABELS,
+  type KitchenColumnConfig,
+  type KitchenOrder,
+  type KitchenPeriod,
+  type KitchenStatus,
+} from "./types";
+
+const PERIOD_PRESETS: KitchenPeriod[] = ["today", "7d", "all"];
 
 const COLUMN_ICONS: Record<KitchenStatus, LucideIcon> = {
   ORDERED: Package,
@@ -147,9 +154,10 @@ export default function Kitchen() {
     toggleSound,
     showCanceled,
     toggleCanceled,
-    selectedDate,
-    setSelectedDate,
-    isToday,
+    period,
+    setPeriod,
+    customDate,
+    setCustomDate,
     isLive,
     advanceOrder,
     cancelOrder,
@@ -196,10 +204,11 @@ export default function Kitchen() {
     onPrint: handlePrint,
   });
 
-  const handleDateChange = (value: string) => {
+  const handleCustomDateChange = (value: string) => {
     if (!value) return;
     const [year, month, day] = value.split("-").map(Number);
-    setSelectedDate(new Date(year, month - 1, day));
+    setCustomDate(new Date(year, month - 1, day));
+    setPeriod("custom");
   };
 
   return (
@@ -218,37 +227,50 @@ export default function Kitchen() {
           {activeOrderTotal} {activeOrderTotal === 1 ? "pedido ativo" : "pedidos ativos"}
         </span>
 
-        {isToday ? (
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold",
+            isLive ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700",
+          )}
+        >
           <span
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold",
-              isLive ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700",
+              "h-1.5 w-1.5 rounded-full",
+              isLive ? "bg-emerald-500" : "animate-pulse bg-amber-500",
             )}
-          >
-            <span
-              className={cn(
-                "h-1.5 w-1.5 rounded-full",
-                isLive ? "bg-emerald-500" : "animate-pulse bg-amber-500",
-              )}
-            />
-            {isLive ? "Ao vivo" : "Reconectando..."}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
-            <History className="h-3.5 w-3.5" />
-            Histórico
-          </span>
-        )}
+          />
+          {isLive ? "Ao vivo" : "Reconectando..."}
+        </span>
 
         <div className="ml-auto flex flex-wrap items-center gap-1">
-          <input
-            type="date"
-            value={toDateInputValue(selectedDate)}
-            max={toDateInputValue(new Date())}
-            onChange={(event) => handleDateChange(event.target.value)}
-            aria-label="Selecionar data"
+          {/* Só afeta Feitos e Cancelados — Novos/Em Preparo/Prontos são sempre "tudo em aberto". */}
+          <span className="hidden text-xs text-muted-foreground md:inline">
+            Período (Feitos/Cancelados):
+          </span>
+          <select
+            value={period}
+            onChange={(event) => setPeriod(event.target.value as KitchenPeriod)}
+            aria-label="Período de Concluídos e Cancelados"
             className="h-9 cursor-pointer rounded-lg border border-input bg-background px-2 text-sm text-slate-600"
-          />
+          >
+            {PERIOD_PRESETS.map((preset) => (
+              <option key={preset} value={preset}>
+                {KITCHEN_PERIOD_LABELS[preset]}
+              </option>
+            ))}
+            <option value="custom">{KITCHEN_PERIOD_LABELS.custom}</option>
+          </select>
+
+          {period === "custom" && (
+            <input
+              type="date"
+              value={toDateInputValue(customDate)}
+              max={toDateInputValue(new Date())}
+              onChange={(event) => handleCustomDateChange(event.target.value)}
+              aria-label="Selecionar data específica"
+              className="h-9 cursor-pointer rounded-lg border border-input bg-background px-2 text-sm text-slate-600"
+            />
+          )}
 
           <Button
             variant={showCanceled ? "secondary" : "ghost"}
