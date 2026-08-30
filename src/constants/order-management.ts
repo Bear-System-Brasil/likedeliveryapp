@@ -14,12 +14,19 @@ export interface CompanyOrderItem extends OrderItem {
     id: string
     quantity: number
     priceSnapshot: number
-    productAddOns?: { description: string }
+    productAddOn?: { name?: string; description?: string }
+    productAddOns?: { name?: string; description?: string }
+    addOn?: { name?: string; description?: string }
+    name?: string
+    description?: string
   }>
   variations?: Array<{
     id: string
     priceSnapshot: number
-    productVariation?: { description: string }
+    variation?: { name?: string; description?: string }
+    productVariation?: { name?: string; description?: string }
+    name?: string
+    description?: string
   }>
 }
 
@@ -170,6 +177,35 @@ export function getElapsedTime(dateString: string): string {
 export function getOrderItemDisplayName(item: CompanyOrderItem): string {
   if (item.product?.name) return item.product.name
   return `Produto #${item.productId.slice(0, 6)}`
+}
+
+// Nome do adicional/variação pode vir aninhado de formas diferentes
+// dependendo do include do backend em GET /order/company - o relation
+// nested aqui só tem `.name` (não `.description`, que não existe em
+// ProductAddOn/ProductVariation), então checar só `.description` como
+// antes deixava o rótulo sempre caindo no genérico "Adicional"/"Variação".
+// Mesma cadeia de fallback usada em use-cart-actions.ts para o carrinho.
+export function getAddOnLabel(addon: NonNullable<CompanyOrderItem['addOns']>[number]): string {
+  return (
+    addon.productAddOn?.name ||
+    addon.productAddOns?.name ||
+    addon.productAddOns?.description ||
+    addon.addOn?.name ||
+    addon.name ||
+    addon.description ||
+    'Adicional'
+  )
+}
+
+export function getVariationLabel(variation: NonNullable<CompanyOrderItem['variations']>[number]): string {
+  return (
+    variation.variation?.name ||
+    variation.productVariation?.name ||
+    variation.productVariation?.description ||
+    variation.name ||
+    variation.description ||
+    'Variação'
+  )
 }
 
 export function getPaymentMethodLabel(method?: string): string {

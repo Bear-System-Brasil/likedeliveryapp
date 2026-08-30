@@ -11,9 +11,11 @@ import {
   type CompanyOrder,
   COLUMN_ACTIONS,
   formatCurrency,
+  getAddOnLabel,
   getElapsedTime,
   getOrderItemDisplayName,
   getPaymentMethodLabel,
+  getVariationLabel,
 } from "@/constants/order-management";
 import {
   ChevronDown,
@@ -128,13 +130,13 @@ export function OrderCard({
 
               {item.addOns?.map((addon, i) => (
                 <p key={i} className="pl-5 text-xs text-muted-foreground">
-                  + {addon.productAddOns?.description || "Adicional"}
+                  + {getAddOnLabel(addon)}
                 </p>
               ))}
 
               {item.variations?.map((variation, i) => (
                 <p key={i} className="pl-5 text-xs text-muted-foreground">
-                  {variation.productVariation?.description || "Variação"}
+                  {getVariationLabel(variation)}
                 </p>
               ))}
             </div>

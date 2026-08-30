@@ -7,9 +7,11 @@ import {
   type CompanyOrder,
   COLUMN_ACTIONS,
   formatCurrency,
+  getAddOnLabel,
   getElapsedTime,
   getOrderItemDisplayName,
   getPaymentMethodLabel,
+  getVariationLabel,
 } from '@/constants/order-management'
 import {
   Clock,
@@ -117,12 +119,12 @@ export function OrderDetailSheet({
                     </p>
                     {item.addOns?.map((addon, i) => (
                       <p key={i} className="text-xs text-muted-foreground pl-4">
-                        + {addon.productAddOns?.description || 'Adicional'}
+                        + {getAddOnLabel(addon)}
                       </p>
                     ))}
                     {item.variations?.map((v, i) => (
                       <p key={i} className="text-xs text-muted-foreground pl-4">
-                        {v.productVariation?.description || 'Variação'}
+                        {getVariationLabel(v)}
                       </p>
                     ))}
                   </div>

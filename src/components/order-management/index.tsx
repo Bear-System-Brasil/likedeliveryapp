@@ -9,8 +9,10 @@ import {
   type CompanyOrder,
   COLUMNS,
   formatCurrency,
+  getAddOnLabel,
   getColumnForOrder,
   getOrderItemDisplayName,
+  getVariationLabel,
 } from "@/constants/order-management";
 import { useOrderManagement } from "@/hooks";
 import {
@@ -142,12 +144,12 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
             </p>
             {item.addOns?.map((addon, i) => (
               <p key={i} className="pl-2">
-                + {addon.productAddOns?.description || "Adicional"}
+                + {getAddOnLabel(addon)}
               </p>
             ))}
             {item.variations?.map((v, i) => (
               <p key={i} className="pl-2">
-                {v.productVariation?.description || "Variação"}
+                {getVariationLabel(v)}
               </p>
             ))}
           </div>
