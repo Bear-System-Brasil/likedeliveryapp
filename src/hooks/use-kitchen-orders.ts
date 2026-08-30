@@ -3,23 +3,27 @@
 /**
  * Toda a busca de dados da tela da cozinha vive aqui.
  *
- * A tela recebe colunas prontas e duas ações; não sabe se os dados vêm de
- * polling, de mock ou de websocket. Para migrar para websocket depois, basta
- * trocar o `refetchInterval` por `queryClient.setQueryData` no listener do
- * socket — nenhum componente muda.
+ * Carrega REST primeiro e mantém o quadro em tempo real via Socket.IO
+ * (namespace `/orders` — ver kitchen-orders.md), com polling só como
+ * fallback enquanto o socket está desconectado. A tela recebe colunas
+ * prontas e algumas ações; não sabe como os dados chegam.
  */
 
 import {
   KITCHEN_COLUMNS,
+  KITCHEN_FALLBACK_POLL_INTERVAL,
   KITCHEN_PAGE_LIMIT,
-  KITCHEN_POLL_INTERVAL,
   KITCHEN_POLL_STAGGER,
+  KITCHEN_SOCKET_NAMESPACE,
+  KITCHEN_STATUSES,
+  KITCHEN_WORKFLOW_STATUSES,
   PAGINATED_STATUSES,
   type KitchenColumnState,
   type KitchenOrder,
   type KitchenOrdersPage,
   type KitchenStatus,
 } from "@/components/kitchen/types";
+import { getDayRange, isSameLocalDay } from "@/components/kitchen/helpers";
 import { useSound } from "@/hooks/use-sound";
 import {
   advanceKitchenOrderStatus,
@@ -35,11 +39,14 @@ import {
   type InfiniteData,
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { io, type Socket } from "socket.io-client";
 import { toast } from "sonner";
 
 type PagedCache = InfiniteData<KitchenOrdersPage, number>;
 
-const queryKeyFor = (status: KitchenStatus) => ["kitchen-orders", status] as const;
+const KITCHEN_SOCKET_URL = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}${KITCHEN_SOCKET_NAMESPACE}`
+  : "";
 
 /** Quanto tempo o card recém-chegado fica destacado. */
 const HIGHLIGHT_MS = 12_000;
@@ -58,14 +65,23 @@ function flatten(cache?: PagedCache): KitchenOrder[] {
   return cache?.pages.flatMap((page) => page.data) ?? [];
 }
 
+interface DayRange {
+  startDate: string;
+  endDate: string;
+}
+
 /**
- * Uma coluna = uma query paginada em `/order/company/status/:status`.
- * `staggerIndex` só desencontra os relógios das quatro colunas.
+ * Uma coluna = uma query paginada em `/order/company/status/:status`, sempre
+ * filtrada pelo intervalo do dia selecionado. `pollingEnabled` só é `true`
+ * quando o socket está fora do ar — enquanto conectado, o cache vive dos
+ * eventos `orderCreated`/`orderStatusUpdated`.
  */
 function useKitchenColumnQuery(
   status: KitchenStatus,
   staggerIndex: number,
   enabled: boolean,
+  dayRange: DayRange,
+  pollingEnabled: boolean,
 ) {
   return useInfiniteQuery<
     KitchenOrdersPage,
@@ -74,23 +90,25 @@ function useKitchenColumnQuery(
     readonly unknown[],
     number
   >({
-    queryKey: queryKeyFor(status),
+    queryKey: ["kitchen-orders", status, dayRange.startDate, dayRange.endDate],
     queryFn: ({ pageParam }) =>
       fetchKitchenOrdersByStatus(status, {
         page: pageParam,
         limit: KITCHEN_PAGE_LIMIT,
+        startDate: dayRange.startDate,
+        endDate: dayRange.endDate,
       }),
     initialPageParam: 1,
     getNextPageParam: (last) =>
       last.meta.page < last.meta.totalPages ? last.meta.page + 1 : undefined,
     enabled,
-    // ~10s por coluna, escalonados para as quatro não dispararem juntas.
-    refetchInterval: KITCHEN_POLL_INTERVAL + staggerIndex * KITCHEN_POLL_STAGGER,
-    // Aba em background não faz polling: a cozinha não precisa gastar rede
-    // enquanto ninguém está olhando, e ao voltar o foco a query revalida.
+    refetchInterval: pollingEnabled
+      ? KITCHEN_FALLBACK_POLL_INTERVAL + staggerIndex * KITCHEN_POLL_STAGGER
+      : false,
+    // Aba em background não faz polling: ao voltar o foco a query revalida.
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
-    staleTime: KITCHEN_POLL_INTERVAL / 2,
+    staleTime: KITCHEN_FALLBACK_POLL_INTERVAL / 2,
   });
 }
 
@@ -132,28 +150,51 @@ export function useKitchenOrders() {
 
   const [activeStatus, setActiveStatus] = useState<KitchenStatus>("ORDERED");
   const [highlighted, setHighlighted] = useState<string[]>([]);
+  const [showCanceled, setShowCanceled] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [isLive, setIsLive] = useState(false);
   const seenIdsRef = useRef<Set<string> | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+
+  const isToday = isSameLocalDay(selectedDate, new Date());
+  const dayRange = getDayRange(selectedDate);
 
   useElapsedTicker();
 
+  const queryKeyFor = useCallback(
+    (status: KitchenStatus) =>
+      ["kitchen-orders", status, dayRange.startDate, dayRange.endDate] as const,
+    [dayRange.startDate, dayRange.endDate],
+  );
+
   // ─── Uma query por coluna ─────────────────────────────────────────────────
-  // Quatro chamadas explícitas, uma por status permitido. Nenhum outro valor do
-  // enum de Order é consultado, então nada fora destes quatro chega à tela.
+  // Cinco chamadas explícitas: os quatro status de trabalho + Cancelados, que só
+  // é consultado quando `showCanceled` está ligado. Nenhum outro valor do enum
+  // de Order é consultado, então nada além destes cinco chega à tela.
   const enabled = !!isAuthenticated;
-  const orderedQuery = useKitchenColumnQuery("ORDERED", 0, enabled);
-  const productionQuery = useKitchenColumnQuery("IN_PRODUCTION", 1, enabled);
-  const readyQuery = useKitchenColumnQuery("READY_FOR_PICKUP", 2, enabled);
-  const completedQuery = useKitchenColumnQuery("COMPLETED", 3, enabled);
+  const pollingEnabled = isToday && !isLive;
+  const orderedQuery = useKitchenColumnQuery("ORDERED", 0, enabled, dayRange, pollingEnabled);
+  const productionQuery = useKitchenColumnQuery("IN_PRODUCTION", 1, enabled, dayRange, pollingEnabled);
+  const readyQuery = useKitchenColumnQuery("READY_FOR_PICKUP", 2, enabled, dayRange, pollingEnabled);
+  const completedQuery = useKitchenColumnQuery("COMPLETED", 3, enabled, dayRange, pollingEnabled);
+  const canceledQuery = useKitchenColumnQuery(
+    "CANCELED",
+    4,
+    enabled && showCanceled,
+    dayRange,
+    pollingEnabled,
+  );
 
   const queryByStatus: Record<KitchenStatus, ColumnQuery> = {
     ORDERED: orderedQuery,
     IN_PRODUCTION: productionQuery,
     READY_FOR_PICKUP: readyQuery,
     COMPLETED: completedQuery,
+    CANCELED: canceledQuery,
   };
 
   // Novos, Em preparo e Prontos mostram tudo: puxam as páginas seguintes
-  // sozinhos. Concluídos só avança quando o usuário pede "ver mais".
+  // sozinhos. Concluídos e Cancelados só avançam quando o usuário pede "ver mais".
   useEffect(() => {
     KITCHEN_COLUMNS.forEach(({ status }) => {
       if (PAGINATED_STATUSES.includes(status)) return;
@@ -205,7 +246,16 @@ export function useKitchenOrders() {
     setKitchenSound(!soundEnabled);
   }, [soundEnabled, setKitchenSound, unlock]);
 
-  // ─── Cache: mover pedido entre colunas (update otimista) ───────────────────
+  const toggleCanceled = useCallback(() => {
+    setShowCanceled((visible) => {
+      const next = !visible;
+      // Saindo de Cancelados: se era a coluna ativa nas abas, volta pra Novos.
+      if (!next) setActiveStatus((current) => (current === "CANCELED" ? "ORDERED" : current));
+      return next;
+    });
+  }, []);
+
+  // ─── Cache: mover pedido entre colunas (update otimista e eventos de socket) ─
 
   const removeFromColumn = useCallback(
     (status: KitchenStatus, orderId: string) => {
@@ -215,18 +265,28 @@ export function useKitchenOrders() {
           ...cache,
           pages: cache.pages.map((page) => ({
             data: page.data.filter((order) => order.id !== orderId),
-            meta: { ...page.meta, total: Math.max(0, page.meta.total - 1) },
+            meta: {
+              ...page.meta,
+              total: page.data.some((order) => order.id === orderId)
+                ? Math.max(0, page.meta.total - 1)
+                : page.meta.total,
+            },
           })),
         };
       });
     },
-    [queryClient],
+    [queryClient, queryKeyFor],
   );
 
   const insertIntoColumn = useCallback(
     (status: KitchenStatus, order: KitchenOrder) => {
       queryClient.setQueryData<PagedCache>(queryKeyFor(status), (cache) => {
         if (!cache || cache.pages.length === 0) return cache;
+        // Otimista + eco do próprio socket podem coincidir: sem isso, duplicaria o card.
+        const alreadyThere = cache.pages.some((page) =>
+          page.data.some((existing) => existing.id === order.id),
+        );
+        if (alreadyThere) return cache;
         const [first, ...rest] = cache.pages;
         return {
           ...cache,
@@ -243,7 +303,7 @@ export function useKitchenOrders() {
         };
       });
     },
-    [queryClient],
+    [queryClient, queryKeyFor],
   );
 
   const snapshot = useCallback(
@@ -252,7 +312,7 @@ export function useKitchenOrders() {
         (status) =>
           [status, queryClient.getQueryData<PagedCache>(queryKeyFor(status))] as const,
       ),
-    [queryClient],
+    [queryClient, queryKeyFor],
   );
 
   const restore = useCallback(
@@ -261,8 +321,68 @@ export function useKitchenOrders() {
         queryClient.setQueryData(queryKeyFor(status), cache);
       });
     },
-    [queryClient],
+    [queryClient, queryKeyFor],
   );
+
+  /** Aplica o snapshot de um evento de socket: tira de onde estava, põe onde está agora. */
+  const applyOrderSnapshot = useCallback(
+    (order: KitchenOrder) => {
+      KITCHEN_STATUSES.forEach((status) => {
+        if (status !== order.status) removeFromColumn(status, order.id);
+      });
+      insertIntoColumn(order.status, order);
+    },
+    [removeFromColumn, insertIntoColumn],
+  );
+
+  // ─── Tempo real: Socket.IO no namespace /orders ────────────────────────────
+  // Só conecta olhando o dia de hoje — histórico não muda, não precisa de socket.
+
+  useEffect(() => {
+    if (!isAuthenticated || !isToday || !KITCHEN_SOCKET_URL) {
+      setIsLive(false);
+      return;
+    }
+
+    let socket: Socket | null = null;
+    let cancelled = false;
+
+    fetch("/api/auth/socket-token")
+      .then((res) => res.json())
+      .then(({ token }: { token: string | null }) => {
+        if (cancelled || !token) return;
+
+        socket = io(KITCHEN_SOCKET_URL, { auth: { token } });
+        socketRef.current = socket;
+
+        socket.on("connect", () => {
+          setIsLive(true);
+          // Ao reconectar, refaz a consulta REST do intervalo atual — o
+          // socket não substitui a sincronização inicial.
+          queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] });
+
+          socket!.emit("joinCompanyOrders", undefined, (ack?: { ok?: boolean }) => {
+            if (!ack?.ok) {
+              toast.error("Não foi possível acompanhar os pedidos em tempo real.");
+            }
+          });
+        });
+
+        socket.on("disconnect", () => setIsLive(false));
+        socket.on("connect_error", () => setIsLive(false));
+
+        socket.on("orderCreated", (order: KitchenOrder) => applyOrderSnapshot(order));
+        socket.on("orderStatusUpdated", (order: KitchenOrder) => applyOrderSnapshot(order));
+      });
+
+    return () => {
+      cancelled = true;
+      socket?.disconnect();
+      socketRef.current = null;
+      setIsLive(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isToday]);
 
   // ─── Avançar status ───────────────────────────────────────────────────────
 
@@ -301,9 +421,9 @@ export function useKitchenOrders() {
 
     onMutate: async ({ order }) => {
       await queryClient.cancelQueries({ queryKey: ["kitchen-orders"] });
-      const previous = snapshot([order.status]);
-      // Cancelado sai do quadro: não é um dos quatro status da cozinha.
+      const previous = snapshot([order.status, "CANCELED"]);
       removeFromColumn(order.status, order.id);
+      if (showCanceled) insertIntoColumn("CANCELED", { ...order, status: "CANCELED" });
       return { previous };
     },
 
@@ -318,6 +438,7 @@ export function useKitchenOrders() {
 
     onSettled: (_data, _error, { order }) => {
       queryClient.invalidateQueries({ queryKey: queryKeyFor(order.status) });
+      queryClient.invalidateQueries({ queryKey: queryKeyFor("CANCELED") });
     },
   });
 
@@ -339,21 +460,35 @@ export function useKitchenOrders() {
     queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] });
   }, [queryClient]);
 
+  const visibleStatuses: readonly KitchenStatus[] = showCanceled
+    ? KITCHEN_STATUSES
+    : KITCHEN_WORKFLOW_STATUSES;
+
   const isEmptyBoard =
-    KITCHEN_COLUMNS.every(({ status }) => columns[status].orders.length === 0) &&
+    KITCHEN_WORKFLOW_STATUSES.every((status) => columns[status].orders.length === 0) &&
     !columns.ORDERED.isLoading;
+
+  const activeOrderTotal =
+    columns.ORDERED.total + columns.IN_PRODUCTION.total + columns.READY_FOR_PICKUP.total;
 
   return {
     columns,
-    columnOrder: KITCHEN_COLUMNS,
+    columnOrder: KITCHEN_COLUMNS.filter((c) => visibleStatuses.includes(c.status)),
     activeStatus,
     setActiveStatus,
     highlightedIds: highlighted,
     isEmptyBoard,
-    isRefreshing: KITCHEN_COLUMNS.some(({ status }) => columns[status].isFetching),
-    hasError: KITCHEN_COLUMNS.some(({ status }) => columns[status].isError),
+    activeOrderTotal,
+    isRefreshing: visibleStatuses.some((status) => columns[status].isFetching),
+    hasError: visibleStatuses.some((status) => columns[status].isError),
     soundEnabled,
     toggleSound,
+    showCanceled,
+    toggleCanceled,
+    selectedDate,
+    setSelectedDate,
+    isToday,
+    isLive,
     advanceOrder,
     cancelOrder,
     advancingOrderId: advanceMutation.isPending

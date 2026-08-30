@@ -28,6 +28,7 @@ interface KitchenColumnProps {
   advancingOrderId?: string;
   onAdvance: (order: KitchenOrder) => void;
   onCancel: (order: KitchenOrder) => void;
+  onPrint: (order: KitchenOrder) => void;
   /** Cabeçalho de coluna aparece só no quadro; nas abas o título já está na aba. */
   showHeader?: boolean;
   className?: string;
@@ -39,6 +40,7 @@ export function KitchenColumn({
   advancingOrderId,
   onAdvance,
   onCancel,
+  onPrint,
   showHeader = true,
   className,
 }: KitchenColumnProps) {
@@ -113,6 +115,7 @@ export function KitchenColumn({
             actionLabel={config.actionLabel}
             onAdvance={onAdvance}
             onCancel={onCancel}
+            onPrint={onPrint}
             isAdvancing={advancingOrderId === order.id}
             isNew={highlightedIds.includes(order.id)}
           />

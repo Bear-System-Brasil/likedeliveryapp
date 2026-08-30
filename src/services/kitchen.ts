@@ -52,23 +52,30 @@ export function toKitchenErrorMessage(error: unknown): string {
 interface FetchParams {
   page: number;
   limit: number;
+  /** Intervalo do dia selecionado (ISO 8601, inclusivo) - ver kitchen-orders.md. */
+  startDate: string;
+  endDate: string;
 }
 
 /**
- * `GET /order/company/status/:status?page&limit`
+ * `GET /order/company/status/:status?page&limit&startDate&endDate`
  *
  * A resposta chega no envelope `{ data, meta }` dentro de `ApiResponse.data`
  * (ver pagination.md) — desembrulhamos aqui para o hook receber a página pronta.
+ * `startDate`/`endDate` evitam que Concluídos e Cancelados acumulem o
+ * histórico inteiro da empresa.
  */
 export async function fetchKitchenOrdersByStatus(
   status: KitchenStatus,
-  { page, limit }: FetchParams,
+  { page, limit, startDate, endDate }: FetchParams,
 ): Promise<KitchenOrdersPage> {
   if (USE_MOCK) return mockFetchOrdersByStatus(status, { page, limit });
 
   const response = await apiService.orders.getCompanyOrdersByStatus(status, {
     page,
     limit,
+    startDate,
+    endDate,
   });
 
   if (!response.success || !response.data) {

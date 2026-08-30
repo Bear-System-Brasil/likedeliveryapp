@@ -6,8 +6,14 @@ import {
   type KitchenOrderItem,
 } from "./types";
 
-/** Faixas de envelhecimento do card — a cor é lida antes do número. */
-export type ElapsedTier = "fresh" | "warm" | "late" | "critical";
+/**
+ * Faixas de envelhecimento do card — a cor é lida antes do número.
+ *
+ * Dados reais ficam em aberto por horas ou dias, então a escala só sobe até
+ * 45 min; passado isso, o tom vira neutro ("antigo") em vez de continuar
+ * escalando para vermelho, que perderia o sentido de alerta.
+ */
+export type ElapsedTier = "fresh" | "warm" | "late" | "critical" | "old";
 
 export interface ElapsedInfo {
   minutes: number;
@@ -21,8 +27,10 @@ const TIER_CLASSES: Record<ElapsedTier, string> = {
   warm: "bg-amber-100 text-amber-800",
   late: "bg-orange-200 text-orange-900",
   critical: "bg-red-600 text-white",
+  old: "bg-slate-200 text-slate-500",
 };
 
+/** `dateString` é `statusChangedAt`: tempo na coluna atual, não desde a criação. */
 export function getElapsed(dateString: string): ElapsedInfo {
   const minutes = Math.max(
     0,
@@ -30,15 +38,15 @@ export function getElapsed(dateString: string): ElapsedInfo {
   );
 
   const tier: ElapsedTier =
-    minutes >= 30 ? "critical" : minutes >= 15 ? "late" : minutes >= 5 ? "warm" : "fresh";
+    minutes > 45 ? "old" : minutes >= 30 ? "critical" : minutes >= 15 ? "late" : minutes >= 5 ? "warm" : "fresh";
 
   const hours = Math.floor(minutes / 60);
   const label =
     minutes < 1
       ? "agora"
-      : hours > 0
-        ? `${hours}h${minutes % 60 > 0 ? ` ${minutes % 60}min` : ""}`
-        : `${minutes} min`;
+      : minutes < 60
+        ? `${minutes} min`
+        : `${hours}h${minutes % 60 > 0 ? ` ${minutes % 60}min` : ""}`;
 
   return { minutes, label, tier, className: TIER_CLASSES[tier] };
 }
@@ -61,14 +69,24 @@ export function getPaymentLabel(order: KitchenOrder): string | null {
   return PAYMENT_METHOD_LABELS[String(method)] ?? String(method);
 }
 
-export function getDeliveryLabel(order: KitchenOrder): string | null {
-  const status = order.delivery?.status;
-  if (!status) return null;
-  return DELIVERY_STATUS_LABELS[status as KitchenDeliveryStatus] ?? null;
+/**
+ * Selo de atendimento: `fulfillmentType` é a fonte da verdade (não deduzir
+ * pela relação `delivery`, que pode ser `null` numa retirada normalmente).
+ */
+export function getFulfillmentLabel(order: KitchenOrder): string {
+  if (order.fulfillmentType === "PICKUP") return "Retirada no local";
+
+  const deliveryStatus = order.delivery?.status;
+  if (deliveryStatus) {
+    return DELIVERY_STATUS_LABELS[deliveryStatus as KitchenDeliveryStatus] ?? "Entrega";
+  }
+  return "Entrega";
 }
 
-/** Selo de entrega: informativo, sem semântica de erro. */
-export function getDeliveryToneClass(order: KitchenOrder): string {
+/** Tom informativo, sem semântica de erro — nem para retirada, nem para entrega. */
+export function getFulfillmentToneClass(order: KitchenOrder): string {
+  if (order.fulfillmentType === "PICKUP") return "bg-violet-100 text-violet-800";
+
   switch (order.delivery?.status) {
     case "PICKED_UP":
       return "bg-emerald-100 text-emerald-800";
@@ -77,4 +95,41 @@ export function getDeliveryToneClass(order: KitchenOrder): string {
     default:
       return "bg-slate-100 text-slate-600";
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Filtro de dia — startDate/endDate ISO com offset local (ver kitchen-orders.md)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function localOffset(date: Date): string {
+  const offsetMinutes = -date.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const abs = Math.abs(offsetMinutes);
+  return `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+}
+
+/** `startDate`/`endDate` inclusivos do dia informado, no fuso local. */
+export function getDayRange(date: Date = new Date()): { startDate: string; endDate: string } {
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const offset = localOffset(date);
+
+  return {
+    startDate: `${year}-${month}-${day}T00:00:00${offset}`,
+    endDate: `${year}-${month}-${day}T23:59:59.999${offset}`,
+  };
+}
+
+/** Valor pro `<input type="date">`, no fuso local (não `toISOString`, que vira UTC). */
+export function toDateInputValue(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function isSameLocalDay(a: Date, b: Date): boolean {
+  return toDateInputValue(a) === toDateInputValue(b);
 }

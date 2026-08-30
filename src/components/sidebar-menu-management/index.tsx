@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import {
+  ChefHat,
   ClipboardList,
   CreditCard,
   House,
@@ -29,7 +30,15 @@ type SidebarProps = {
   onClose: () => void;
 };
 
-const navGroups = [
+type NavLink = {
+  href: string;
+  label: string;
+  icon: typeof House;
+  /** Sem role = visível para qualquer usuário autenticado. */
+  roles?: string[];
+};
+
+const navGroups: { label: string; links: NavLink[] }[] = [
   {
     label: "Principal",
     links: [{ href: "/", label: "Início", icon: House }],
@@ -37,14 +46,36 @@ const navGroups = [
   {
     label: "Gestão",
     links: [
-      { href: "/menu-management", label: "Cardápio", icon: UtensilsCrossed },
-      { href: "/category-management", label: "Categorias", icon: LayoutGrid },
+      {
+        href: "/menu-management",
+        label: "Cardápio",
+        icon: UtensilsCrossed,
+        roles: ["owner", "admin", "manager"],
+      },
+      {
+        href: "/category-management",
+        label: "Categorias",
+        icon: LayoutGrid,
+        roles: ["owner", "admin", "manager"],
+      },
       {
         href: "/order-management",
         label: "Gerenciar Pedidos",
         icon: ClipboardList,
+        roles: ["owner", "admin", "manager"],
       },
-      { href: "/team-management", label: "Equipe", icon: UserCog },
+      {
+        href: "/kitchen",
+        label: "Cozinha",
+        icon: ChefHat,
+        roles: ["owner", "admin", "manager", "cook"],
+      },
+      {
+        href: "/team-management",
+        label: "Equipe",
+        icon: UserCog,
+        roles: ["owner", "admin", "manager"],
+      },
     ],
   },
   {
@@ -54,39 +85,61 @@ const navGroups = [
         href: "/financial-management/dashboard",
         label: "Dashboard",
         icon: LayoutDashboard,
+        roles: ["owner", "admin"],
       },
       {
         href: "/financial-management/finance",
         label: "Finanças",
         icon: TrendingUp,
+        roles: ["owner", "admin"],
       },
       {
         href: "/financial-management/cash-register",
         label: "Caixa",
         icon: Wallet,
+        roles: ["owner", "admin"],
       },
       {
         href: "/financial-management/orders",
         label: "Pedidos",
         icon: ClipboardList,
+        roles: ["owner", "admin"],
       },
       {
         href: "/financial-management/customers",
         label: "Clientes",
         icon: Users,
+        roles: ["owner", "admin"],
       },
       {
         href: "/financial-management/settings",
         label: "Configurações",
         icon: Settings,
+        roles: ["owner", "admin"],
       },
     ],
   },
   {
     label: "Conta",
     links: [
-      { href: "/company-profile", label: "Meu Perfil", icon: User },
-      { href: "/checkout", label: "Checkout", icon: CreditCard },
+      {
+        href: "/company-profile",
+        label: "Meu Perfil",
+        icon: User,
+        roles: ["owner", "admin"],
+      },
+      {
+        href: "/profile",
+        label: "Perfil",
+        icon: User,
+        roles: ["manager", "cook", "delivery", "client"],
+      },
+      {
+        href: "/checkout",
+        label: "Checkout",
+        icon: CreditCard,
+        roles: ["owner", "admin", "manager"],
+      },
     ],
   },
 ];
@@ -94,7 +147,7 @@ const navGroups = [
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -104,6 +157,14 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     router.push("/");
     onClose?.();
   };
+
+  // Sem role carregada ainda (SSR/primeira hidratação): não mostra nada que
+  // dependa de permissão, só o que é livre para qualquer autenticado.
+  const canSee = (link: NavLink) => !link.roles || (!!user?.role && link.roles.includes(user.role));
+
+  const visibleGroups = navGroups
+    .map((group) => ({ ...group, links: group.links.filter(canSee) }))
+    .filter((group) => group.links.length > 0);
 
   return (
     <div className="flex h-full flex-col bg-white text-[#14161A]">
@@ -134,7 +195,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-1">
-        {navGroups.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.label} className="mt-4 first:mt-3">
             <p className="mb-2 px-3 text-[10.5px] font-extrabold uppercase tracking-normal text-[#A9AFB9]">
               {group.label}

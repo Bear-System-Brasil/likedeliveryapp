@@ -1,19 +1,139 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getCustomerName, getItemName, getOrderLabel, toDateInputValue } from "./helpers";
 import { useKitchenOrders } from "@/hooks/use-kitchen-orders";
+import { useAuthStore } from "@/stores";
 import { cn } from "@/lib/utils";
-import { Bell, BellOff, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import {
+  Ban,
+  Bell,
+  BellOff,
+  CheckCircle,
+  ChefHat,
+  History,
+  Package,
+  RefreshCw,
+  Store,
+  Truck,
+  type LucideIcon,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { CancelKitchenOrderDialog } from "./cancel-kitchen-order-dialog";
 import { KitchenColumn } from "./kitchen-column";
-import type { KitchenOrder, KitchenStatus } from "./types";
+import type { KitchenColumnConfig, KitchenOrder, KitchenStatus } from "./types";
 
-/**
- * Quadro da cozinha. Só compõe o que o hook entrega: nenhuma chamada de API,
- * nenhum mock, nenhuma regra de status aqui.
- */
+const COLUMN_ICONS: Record<KitchenStatus, LucideIcon> = {
+  ORDERED: Package,
+  IN_PRODUCTION: ChefHat,
+  READY_FOR_PICKUP: Truck,
+  COMPLETED: CheckCircle,
+  CANCELED: Ban,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cards de contador coloridos (padrão /order-management) — também funcionam
+// como troca de coluna em telas estreitas.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function KitchenCounterTile({
+  config,
+  count,
+  active,
+  onSelect,
+}: {
+  config: KitchenColumnConfig;
+  count: number;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const Icon = COLUMN_ICONS[config.status];
+
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onSelect}
+      className={cn(
+        "flex min-w-[84px] flex-1 cursor-pointer flex-col items-center gap-1 rounded-xl border p-2 transition-shadow md:p-3",
+        config.tone.header,
+        config.tone.text,
+        active && "ring-2 ring-orange-400 ring-offset-1",
+      )}
+    >
+      <Icon className="h-4 w-4 md:h-5 md:w-5" />
+      <span className="text-center text-xs font-semibold md:text-sm">{config.shortLabel}</span>
+      <span className="text-xl font-bold tabular-nums md:text-2xl">{count}</span>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Área de impressão (oculta — visível apenas em @media print)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function KitchenPrintArea({ order }: { order: KitchenOrder | null }) {
+  if (!order) return null;
+
+  const items = order.orderedItems ?? [];
+  const observations = order.observations?.trim();
+
+  return (
+    <div className="print-area hidden print:mx-auto print:block print:w-[80mm] print:bg-white print:font-mono print:text-xs print:text-black">
+      <div className="mb-2 text-center">
+        <h2 className="text-base font-bold">COZINHA</h2>
+        <p>───────────────────────</p>
+      </div>
+
+      <div className="mb-2">
+        <p className="text-sm font-bold">PEDIDO #{getOrderLabel(order)}</p>
+        <p>Cliente: {getCustomerName(order)}</p>
+        <p>{order.fulfillmentType === "PICKUP" ? "Retirada no local" : "Entrega"}</p>
+        <p>Data: {new Date(order.created_at).toLocaleString("pt-BR")}</p>
+      </div>
+
+      <p>───────────────────────</p>
+
+      <div className="mb-2">
+        {items.map((item) => (
+          <div key={item.id} className="mb-1">
+            <p className="font-bold">
+              {item.quantity}x {getItemName(item)}
+            </p>
+            {item.addOns?.map((addon) => (
+              <p key={addon.id} className="pl-2">
+                + {addon.productAddOns?.description ?? "Adicional"}
+              </p>
+            ))}
+            {item.variations?.map((variation) => (
+              <p key={variation.id} className="pl-2">
+                {variation.productVariation?.description ?? "Variação"}
+              </p>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {observations && (
+        <>
+          <p>───────────────────────</p>
+          <p className="font-bold">OBS: {observations}</p>
+        </>
+      )}
+
+      <p className="mt-2 text-center">───────────────────────</p>
+      <p className="text-center text-[10px]">
+        Impresso em {new Date().toLocaleString("pt-BR")}
+      </p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Componente principal
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function Kitchen() {
   const {
     columns,
@@ -21,9 +141,16 @@ export default function Kitchen() {
     activeStatus,
     setActiveStatus,
     highlightedIds,
+    activeOrderTotal,
     isRefreshing,
     soundEnabled,
     toggleSound,
+    showCanceled,
+    toggleCanceled,
+    selectedDate,
+    setSelectedDate,
+    isToday,
+    isLive,
     advanceOrder,
     cancelOrder,
     advancingOrderId,
@@ -31,7 +158,34 @@ export default function Kitchen() {
     refetchAll,
   } = useKitchenOrders();
 
+  const restaurantUser = useAuthStore((state) => state.user);
+  const restaurantName = restaurantUser?.tradeName || restaurantUser?.legalName || "Cozinha";
+
   const [cancelTarget, setCancelTarget] = useState<KitchenOrder | null>(null);
+  const [printOrder, setPrintOrder] = useState<KitchenOrder | null>(null);
+  const printRef = useRef(false);
+
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const clockLabel = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+  useEffect(() => {
+    if (printOrder && !printRef.current) {
+      printRef.current = true;
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          setPrintOrder(null);
+          printRef.current = false;
+        }, 500);
+      }, 100);
+    }
+  }, [printOrder]);
+
+  const handlePrint = (order: KitchenOrder) => setPrintOrder(order);
 
   const columnProps = (status: KitchenStatus) => ({
     column: columns[status],
@@ -39,83 +193,130 @@ export default function Kitchen() {
     advancingOrderId,
     onAdvance: advanceOrder,
     onCancel: setCancelTarget,
+    onPrint: handlePrint,
   });
+
+  const handleDateChange = (value: string) => {
+    if (!value) return;
+    const [year, month, day] = value.split("-").map(Number);
+    setSelectedDate(new Date(year, month - 1, day));
+  };
 
   return (
     // Altura travada na viewport: a página não rola, só o interior das colunas.
     <div className="flex h-[calc(100dvh-52px)] min-h-0 flex-col overflow-hidden">
-      {/* Barra de controles — som e atualização manual */}
-      <div className="flex items-center justify-between gap-2 border-b bg-card px-3 py-2">
-        <Button
-          variant="ghost"
-          className="h-11 cursor-pointer gap-2 text-base"
-          onClick={toggleSound}
-          aria-pressed={soundEnabled}
-        >
-          {soundEnabled ? (
-            <>
-              <Bell className="h-5 w-5 text-orange-500" />
-              Alerta sonoro ligado
-            </>
-          ) : (
-            <>
-              <BellOff className="h-5 w-5 text-muted-foreground" />
-              <span className="text-muted-foreground">Alerta sonoro desligado</span>
-            </>
+      {/* Cabeçalho compacto: identidade da estação, relógio, total ativo e controles */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-card px-3 py-2 print:hidden">
+        <div className="flex min-w-0 items-center gap-2 font-bold text-slate-800">
+          <Store className="h-4 w-4 shrink-0 text-orange-500" />
+          <span className="truncate">{restaurantName}</span>
+        </div>
+
+        <span className="tabular-nums text-sm font-semibold text-slate-500">{clockLabel}</span>
+
+        <span className="text-sm font-semibold text-slate-600">
+          {activeOrderTotal} {activeOrderTotal === 1 ? "pedido ativo" : "pedidos ativos"}
+        </span>
+
+        {isToday ? (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold",
+              isLive ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700",
+            )}
+          >
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                isLive ? "bg-emerald-500" : "animate-pulse bg-amber-500",
+              )}
+            />
+            {isLive ? "Ao vivo" : "Reconectando..."}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+            <History className="h-3.5 w-3.5" />
+            Histórico
+          </span>
+        )}
+
+        <div className="ml-auto flex flex-wrap items-center gap-1">
+          <input
+            type="date"
+            value={toDateInputValue(selectedDate)}
+            max={toDateInputValue(new Date())}
+            onChange={(event) => handleDateChange(event.target.value)}
+            aria-label="Selecionar data"
+            className="h-9 cursor-pointer rounded-lg border border-input bg-background px-2 text-sm text-slate-600"
+          />
+
+          <Button
+            variant={showCanceled ? "secondary" : "ghost"}
+            className="h-9 cursor-pointer gap-1.5 px-2 text-xs"
+            onClick={toggleCanceled}
+          >
+            <Ban className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {showCanceled ? "Ocultar cancelados" : "Ver cancelados"}
+            </span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="h-9 cursor-pointer gap-1.5 px-2 text-xs"
+            onClick={toggleSound}
+            aria-pressed={soundEnabled}
+          >
+            {soundEnabled ? (
+              <Bell className="h-4 w-4 text-orange-500" />
+            ) : (
+              <BellOff className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="hidden sm:inline">{soundEnabled ? "Som ligado" : "Som desligado"}</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="h-9 cursor-pointer gap-1.5 px-2 text-xs"
+            onClick={refetchAll}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            <span className="hidden sm:inline">Atualizar</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Cards de contador — em telas estreitas também trocam a coluna visível */}
+      <div
+        className="flex shrink-0 gap-2 overflow-x-auto border-b bg-white p-2 print:hidden"
+        role="tablist"
+        aria-label="Colunas da cozinha"
+      >
+        {columnOrder.map((config) => (
+          <KitchenCounterTile
+            key={config.status}
+            config={config}
+            count={columns[config.status].total}
+            active={activeStatus === config.status}
+            onSelect={() => setActiveStatus(config.status)}
+          />
+        ))}
+      </div>
+
+      {/* Telas estreitas: só a coluna ativa, com rolagem interna própria */}
+      <div className="min-h-0 flex-1 p-3 lg:hidden print:hidden">
+        <KitchenColumn {...columnProps(activeStatus)} showHeader={false} />
+      </div>
+
+      {/* Telas largas: colunas lado a lado, cada uma com altura fixa e rolagem própria */}
+      <div className="hidden min-h-0 flex-1 p-4 lg:block print:hidden">
+        <div
+          className={cn(
+            "grid h-full min-h-0 gap-4",
+            columnOrder.length === 5 ? "lg:grid-cols-5" : "lg:grid-cols-4",
           )}
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="h-11 cursor-pointer gap-2 text-base"
-          onClick={refetchAll}
-          disabled={isRefreshing}
         >
-          <RefreshCw className={cn("h-5 w-5", isRefreshing && "animate-spin")} />
-          <span className="hidden sm:inline">Atualizar</span>
-        </Button>
-      </div>
-
-      {/* Telas estreitas: abas com contador */}
-      <div className="min-h-0 flex-1 p-3 lg:hidden">
-        <Tabs
-          value={activeStatus}
-          onValueChange={(value) => setActiveStatus(value as KitchenStatus)}
-          className="flex h-full min-h-0 flex-col"
-        >
-          <TabsList className="grid h-auto w-full shrink-0 grid-cols-4 gap-1 p-1">
-            {columnOrder.map((config) => (
-              <TabsTrigger
-                key={config.status}
-                value={config.status}
-                className={cn(
-                  "h-14 cursor-pointer flex-col gap-0.5 text-sm font-semibold",
-                  config.tone.tab,
-                )}
-              >
-                <span>{config.shortLabel}</span>
-                <span className="text-lg font-bold tabular-nums">
-                  {columns[config.status].total}
-                </span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {columnOrder.map((config) => (
-            <TabsContent
-              key={config.status}
-              value={config.status}
-              className="mt-3 flex min-h-0 flex-1 flex-col focus-visible:outline-none"
-            >
-              <KitchenColumn {...columnProps(config.status)} showHeader={false} />
-            </TabsContent>
-          ))}
-        </Tabs>
-      </div>
-
-      {/* Telas largas: quatro colunas lado a lado */}
-      <div className="hidden min-h-0 flex-1 p-4 lg:block">
-        <div className="grid h-full min-h-0 grid-cols-4 gap-4">
           {columnOrder.map((config) => (
             <KitchenColumn key={config.status} {...columnProps(config.status)} />
           ))}
@@ -129,6 +330,8 @@ export default function Kitchen() {
         onConfirm={cancelOrder}
         isLoading={isCanceling}
       />
+
+      <KitchenPrintArea order={printOrder} />
     </div>
   );
 }

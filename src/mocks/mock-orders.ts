@@ -6,8 +6,10 @@
  * então se o contrato mudar, o mock quebra no build junto com a tela.
  *
  * Cobertura proposital: observação longa, item com adicionais e variações,
- * pedido sem observação nenhuma, e uma coluna de Concluídos com 30 cards
- * para exercitar paginação e rolagem.
+ * pedido sem observação nenhuma, retirada e entrega lado a lado, um pedido
+ * cujo `statusChangedAt` é bem mais recente que `created_at` (pra provar que
+ * o cronômetro é por coluna), uma coluna de Concluídos com 30 cards para
+ * exercitar paginação e rolagem, e alguns Cancelados com motivo.
  */
 
 import {
@@ -26,6 +28,8 @@ const ordered: KitchenOrder[] = [
     orderNumber: 1041,
     status: "ORDERED",
     created_at: minutesAgo(1),
+    statusChangedAt: minutesAgo(1),
+    fulfillmentType: "DELIVERY",
     totalValue: 128.4,
     observations:
       "Cliente é alérgica a castanha — conferir todos os molhos antes de montar. Se o prato do meio não puder sair sem castanha, ligar para ela antes de preparar; ela pediu para não substituir por outro item sem avisar. Entregar tudo junto, na mesma sacola.",
@@ -65,6 +69,8 @@ const ordered: KitchenOrder[] = [
     orderNumber: 1040,
     status: "ORDERED",
     created_at: minutesAgo(7),
+    statusChangedAt: minutesAgo(7),
+    fulfillmentType: "DELIVERY",
     totalValue: 61.9,
     customer: { id: "c-2", name: "Rafael Nogueira" },
     payments: [{ id: "p-2", amount: 61.9, paymentMethod: "CREDIT_CARD" }],
@@ -93,12 +99,16 @@ const ordered: KitchenOrder[] = [
     id: "ord-1039",
     orderNumber: 1039,
     status: "ORDERED",
+    // Criado há mais tempo, mas voltou pra "Novos" recentemente (ex.: pagamento
+    // aprovado com atraso) — o relógio do card mostra 2min, não 23min.
     created_at: minutesAgo(23),
+    statusChangedAt: minutesAgo(2),
+    fulfillmentType: "PICKUP",
     totalValue: 89,
     observations: "Sem cebola.",
     customer: { id: "c-3", name: "Juliana Prado" },
     payments: [{ id: "p-3", amount: 89, paymentMethod: "CASH" }],
-    delivery: { id: "d-3", status: "ACCEPTED" },
+    delivery: null,
     orderedItems: [
       {
         id: "i-6",
@@ -117,6 +127,8 @@ const inProduction: KitchenOrder[] = [
     orderNumber: 1036,
     status: "IN_PRODUCTION",
     created_at: minutesAgo(12),
+    statusChangedAt: minutesAgo(12),
+    fulfillmentType: "DELIVERY",
     totalValue: 74.5,
     customer: { id: "c-4", name: "Otávio Lins" },
     payments: [{ id: "p-4", amount: 74.5, paymentMethod: "PIX" }],
@@ -136,6 +148,8 @@ const inProduction: KitchenOrder[] = [
     orderNumber: 1034,
     status: "IN_PRODUCTION",
     created_at: minutesAgo(34),
+    statusChangedAt: minutesAgo(34),
+    fulfillmentType: "DELIVERY",
     totalValue: 152,
     observations: "Pedido de aniversário — mandar vela junto com a sobremesa.",
     customer: { id: "c-5", name: "Camila Ferraz" },
@@ -165,6 +179,8 @@ const readyForPickup: KitchenOrder[] = [
     orderNumber: 1031,
     status: "READY_FOR_PICKUP",
     created_at: minutesAgo(41),
+    statusChangedAt: minutesAgo(41),
+    fulfillmentType: "DELIVERY",
     totalValue: 43.9,
     customer: { id: "c-6", name: "Bruno Sales" },
     payments: [{ id: "p-6", amount: 43.9, paymentMethod: "PIX" }],
@@ -182,11 +198,13 @@ const readyForPickup: KitchenOrder[] = [
     id: "ord-1029",
     orderNumber: 1029,
     status: "READY_FOR_PICKUP",
-    created_at: minutesAgo(55),
+    // Aberto há quase 2h: fica "antigo" (tom neutro), não vermelho.
+    created_at: minutesAgo(112),
+    statusChangedAt: minutesAgo(112),
+    fulfillmentType: "PICKUP",
     totalValue: 96.2,
     customer: { id: "c-7", name: "Helena Castro" },
     payments: [{ id: "p-7", amount: 96.2, paymentMethod: "CASH" }],
-    // Retirada no balcão: sem entrega vinculada — aviso informativo no card.
     delivery: null,
     orderedItems: [
       {
@@ -204,11 +222,14 @@ const readyForPickup: KitchenOrder[] = [
 /** 30 concluídos para exercitar contador, paginação e "ver mais". */
 const completed: KitchenOrder[] = Array.from({ length: 30 }, (_, index) => {
   const number = 1028 - index;
+  const changedAt = minutesAgo(20 + index * 9);
   return {
     id: `ord-${number}`,
     orderNumber: number,
     status: "COMPLETED" as KitchenStatus,
     created_at: minutesAgo(70 + index * 9),
+    statusChangedAt: changedAt,
+    fulfillmentType: index % 3 === 0 ? "PICKUP" : "DELIVERY",
     totalValue: 38 + ((index * 7) % 90),
     observations: index % 6 === 0 ? "Retirado no balcão." : undefined,
     customer: {
@@ -241,14 +262,61 @@ const completed: KitchenOrder[] = Array.from({ length: 30 }, (_, index) => {
   };
 });
 
+/** Cancelados: ocultos por padrão, exercitam o botão "ver cancelados" e o motivo. */
+const canceled: KitchenOrder[] = [
+  {
+    id: "ord-1037",
+    orderNumber: 1037,
+    status: "CANCELED",
+    created_at: minutesAgo(50),
+    statusChangedAt: minutesAgo(18),
+    fulfillmentType: "DELIVERY",
+    totalValue: 67.3,
+    cancelReason: "Falta de estoque / Item indisponível",
+    customer: { id: "c-8", name: "Igor Barreto" },
+    payments: [{ id: "p-8", amount: 67.3, paymentMethod: "PIX" }],
+    delivery: null,
+    orderedItems: [
+      {
+        id: "i-12",
+        productId: "prod-5",
+        quantity: 1,
+        product: { id: "prod-5", name: "Combinado de sushi 20 peças" },
+      },
+    ],
+  },
+  {
+    id: "ord-1033",
+    orderNumber: 1033,
+    status: "CANCELED",
+    created_at: minutesAgo(95),
+    statusChangedAt: minutesAgo(80),
+    fulfillmentType: "PICKUP",
+    totalValue: 32,
+    cancelReason: "Cliente solicitou cancelamento",
+    customer: { id: "c-9", name: "Renata Assis" },
+    payments: [{ id: "p-9", amount: 32, paymentMethod: "CASH" }],
+    delivery: null,
+    orderedItems: [
+      {
+        id: "i-13",
+        productId: "prod-30",
+        quantity: 2,
+        product: { id: "prod-30", name: "Batata rústica" },
+      },
+    ],
+  },
+];
+
 const BY_STATUS: Record<KitchenStatus, KitchenOrder[]> = {
   ORDERED: ordered,
   IN_PRODUCTION: inProduction,
   READY_FOR_PICKUP: readyForPickup,
   COMPLETED: completed,
+  CANCELED: canceled,
 };
 
-/** Devolve uma página no mesmo envelope da API real. */
+/** Devolve uma página no mesmo envelope da API real. Ignora startDate/endDate: o mock é sempre "hoje". */
 export async function mockFetchOrdersByStatus(
   status: KitchenStatus,
   { page = 1, limit = KITCHEN_PAGE_LIMIT }: { page?: number; limit?: number } = {},

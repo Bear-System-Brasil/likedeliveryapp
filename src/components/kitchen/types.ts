@@ -1,9 +1,11 @@
 /**
  * Contrato da tela da cozinha (/kitchen).
  *
- * Tipado a partir do que `GET /order/company/status/:status` devolve, e não do
- * enum completo de `Order`: a cozinha só conhece quatro status, e qualquer
- * outro (CART, AWAITING_PAYMENT, ABANDONED, CANCELED) não deve nem chegar aqui.
+ * Tipado a partir do que `GET /order/company/status/:status` devolve (ver
+ * docs/kitchen-integration.md e kitchen-orders.md), não do enum completo de
+ * `Order`: a cozinha só conhece cinco status de trabalho — os quatro do fluxo
+ * mais `CANCELED`, que fica oculto por padrão. `CART`, `AWAITING_PAYMENT` e
+ * `ABANDONED` nunca chegam aqui.
  */
 
 import type { PaymentMethod } from "@/services/api";
@@ -12,15 +14,23 @@ import type { PaymentMethod } from "@/services/api";
 // Status
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Os únicos status consultados pela tela, em ordem de avanço. */
-export const KITCHEN_STATUSES = [
+/** Os status do fluxo de preparo, em ordem de avanço via PATCH /order/:id/status. */
+export const KITCHEN_WORKFLOW_STATUSES = [
   "ORDERED",
   "IN_PRODUCTION",
   "READY_FOR_PICKUP",
   "COMPLETED",
 ] as const;
 
+export type KitchenWorkflowStatus = (typeof KITCHEN_WORKFLOW_STATUSES)[number];
+
+/** Colunas do quadro: o fluxo de preparo + Cancelados (oculto por padrão). */
+export const KITCHEN_STATUSES = [...KITCHEN_WORKFLOW_STATUSES, "CANCELED"] as const;
+
 export type KitchenStatus = (typeof KITCHEN_STATUSES)[number];
+
+/** Fonte da verdade para entrega vs. retirada — não deduzir pela relação `delivery`. */
+export type KitchenFulfillmentType = "DELIVERY" | "PICKUP";
 
 /** Status da entrega que a cozinha precisa ler — só informativo, nunca acionável. */
 export type KitchenDeliveryStatus = "PENDING" | "ACCEPTED" | "PICKED_UP";
@@ -93,10 +103,15 @@ export interface KitchenOrder {
   totalValue?: number;
   created_at: string;
   updated_at?: string;
+  /** Quando entrou no `status` atual — referência do cronômetro da coluna. */
+  statusChangedAt: string;
+  fulfillmentType: KitchenFulfillmentType;
+  /** Preenchido quando `status === "CANCELED"`. */
+  cancelReason?: string | null;
   customer?: KitchenCustomer | null;
   orderedItems?: KitchenOrderItem[] | null;
   payments?: KitchenPayment[] | null;
-  /** `null` é resposta legítima: pedido de balcão/retirada, sem entrega vinculada. */
+  /** Só relevante quando `fulfillmentType === "DELIVERY"`; pode ser `null` antes da entrega ser criada. */
   delivery?: KitchenDelivery | null;
 }
 
@@ -124,14 +139,16 @@ export interface KitchenColumnConfig {
   status: KitchenStatus;
   /** Título da coluna em telas largas. */
   label: string;
-  /** Rótulo curto das abas em telas estreitas. */
+  /** Rótulo curto dos cards de contador em telas estreitas. */
   shortLabel: string;
   /** Mensagem da coluna vazia. */
   emptyMessage: string;
   /** Próximo status via PATCH /order/:id/status. `null` encerra o fluxo. */
-  nextStatus: KitchenStatus | null;
+  nextStatus: KitchenWorkflowStatus | null;
   /** Rótulo do botão principal. `null` = coluna sem ação. */
   actionLabel: string | null;
+  /** Oculta por padrão — só Cancelados; ligada por um botão no cabeçalho. */
+  hiddenByDefault?: boolean;
   /** Tokens de cor, no mesmo vocabulário do /order-management. */
   tone: {
     header: string;
@@ -203,6 +220,22 @@ export const KITCHEN_COLUMNS: KitchenColumnConfig[] = [
       tab: "data-[state=active]:bg-slate-200 data-[state=active]:text-slate-800",
     },
   },
+  {
+    status: "CANCELED",
+    label: "Cancelados",
+    shortLabel: "Cancelados",
+    emptyMessage: "Nenhum pedido cancelado",
+    nextStatus: null,
+    actionLabel: null,
+    hiddenByDefault: true,
+    tone: {
+      header: "bg-rose-100 border-rose-200",
+      body: "bg-rose-50/40 border-rose-200",
+      text: "text-rose-800",
+      badge: "bg-rose-500 text-white",
+      tab: "data-[state=active]:bg-rose-100 data-[state=active]:text-rose-800",
+    },
+  },
 ];
 
 export const KITCHEN_COLUMN_BY_STATUS = KITCHEN_COLUMNS.reduce(
@@ -213,13 +246,19 @@ export const KITCHEN_COLUMN_BY_STATUS = KITCHEN_COLUMNS.reduce(
   {} as Record<KitchenStatus, KitchenColumnConfig>,
 );
 
-/** Só Concluídos pagina; as três primeiras colunas mostram tudo. */
-export const PAGINATED_STATUSES: KitchenStatus[] = ["COMPLETED"];
+/** Concluídos e Cancelados são estados finais: paginam com "ver mais" em vez de drenar tudo. */
+export const PAGINATED_STATUSES: KitchenStatus[] = ["COMPLETED", "CANCELED"];
 
 export const KITCHEN_PAGE_LIMIT = 20;
 
-/** ~10s por coluna, escalonado para as quatro não baterem no mesmo instante. */
-export const KITCHEN_POLL_INTERVAL = 10_000;
+/** Namespace Socket.IO do gateway operacional (ver kitchen-orders.md). */
+export const KITCHEN_SOCKET_NAMESPACE = "/orders";
+
+/**
+ * Fallback só usado quando o socket está caído — enquanto conectado, o quadro
+ * vive dos eventos `orderCreated`/`orderStatusUpdated`.
+ */
+export const KITCHEN_FALLBACK_POLL_INTERVAL = 10_000;
 export const KITCHEN_POLL_STAGGER = 600;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -234,7 +273,7 @@ export interface KitchenColumnState {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
-  /** Só Concluídos: existem mais páginas a carregar. */
+  /** Concluídos e Cancelados: existem mais páginas a carregar. */
   hasMore: boolean;
   isLoadingMore: boolean;
   loadMore: () => void;

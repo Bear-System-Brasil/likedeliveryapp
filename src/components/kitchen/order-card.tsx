@@ -2,12 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Bike, Clock, MessageSquareWarning, PackageX, X } from "lucide-react";
+import { Bike, Clock, MessageSquareWarning, Printer, Store, X } from "lucide-react";
 import {
   getCustomerName,
-  getDeliveryLabel,
-  getDeliveryToneClass,
   getElapsed,
+  getFulfillmentLabel,
+  getFulfillmentToneClass,
   getItemName,
   getOrderLabel,
   getPaymentLabel,
@@ -16,10 +16,11 @@ import type { KitchenOrder } from "./types";
 
 interface KitchenOrderCardProps {
   order: KitchenOrder;
-  /** Rótulo do botão principal; `null` em Concluídos, que não tem ação. */
+  /** Rótulo do botão principal; `null` em Concluídos e Cancelados, que não têm ação. */
   actionLabel: string | null;
   onAdvance: (order: KitchenOrder) => void;
   onCancel: (order: KitchenOrder) => void;
+  onPrint: (order: KitchenOrder) => void;
   isAdvancing?: boolean;
   /** Destaque momentâneo de pedido recém-chegado. */
   isNew?: boolean;
@@ -30,16 +31,17 @@ export function KitchenOrderCard({
   actionLabel,
   onAdvance,
   onCancel,
+  onPrint,
   isAdvancing,
   isNew,
 }: KitchenOrderCardProps) {
-  const elapsed = getElapsed(order.created_at);
+  const elapsed = getElapsed(order.statusChangedAt);
   const items = order.orderedItems ?? [];
   const payment = getPaymentLabel(order);
-  const deliveryLabel = getDeliveryLabel(order);
+  const fulfillmentLabel = getFulfillmentLabel(order);
   const observations = order.observations?.trim();
   const hasActions = actionLabel !== null;
-  const missingDelivery = order.status === "READY_FOR_PICKUP" && !order.delivery;
+  const isCanceled = order.status === "CANCELED";
 
   return (
     <article
@@ -61,7 +63,7 @@ export function KitchenOrderCard({
             "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-bold tabular-nums",
             elapsed.className,
           )}
-          title="Tempo desde a entrada do pedido"
+          title="Tempo nesta coluna"
         >
           <Clock className="h-4 w-4" />
           {elapsed.label}
@@ -118,6 +120,13 @@ export function KitchenOrderCard({
           </div>
         )}
 
+        {isCanceled && order.cancelReason && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+            <p className="text-sm font-semibold text-red-700">Motivo do cancelamento</p>
+            <p className="mt-1 text-sm text-red-600">{order.cancelReason}</p>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-2">
           {payment && (
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-600">
@@ -125,24 +134,19 @@ export function KitchenOrderCard({
             </span>
           )}
 
-          {deliveryLabel && (
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium",
-                getDeliveryToneClass(order),
-              )}
-            >
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium",
+              getFulfillmentToneClass(order),
+            )}
+          >
+            {order.fulfillmentType === "PICKUP" ? (
+              <Store className="h-4 w-4" />
+            ) : (
               <Bike className="h-4 w-4" />
-              {deliveryLabel}
-            </span>
-          )}
-
-          {missingDelivery && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-500">
-              <PackageX className="h-4 w-4" />
-              sem entrega vinculada
-            </span>
-          )}
+            )}
+            {fulfillmentLabel}
+          </span>
         </div>
       </div>
 
@@ -154,6 +158,15 @@ export function KitchenOrderCard({
             disabled={isAdvancing}
           >
             {isAdvancing ? "Enviando..." : actionLabel}
+          </Button>
+
+          <Button
+            variant="outline"
+            className="h-14 w-14 shrink-0 cursor-pointer rounded-xl"
+            onClick={() => onPrint(order)}
+            aria-label={`Imprimir pedido ${getOrderLabel(order)}`}
+          >
+            <Printer className="h-6 w-6" />
           </Button>
 
           <Button
