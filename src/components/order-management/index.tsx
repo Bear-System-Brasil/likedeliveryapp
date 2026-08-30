@@ -27,7 +27,7 @@ import {
   RefreshCw,
   Truck,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AcceptOrderDialog } from "./accept-order-dialog";
 import { CancelOrderDialog } from "./cancel-order-dialog";
 import { OrderCard } from "./order-card";
@@ -106,6 +106,50 @@ function ColumnSkeleton() {
           <Skeleton className="h-8 w-full" />
         </div>
       ))}
+    </div>
+  );
+}
+
+const COMPLETED_PAGE_SIZE = 10;
+
+function CompletedPagination({
+  page,
+  totalPages,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  total: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-between gap-2 pt-1">
+      <span className="text-xs text-muted-foreground">
+        Página {page} de {totalPages} ({total} pedido{total !== 1 ? "s" : ""})
+      </span>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer rounded-xl"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+        >
+          Anterior
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer rounded-xl"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages}
+        >
+          Próxima
+        </Button>
+      </div>
     </div>
   );
 }
@@ -208,6 +252,28 @@ export default function OrderManagement() {
   const [printOrder, setPrintOrder] = useState<CompanyOrder | null>(null);
   const printRef = useRef(false);
 
+  // Concluídos/Cancelados só cresce (nunca esvazia como as outras colunas),
+  // então é o único que precisa de paginação pra não virar uma lista infinita.
+  const [completedPage, setCompletedPage] = useState(1);
+  const completedTotal = columns.completed.length;
+  const completedTotalPages = Math.max(
+    1,
+    Math.ceil(completedTotal / COMPLETED_PAGE_SIZE),
+  );
+
+  useEffect(() => {
+    setCompletedPage((current) => Math.min(current, completedTotalPages));
+  }, [completedTotalPages]);
+
+  const paginatedCompleted = useMemo(
+    () =>
+      columns.completed.slice(
+        (completedPage - 1) * COMPLETED_PAGE_SIZE,
+        completedPage * COMPLETED_PAGE_SIZE,
+      ),
+    [columns.completed, completedPage],
+  );
+
   useEffect(() => {
     if (printOrder && !printRef.current) {
       printRef.current = true;
@@ -237,7 +303,7 @@ export default function OrderManagement() {
   };
 
   const renderCards = (columnId: ColumnId) => {
-    const items = columns[columnId];
+    const items = columnId === "completed" ? paginatedCompleted : columns[columnId];
 
     if (isLoading) return <ColumnSkeleton />;
     if (items.length === 0) return <EmptyColumn columnId={columnId} />;
@@ -388,8 +454,14 @@ export default function OrderManagement() {
             {renderCards("preparing")}
           </TabsContent>
           <TabsContent value="ready">{renderCards("ready")}</TabsContent>
-          <TabsContent value="completed">
+          <TabsContent value="completed" className="space-y-3">
             {renderCards("completed")}
+            <CompletedPagination
+              page={completedPage}
+              totalPages={completedTotalPages}
+              total={completedTotal}
+              onPageChange={setCompletedPage}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -435,23 +507,31 @@ export default function OrderManagement() {
           </Button>
 
           {showCompleted && (
-            <div className="mt-2 grid grid-cols-2 lg:grid-cols-3 gap-3">
-              {columns.completed.length === 0 ? (
-                <div className="col-span-full">
-                  <EmptyColumn columnId="completed" />
-                </div>
-              ) : (
-                columns.completed.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    columnId="completed"
-                    onViewDetails={handleViewDetails}
-                    onPrint={handlePrint}
-                    isUpdating={isUpdating}
-                  />
-                ))
-              )}
+            <div className="mt-2 space-y-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {completedTotal === 0 ? (
+                  <div className="col-span-full">
+                    <EmptyColumn columnId="completed" />
+                  </div>
+                ) : (
+                  paginatedCompleted.map((order) => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      columnId="completed"
+                      onViewDetails={handleViewDetails}
+                      onPrint={handlePrint}
+                      isUpdating={isUpdating}
+                    />
+                  ))
+                )}
+              </div>
+              <CompletedPagination
+                page={completedPage}
+                totalPages={completedTotalPages}
+                total={completedTotal}
+                onPageChange={setCompletedPage}
+              />
             </div>
           )}
         </div>
