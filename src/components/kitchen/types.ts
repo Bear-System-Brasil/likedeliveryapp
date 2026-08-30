@@ -1,0 +1,252 @@
+/**
+ * Contrato da tela da cozinha (/kitchen).
+ *
+ * Tipado a partir do que `GET /order/company/status/:status` devolve, e não do
+ * enum completo de `Order`: a cozinha só conhece quatro status, e qualquer
+ * outro (CART, AWAITING_PAYMENT, ABANDONED, CANCELED) não deve nem chegar aqui.
+ */
+
+import type { PaymentMethod } from "@/services/api";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Status
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Os únicos status consultados pela tela, em ordem de avanço. */
+export const KITCHEN_STATUSES = [
+  "ORDERED",
+  "IN_PRODUCTION",
+  "READY_FOR_PICKUP",
+  "COMPLETED",
+] as const;
+
+export type KitchenStatus = (typeof KITCHEN_STATUSES)[number];
+
+/** Status da entrega que a cozinha precisa ler — só informativo, nunca acionável. */
+export type KitchenDeliveryStatus = "PENDING" | "ACCEPTED" | "PICKED_UP";
+
+export const DELIVERY_STATUS_LABELS: Record<KitchenDeliveryStatus, string> = {
+  PENDING: "aguardando entregador",
+  ACCEPTED: "entregador a caminho",
+  PICKED_UP: "coletado",
+};
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  CASH: "Dinheiro",
+  CREDIT_CARD: "Crédito",
+  DEBIT_CARD: "Débito",
+  PIX: "PIX",
+  BANK_TRANSFER: "Transferência",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pedido
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface KitchenAddOn {
+  id: string;
+  quantity: number;
+  priceSnapshot?: number;
+  productAddOns?: { description: string } | null;
+}
+
+export interface KitchenVariation {
+  id: string;
+  priceSnapshot?: number;
+  productVariation?: { description: string } | null;
+}
+
+export interface KitchenOrderItem {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPrice?: number;
+  product?: { id: string; name: string; salePrice?: number } | null;
+  addOns?: KitchenAddOn[] | null;
+  variations?: KitchenVariation[] | null;
+}
+
+export interface KitchenCustomer {
+  id: string;
+  name: string;
+  phone?: string;
+}
+
+export interface KitchenPayment {
+  id: string;
+  amount: number;
+  paymentMethod: PaymentMethod | string;
+  status?: string;
+}
+
+export interface KitchenDelivery {
+  id: string;
+  status: KitchenDeliveryStatus | string;
+  deliveryPerson?: { id: string; name: string; phone?: string } | null;
+}
+
+export interface KitchenOrder {
+  id: string;
+  orderNumber?: number | string;
+  status: KitchenStatus;
+  observations?: string | null;
+  totalValue?: number;
+  created_at: string;
+  updated_at?: string;
+  customer?: KitchenCustomer | null;
+  orderedItems?: KitchenOrderItem[] | null;
+  payments?: KitchenPayment[] | null;
+  /** `null` é resposta legítima: pedido de balcão/retirada, sem entrega vinculada. */
+  delivery?: KitchenDelivery | null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Envelope paginado — `{ data, meta }`, pedidos em `data`
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface KitchenPageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface KitchenOrdersPage {
+  data: KitchenOrder[];
+  meta: KitchenPageMeta;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Colunas do quadro
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface KitchenColumnConfig {
+  status: KitchenStatus;
+  /** Título da coluna em telas largas. */
+  label: string;
+  /** Rótulo curto das abas em telas estreitas. */
+  shortLabel: string;
+  /** Mensagem da coluna vazia. */
+  emptyMessage: string;
+  /** Próximo status via PATCH /order/:id/status. `null` encerra o fluxo. */
+  nextStatus: KitchenStatus | null;
+  /** Rótulo do botão principal. `null` = coluna sem ação. */
+  actionLabel: string | null;
+  /** Tokens de cor, no mesmo vocabulário do /order-management. */
+  tone: {
+    header: string;
+    body: string;
+    text: string;
+    badge: string;
+    tab: string;
+  };
+}
+
+export const KITCHEN_COLUMNS: KitchenColumnConfig[] = [
+  {
+    status: "ORDERED",
+    label: "Novos",
+    shortLabel: "Novos",
+    emptyMessage: "Nenhum pedido novo",
+    nextStatus: "IN_PRODUCTION",
+    actionLabel: "Iniciar preparo",
+    tone: {
+      header: "bg-amber-100 border-amber-200",
+      body: "bg-amber-50/40 border-amber-200",
+      text: "text-amber-800",
+      badge: "bg-amber-500 text-white",
+      tab: "data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800",
+    },
+  },
+  {
+    status: "IN_PRODUCTION",
+    label: "Em preparo",
+    shortLabel: "Preparo",
+    emptyMessage: "Nada em preparo agora",
+    nextStatus: "READY_FOR_PICKUP",
+    actionLabel: "Marcar pronto",
+    tone: {
+      header: "bg-blue-100 border-blue-200",
+      body: "bg-blue-50/40 border-blue-200",
+      text: "text-blue-800",
+      badge: "bg-blue-500 text-white",
+      tab: "data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800",
+    },
+  },
+  {
+    status: "READY_FOR_PICKUP",
+    label: "Prontos",
+    shortLabel: "Prontos",
+    emptyMessage: "Nenhum pedido pronto",
+    nextStatus: "COMPLETED",
+    actionLabel: "Concluir",
+    tone: {
+      header: "bg-emerald-100 border-emerald-200",
+      body: "bg-emerald-50/40 border-emerald-200",
+      text: "text-emerald-800",
+      badge: "bg-emerald-500 text-white",
+      tab: "data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800",
+    },
+  },
+  {
+    status: "COMPLETED",
+    label: "Concluídos",
+    shortLabel: "Feitos",
+    emptyMessage: "Nenhum pedido concluído",
+    nextStatus: null,
+    actionLabel: null,
+    tone: {
+      header: "bg-slate-100 border-slate-200",
+      body: "bg-slate-50/60 border-slate-200",
+      text: "text-slate-700",
+      badge: "bg-slate-500 text-white",
+      tab: "data-[state=active]:bg-slate-200 data-[state=active]:text-slate-800",
+    },
+  },
+];
+
+export const KITCHEN_COLUMN_BY_STATUS = KITCHEN_COLUMNS.reduce(
+  (acc, column) => {
+    acc[column.status] = column;
+    return acc;
+  },
+  {} as Record<KitchenStatus, KitchenColumnConfig>,
+);
+
+/** Só Concluídos pagina; as três primeiras colunas mostram tudo. */
+export const PAGINATED_STATUSES: KitchenStatus[] = ["COMPLETED"];
+
+export const KITCHEN_PAGE_LIMIT = 20;
+
+/** ~10s por coluna, escalonado para as quatro não baterem no mesmo instante. */
+export const KITCHEN_POLL_INTERVAL = 10_000;
+export const KITCHEN_POLL_STAGGER = 600;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Estado por coluna, exposto pelo hook
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface KitchenColumnState {
+  config: KitchenColumnConfig;
+  orders: KitchenOrder[];
+  /** Contador do cabeçalho — vem de `meta.total`, não de `orders.length`. */
+  total: number;
+  isLoading: boolean;
+  isFetching: boolean;
+  isError: boolean;
+  /** Só Concluídos: existem mais páginas a carregar. */
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  loadMore: () => void;
+  refetch: () => void;
+}
+
+export interface CancelTarget {
+  order: KitchenOrder;
+}
+
+/** Erros da API traduzidos para a mensagem que o toast mostra. */
+export interface KitchenApiErrorShape {
+  status?: number;
+  message: string;
+}
