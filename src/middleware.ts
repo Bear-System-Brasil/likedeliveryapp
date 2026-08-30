@@ -5,6 +5,10 @@ const SESSION_COOKIE = "like_session";
 
 /** Config central: rota nova entra aqui e já fica coberta. */
 const PROTECTED: { prefix: string; roles?: string[] }[] = [
+  // Pedidos do cliente logado: GET /order/customer/me é exclusivo de role
+  // client no backend, então abrir esta rota pra outras roles não resolveria
+  // nada — elas continuam usando o carrinho/checkout normalmente, só o
+  // histórico de pedidos é que é uma tela de cliente de verdade.
   { prefix: "/orders", roles: ["client"] },
   { prefix: "/profile" },
   { prefix: "/menu-management", roles: ["owner", "admin", "manager"] },
@@ -13,6 +17,7 @@ const PROTECTED: { prefix: string; roles?: string[] }[] = [
     prefix: "/order-management",
     roles: ["owner", "admin", "manager", "cook"],
   },
+  { prefix: "/kitchen", roles: ["owner", "admin", "manager", "cook"] },
   { prefix: "/company-profile", roles: ["owner", "admin"] },
   { prefix: "/financial-management", roles: ["owner", "admin"] },
   { prefix: "/team-management", roles: ["owner", "admin", "manager"] },
@@ -55,6 +60,7 @@ export const config = {
     "/menu-management/:path*",
     "/category-management/:path*",
     "/order-management/:path*",
+    "/kitchen/:path*",
     "/company-profile/:path*",
     "/financial-management/:path*",
     "/team-management/:path*",

@@ -36,6 +36,9 @@ interface Preferences {
   compactMode: boolean
   showOnboarding: boolean
   lastViewedRestaurant?: string
+
+  /** Alerta sonoro da tela da cozinha. Desligado por padrão. */
+  kitchenSoundEnabled: boolean
 }
 
 interface PreferencesState extends Preferences {
@@ -45,6 +48,7 @@ interface PreferencesState extends Preferences {
   updateNotifications: (notifications: Partial<Preferences['notifications']>) => void
   setDefaultAddress: (addressId: string) => void
   setCompactMode: (compact: boolean) => void
+  setKitchenSound: (enabled: boolean) => void
   dismissOnboarding: () => void
   setLastViewedRestaurant: (restaurantId: string) => void
   resetPreferences: () => void
@@ -64,6 +68,7 @@ const defaultPreferences: Preferences = {
   saveOrderHistory: true,
   compactMode: false,
   showOnboarding: true,
+  kitchenSoundEnabled: false,
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -109,6 +114,13 @@ export const usePreferencesStore = create<PreferencesState>()(
             'preferences/setCompactMode'
           ),
 
+        setKitchenSound: (enabled) =>
+          set(
+            { kitchenSoundEnabled: enabled },
+            false,
+            'preferences/setKitchenSound'
+          ),
+
         dismissOnboarding: () =>
           set(
             { showOnboarding: false },
@@ -132,7 +144,14 @@ export const usePreferencesStore = create<PreferencesState>()(
       }),
       {
         name: STORAGE_KEYS.PREFERENCES,
-        version: 1,
+        version: 2,
+        migrate: (persistedState, version) => {
+          const state = persistedState as PreferencesState
+          if (version < 2) {
+            state.kitchenSoundEnabled = false
+          }
+          return state
+        },
       }
     ),
     { name: 'preferences-store', enabled: process.env.NODE_ENV !== 'production' }

@@ -41,9 +41,10 @@ const managementRoutes = [
 ];
 
 // Fluxos focados que ja possuem barra de acao fixa no rodape (checkout) ou
-// cabecalho proprio com as acoes do papel (entregador) - a nav do cliente
-// (carrinho, pedidos de cliente etc.) nao faz sentido sobreposta ali.
-const hiddenRoutes = ["/checkout", "/delivery-dashboard"];
+// cabecalho proprio com as acoes do papel (entregador), e a tela da cozinha
+// (operacional, sem espaço vertical de sobra) - a nav do cliente (carrinho,
+// pedidos de cliente etc.) nao faz sentido sobreposta ali.
+const hiddenRoutes = ["/checkout", "/delivery-dashboard", "/kitchen"];
 
 function getActiveTab(pathname: string): BottomTabId {
   if (pathname === "/cart" || pathname.startsWith("/checkout")) return "cart";
@@ -90,6 +91,11 @@ export function BottomBar({ activeTab }: BottomBarProps) {
     return null;
   }
 
+  // GET /order/customer/me é exclusivo de role client no backend: pra cook
+  // (que também usa o app como cliente final) esta aba não pode apontar pro
+  // histórico de pedidos do cliente, e sim pro quadro que é o "pedidos" dele.
+  const ordersHref = user?.role === "cook" ? "/kitchen" : "/orders";
+
   const clientTabs: Tab[] = [
     { id: "home", label: "Início", icon: Home, href: "/" },
     {
@@ -103,7 +109,7 @@ export function BottomBar({ activeTab }: BottomBarProps) {
       id: "orders",
       label: "Pedidos",
       icon: ClipboardList,
-      href: "/orders",
+      href: ordersHref,
       protected: true,
     },
     {

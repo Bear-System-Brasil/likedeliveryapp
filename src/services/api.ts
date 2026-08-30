@@ -126,6 +126,12 @@ export interface PaginationParams {
   limit?: number;
 }
 
+/** `getCompanyOrders` / `getCompanyOrdersByStatus` — filtro de intervalo (ISO 8601, inclusivo). */
+export interface OrderDateRangeParams extends PaginationParams {
+  startDate?: string;
+  endDate?: string;
+}
+
 /** Máximo aceito pelo backend (ver pagination.md) - usar quando a tela
  * precisa do conjunto quase-completo numa única chamada (ex: Kanban ao vivo)
  * em vez de paginação de verdade. */
@@ -138,6 +144,19 @@ function withPagination(endpoint: string, params?: PaginationParams): string {
   if (params.limit) qs.set("limit", String(params.limit));
   const separator = endpoint.includes("?") ? "&" : "?";
   return `${endpoint}${separator}${qs.toString()}`;
+}
+
+function withOrderDateRange(endpoint: string, params?: OrderDateRangeParams): string {
+  if (!params) return endpoint;
+  const qs = new URLSearchParams();
+  if (params.page) qs.set("page", String(params.page));
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.startDate) qs.set("startDate", params.startDate);
+  if (params.endDate) qs.set("endDate", params.endDate);
+  const query = qs.toString();
+  if (!query) return endpoint;
+  const separator = endpoint.includes("?") ? "&" : "?";
+  return `${endpoint}${separator}${query}`;
 }
 
 export interface User {
@@ -614,6 +633,11 @@ export interface Order {
   orderedItems?: OrderItem[];
   created_at: string;
   updated_at: string;
+  /** Quando entrou no `status` atual — referência do cronômetro de coluna, não `updated_at`. */
+  statusChangedAt: string;
+  /** Fonte da verdade para entrega vs. retirada — não deduzir pela relação `delivery`. */
+  fulfillmentType: "DELIVERY" | "PICKUP";
+  cancelReason?: string | null;
   companyId: string;
 }
 
@@ -1634,18 +1658,18 @@ export const apiService = {
         true,
       ),
 
-    getCompanyOrders: (params?: PaginationParams) =>
+    getCompanyOrders: (params?: OrderDateRangeParams) =>
       apiRequest<PaginatedResponse<Order>>(
         "GET",
-        withPagination("/order/company", params),
+        withOrderDateRange("/order/company", params),
         undefined,
         true,
       ),
 
-    getCompanyOrdersByStatus: (status: string, params?: PaginationParams) =>
+    getCompanyOrdersByStatus: (status: string, params?: OrderDateRangeParams) =>
       apiRequest<PaginatedResponse<Order>>(
         "GET",
-        withPagination(`/order/company/status/${status}`, params),
+        withOrderDateRange(`/order/company/status/${status}`, params),
         undefined,
         true,
       ),

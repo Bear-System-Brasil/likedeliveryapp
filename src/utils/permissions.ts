@@ -20,6 +20,7 @@ export const ROUTE_PERMISSIONS: { [key: string]: string[] } = {
 
   // Order management
   "/order-management": ["owner", "admin", "manager", "cook"],
+  "/kitchen": ["owner", "admin", "manager", "cook"],
 
   // Financial management
   "/financial-management": ["owner", "admin"],
