@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePayment } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { Payment, PaymentMethod, PaymentStatus } from "@/services/api";
-import { formatCurrency } from "@/utils";
+import { formatCurrency, getCustomerDisplayName } from "@/utils";
 import { DollarSign, Search } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 
@@ -437,10 +437,10 @@ export default function FinancePage() {
 
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <span
-                        className="truncate text-[11.5px] font-semibold text-[#8A8F99]"
+                        className="truncate text-[11.5px] font-semibold text-[#5B6472]"
                         title={payment.customerId}
                       >
-                        Cliente {payment.customerId.slice(0, 8)}...
+                        {getCustomerDisplayName(payment.customer)}
                       </span>
                       <span className="shrink-0 text-[13px] font-extrabold text-[#14161A]">
                         {formatCurrency(payment.amount)}
@@ -528,7 +528,7 @@ export default function FinancePage() {
                       className="truncate text-[12.5px] font-semibold text-[#14161A]"
                       title={payment.customerId}
                     >
-                      {payment.customerId.slice(0, 8)}...
+                      {getCustomerDisplayName(payment.customer)}
                     </span>
 
                     <span className="truncate text-[11.5px] font-semibold text-[#3D4149]">

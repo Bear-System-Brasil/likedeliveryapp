@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { apiService, MAX_PAGE_LIMIT } from "@/services/api"
 import { Order } from "@/services/api"
-import { formatCurrency } from "@/utils"
+import { formatCurrency, getCustomerDisplayName } from "@/utils"
 import { useAuthStore } from "@/stores"
 import { useQuery } from "@tanstack/react-query"
 import { ClipboardList, RefreshCw } from "lucide-react"
@@ -171,8 +171,11 @@ export default function OrdersPage() {
                           <p className="font-mono text-xs text-gray-500">
                             {order.id.slice(0, 8)}…
                           </p>
-                          <p className="mt-1 font-mono text-xs text-gray-500">
-                            Cliente {order.customerId.slice(0, 8)}…
+                          <p
+                            className="mt-1 truncate text-sm font-semibold text-gray-900"
+                            title={order.customerId}
+                          >
+                            {getCustomerDisplayName(order.customer)}
                           </p>
                         </div>
                         <Badge
@@ -234,8 +237,11 @@ export default function OrdersPage() {
                               minute: "2-digit",
                             })}
                           </td>
-                          <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                            {order.customerId.slice(0, 8)}…
+                          <td
+                            className="px-4 py-3 font-medium text-gray-900"
+                            title={order.customerId}
+                          >
+                            {getCustomerDisplayName(order.customer)}
                           </td>
                           <td className="px-4 py-3 text-right font-semibold">
                             {formatCurrency(order.totalValue)}

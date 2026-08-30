@@ -149,3 +149,15 @@ export const isValidCep = (cep: string): boolean => {
 export function formatPhoneRegex(phone: string) {
   return phone.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, "($1) $2 $3-$4");
 }
+
+/**
+ * Nome do cliente para exibição. O backend embute a relação `customer` nas
+ * listas de pedidos e pagamentos (ver order.md / payment.md); o UUID é chave
+ * de API e não deve virar rótulo de tela, então quando a relação não vem o
+ * fallback é genérico.
+ * @param customer - Relação `customer` do pedido/pagamento, quando presente
+ * @returns Nome do cliente ou "Cliente" como fallback
+ */
+export const getCustomerDisplayName = (
+  customer?: { name?: string | null } | null,
+): string => customer?.name?.trim() || "Cliente";

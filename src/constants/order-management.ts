@@ -1,4 +1,4 @@
-import type { Order, OrderItem, Payment } from '@/services/api'
+import type { CustomerRef, Order, OrderItem, Payment } from '@/services/api'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types — Order com relações do Prisma retornadas por GET /order/company
@@ -26,12 +26,7 @@ export interface CompanyOrderItem extends OrderItem {
 export interface CompanyOrder extends Omit<Order, 'orderedItems'> {
   orderNumber?: number
   cancelReason?: string
-  customer?: {
-    id: string
-    name: string
-    phone?: string
-    photoUrl?: string
-  }
+  customer?: CustomerRef
   orderedItems?: CompanyOrderItem[]
   payments?: Payment[]
   delivery?: {

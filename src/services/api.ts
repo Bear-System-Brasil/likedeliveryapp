@@ -153,6 +153,19 @@ export interface User {
   updatedAt: string;
 }
 
+/**
+ * Recorte do cliente que o backend devolve embutido nas relações de
+ * Order e Payment (ver order.md / payment.md). Existe para as telas
+ * exibirem o nome - o `customerId` continua sendo a chave usada nas
+ * chamadas de API, nunca o rótulo mostrado ao usuário.
+ */
+export interface CustomerRef {
+  id: string;
+  name: string;
+  phone?: string;
+  photoUrl?: string;
+}
+
 export interface LoginResponse {
   token: string;
   user: User | Company;
@@ -584,6 +597,8 @@ export interface UpdateAddressRequest {
 export interface Order {
   id: string;
   customerId: string;
+  /** Relação incluída por GET /order/company (ver order.md). */
+  customer?: CustomerRef;
   discount: number;
   totalShipping: number;
   totalValue: number;
@@ -703,6 +718,8 @@ export interface Payment {
   amount: number;
   orderId: string;
   customerId: string;
+  /** Relação incluída pelas listas de /payment (ver payment.md). */
+  customer?: CustomerRef;
   paymentMethod: PaymentMethod;
   status: PaymentStatus;
   transaction?: string;
