@@ -266,7 +266,7 @@ export function MainHeader({
       )}
     >
       <div className="px-3 py-2 sm:px-6 sm:py-3">
-        <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+        <div className="flex items-center justify-between">
           {/* ===== LADO ESQUERDO (Logo + Endereço) ===== */}
           <div
             className={clsx(
@@ -274,148 +274,150 @@ export function MainHeader({
               searchOpen && "max-sm:hidden",
             )}
           >
-            <Link href="/" className="shrink-0">
-              <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
-            </Link>
+            <div className="flex gap-3 items-center">
+              <Link href="/" className="shrink-0">
+                <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
+              </Link>
 
-            <div className="min-w-0 leading-tight">
-              <Sheet
-                open={locationOpen}
-                onOpenChange={(open) => {
-                  setLocationOpen(open);
-                  if (!open) {
-                    setLocationError("");
-                    setIsChangingLocation(false);
-                    setManualLocation("");
-                  }
-                }}
-              >
-                <SheetTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex max-w-[90px] cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-200 xs:max-w-[120px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[240px]"
-                    title="Alterar endereço"
-                  >
-                    <MapPin className="h-3.5 w-3.5 shrink-0 fill-orange-500 text-orange-500" />
-                    <span className="truncate" title={locationLabel}>
-                      {locationLabel}
-                    </span>
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                  </button>
-                </SheetTrigger>
-
-                <SheetContent
-                  side="bottom"
-                  className="rounded-t-3xl border-t border-orange-100 bg-white px-4 pb-8 pt-4 sm:px-6"
+              <div className="min-w-0 leading-tight">
+                <Sheet
+                  open={locationOpen}
+                  onOpenChange={(open) => {
+                    setLocationOpen(open);
+                    if (!open) {
+                      setLocationError("");
+                      setIsChangingLocation(false);
+                      setManualLocation("");
+                    }
+                  }}
                 >
-                  {/* Handle visual (opcional mas fica bonito) */}
-                  <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-gray-200" />
+                  <SheetTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex max-w-[90px] cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-200 xs:max-w-[120px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[240px]"
+                      title="Alterar endereço"
+                    >
+                      <MapPin className="h-3.5 w-3.5 shrink-0 fill-orange-500 text-orange-500" />
+                      <span className="truncate" title={locationLabel}>
+                        {locationLabel}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    </button>
+                  </SheetTrigger>
 
-                  <div className="mx-auto w-full max-w-xl space-y-4">
-                    <div className="space-y-1">
-                      <SheetTitle className="text-lg font-bold text-gray-950">
-                        Endereço de entrega
-                      </SheetTitle>
-                      <p className="text-sm text-gray-500">
-                        Onde seu pedido será entregue
-                      </p>
-                    </div>
+                  <SheetContent
+                    side="bottom"
+                    className="rounded-t-3xl border-t border-orange-100 bg-white px-4 pb-8 pt-4 sm:px-6"
+                  >
+                    {/* Handle visual (opcional mas fica bonito) */}
+                    <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-gray-200" />
 
-                    {/* Card do endereço atual */}
-                    <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
-                      <div className="flex gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-orange-500 shadow-sm">
-                          <MapPin className="h-5 w-5 fill-orange-500" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-orange-600">
-                            Entregando em
-                          </p>
-                          <p className="mt-1 text-sm font-semibold leading-snug text-gray-950">
-                            {currentLocationText}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setManualLocation("");
-                            setLocationError("");
-                            setIsChangingLocation(true);
-                          }}
-                          className="h-11 justify-center rounded-xl border-orange-200 bg-white text-orange-600 hover:bg-orange-50"
-                        >
-                          <PencilLine className="mr-2 h-4 w-4" />
-                          Trocar
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={locationLoading}
-                          onClick={handleCurrentLocation}
-                          className="h-11 justify-center rounded-xl border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                        >
-                          <Navigation className="mr-2 h-4 w-4" />
-                          Usar atual
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Formulário só aparece quando o usuário clica em "Trocar" */}
-                    {isChangingLocation && (
-                      <form
-                        onSubmit={handleManualLocation}
-                        className="rounded-2xl border border-gray-200 bg-gray-50 p-4"
-                      >
-                        <p className="mb-3 text-sm font-semibold text-gray-950">
-                          Digite o novo endereço
+                    <div className="mx-auto w-full max-w-xl space-y-4">
+                      <div className="space-y-1">
+                        <SheetTitle className="text-lg font-bold text-gray-950">
+                          Endereço de entrega
+                        </SheetTitle>
+                        <p className="text-sm text-gray-500">
+                          Onde seu pedido será entregue
                         </p>
-                        <div className="flex flex-col gap-2">
-                          <Input
-                            value={manualLocation}
-                            onChange={(event) =>
-                              setManualLocation(event.target.value)
-                            }
-                            placeholder="Ex.: Rua Machado de Assis, 334"
-                            className="h-11 rounded-xl bg-white"
-                            // ← sem autoFocus
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                setIsChangingLocation(false);
-                                setManualLocation("");
-                                setLocationError("");
-                              }}
-                              className="h-11 flex-1 rounded-xl"
-                            >
-                              Cancelar
-                            </Button>
-                            <Button
-                              type="submit"
-                              disabled={locationLoading}
-                              className="h-11 flex-1 rounded-xl bg-orange-500 hover:bg-orange-600"
-                            >
-                              {locationLoading ? "Buscando..." : "Salvar"}
-                            </Button>
+                      </div>
+
+                      {/* Card do endereço atual */}
+                      <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
+                        <div className="flex gap-3">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-orange-500 shadow-sm">
+                            <MapPin className="h-5 w-5 fill-orange-500" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-orange-600">
+                              Entregando em
+                            </p>
+                            <p className="mt-1 text-sm font-semibold leading-snug text-gray-950">
+                              {currentLocationText}
+                            </p>
                           </div>
                         </div>
-                      </form>
-                    )}
 
-                    {locationError && (
-                      <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
-                        {locationError}
-                      </p>
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setManualLocation("");
+                              setLocationError("");
+                              setIsChangingLocation(true);
+                            }}
+                            className="h-11 justify-center rounded-xl border-orange-200 bg-white text-orange-600 hover:bg-orange-50"
+                          >
+                            <PencilLine className="mr-2 h-4 w-4" />
+                            Trocar
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={locationLoading}
+                            onClick={handleCurrentLocation}
+                            className="h-11 justify-center rounded-xl border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                          >
+                            <Navigation className="mr-2 h-4 w-4" />
+                            Usar atual
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Formulário só aparece quando o usuário clica em "Trocar" */}
+                      {isChangingLocation && (
+                        <form
+                          onSubmit={handleManualLocation}
+                          className="rounded-2xl border border-gray-200 bg-gray-50 p-4"
+                        >
+                          <p className="mb-3 text-sm font-semibold text-gray-950">
+                            Digite o novo endereço
+                          </p>
+                          <div className="flex flex-col gap-2">
+                            <Input
+                              value={manualLocation}
+                              onChange={(event) =>
+                                setManualLocation(event.target.value)
+                              }
+                              placeholder="Ex.: Rua Machado de Assis, 334"
+                              className="h-11 rounded-xl bg-white"
+                              // ← sem autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  setIsChangingLocation(false);
+                                  setManualLocation("");
+                                  setLocationError("");
+                                }}
+                                className="h-11 flex-1 rounded-xl"
+                              >
+                                Cancelar
+                              </Button>
+                              <Button
+                                type="submit"
+                                disabled={locationLoading}
+                                className="h-11 flex-1 rounded-xl bg-orange-500 hover:bg-orange-600"
+                              >
+                                {locationLoading ? "Buscando..." : "Salvar"}
+                              </Button>
+                            </div>
+                          </div>
+                        </form>
+                      )}
+
+                      {locationError && (
+                        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+                          {locationError}
+                        </p>
+                      )}
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
           </div>
 
@@ -676,13 +678,14 @@ export function MainHeader({
                             </Button>
                           )}
 
-                          <Button
-                            className="w-full justify-start rounded-xl text-orange-600 hover:text-orange-700 hover:bg-red-50"
+                          <button
+                            type="button"
                             onClick={handleLogout}
+                            className="flex h-[38px] w-full items-center gap-[11px] rounded-[14px] bg-[#FF6B00] px-3 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(255,107,0,0.35)] transition-colors hover:bg-[#FF8A33] cursor-pointer"
                           >
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Sair da conta
-                          </Button>
+                            <LogOut className="h-4 w-4 shrink-0" />
+                            <span className="truncate">Sair da conta</span>
+                          </button>
                         </div>
                       </div>
                     </SheetContent>
