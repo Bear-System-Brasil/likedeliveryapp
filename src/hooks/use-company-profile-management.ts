@@ -17,7 +17,7 @@ async function withStoreCoordinates<T extends AddressFormData>(address: T) {
   if (!coords) {
     toast.warning("Nao localizamos esse endereço no mapa", {
       description:
-        "Confira CEP, rua e numero. Sem isso a loja nao aparece nas buscas por proximidade.",
+        "Confira CEP, rua e numero. Sem isso a loja não aparece nas buscas por proximidade.",
       duration: 6000,
     });
 
@@ -470,8 +470,7 @@ export const useCompanyProfileManagement = () => {
         }
       }
 
-      const response =
-        await apiService.address.createCompanyAddress(payload);
+      const response = await apiService.address.createCompanyAddress(payload);
 
       if (response.success && response.data) {
         toast.success("Endereço adicionado com sucesso!");
@@ -602,11 +601,15 @@ export const useCompanyProfileManagement = () => {
     const trimmedComplement = newAddress.complement.trim();
     const trimmedReference = newAddress.reference.trim();
     if (trimmedComplement.length > 0 && trimmedComplement.length < 5) {
-      toast.error("Complemento deve ter pelo menos 5 caracteres (ou ficar vazio)");
+      toast.error(
+        "Complemento deve ter pelo menos 5 caracteres (ou ficar vazio)",
+      );
       return;
     }
     if (trimmedReference.length > 0 && trimmedReference.length < 5) {
-      toast.error("Referência deve ter pelo menos 5 caracteres (ou ficar vazia)");
+      toast.error(
+        "Referência deve ter pelo menos 5 caracteres (ou ficar vazia)",
+      );
       return;
     }
 

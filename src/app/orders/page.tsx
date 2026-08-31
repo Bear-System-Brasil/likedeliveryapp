@@ -193,7 +193,10 @@ function OrderHistoryContent() {
       );
       const orderItems = (itemsResponse.data as any[]) || [];
       const companyId = getCompanyId(order);
-      const restaurantName = getRestaurantBrand(order, restaurantBrandsById).name;
+      const restaurantName = getRestaurantBrand(
+        order,
+        restaurantBrandsById,
+      ).name;
 
       if (!companyId || orderItems.length === 0) {
         throw new Error("Itens indisponíveis para repetir");
@@ -345,7 +348,10 @@ function OrdersShell({
   const router = useRouter();
 
   return (
-    <AnimatedBackground showBlobs={false} className="min-h-screen bg-[#f4f5f7] py-0">
+    <AnimatedBackground
+      showBlobs={false}
+      className="min-h-screen bg-[#f4f5f7] py-0"
+    >
       <MainHeader
         cartItems={cartItems}
         onCartClick={() => router.push("/cart")}
@@ -383,7 +389,9 @@ function ActiveOrderCard({
           </div>
           <p className="mt-1 text-xs font-medium text-[#8a8f99]">
             Pedido #{String(getOrderId(order)).slice(0, 8)}
-            {itemCount ? ` · ${itemCount} ${itemCount === 1 ? "item" : "itens"}` : ""}
+            {itemCount
+              ? ` · ${itemCount} ${itemCount === 1 ? "item" : "itens"}`
+              : ""}
           </p>
         </div>
       </div>
@@ -462,7 +470,7 @@ function CompletedOrderCard({
   onRepeat: () => void;
 }) {
   const isCancelled = isCanceledOrder(order);
-  // Carrinho e abandonado nao foram concluidos - o visual verde de "pedido
+  // Carrinho e abandonado não foram concluidos - o visual verde de "pedido
   // entregue" daria a entender que a compra aconteceu.
   const isInert = isInertOrder(order);
   const itemCount = getItemCount(order);
@@ -496,7 +504,8 @@ function CompletedOrderCard({
             <OrderStatusBadge order={order} />
           </div>
           <p className="mt-0.5 text-xs font-medium text-[#8a8f99]">
-            Pedido #{String(getOrderId(order)).slice(0, 8)} · {getOrderDate(order)}
+            Pedido #{String(getOrderId(order)).slice(0, 8)} ·{" "}
+            {getOrderDate(order)}
             {itemCount
               ? ` · ${itemCount} ${itemCount === 1 ? "item" : "itens"}`
               : ""}

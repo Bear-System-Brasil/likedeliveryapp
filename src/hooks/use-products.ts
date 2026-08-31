@@ -1,11 +1,41 @@
+import type { Product } from "@/services/api";
 import { apiService } from "@/services/api";
 import { getCompanyProducts } from "@/services/products";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-/**
- * Hook para buscar todos os produtos
- */
+function unwrapProduct(raw: unknown): Product | null {
+  if (!raw || typeof raw !== "object") return null;
+
+  const obj = raw as Record<string, unknown>;
+  if (typeof obj.id === "string") return raw as Product;
+
+  const nested = obj.data;
+  if (
+    nested &&
+    typeof nested === "object" &&
+    typeof (nested as { id?: unknown }).id === "string"
+  ) {
+    return nested as Product;
+  }
+
+  return null;
+}
+
+function asProductList(old: unknown): Product[] {
+  return Array.isArray(old) ? (old as Product[]) : [];
+}
+
+function patchCompanyProductLists(
+  queryClient: ReturnType<typeof useQueryClient>,
+  updater: (old: Product[]) => Product[],
+) {
+  queryClient.setQueriesData(
+    { queryKey: ["products", "company"] },
+    (old: unknown) => updater(asProductList(old)),
+  );
+}
+
 export const useProducts = () => {
   return useQuery({
     queryKey: ["products"],
@@ -16,30 +46,23 @@ export const useProducts = () => {
       }
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 };
 
-/**
- * Hook para buscar produtos por empresa
- * Cache agressivo — ideal pra cardápio
- */
 export const useCompanyProducts = (companyId: string | null) => {
   return useQuery({
     queryKey: ["products", "company", companyId],
     queryFn: () => getCompanyProducts(companyId!),
     enabled: !!companyId,
-    staleTime: 10 * 60 * 1000, // 10 min
-    gcTime: 60 * 60 * 1000, // 1h
+    staleTime: 10 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
 };
 
-/**
- * Hook para buscar detalhes de um produto
- */
 export const useProduct = (productId: string | null) => {
   return useQuery({
     queryKey: ["product", productId],
@@ -52,44 +75,11 @@ export const useProduct = (productId: string | null) => {
       return response.data;
     },
     enabled: !!productId,
-    staleTime: 15 * 60 * 1000, // 15 min
+    staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
 };
 
-/**
- * Helper: invalida todas as queries relacionadas a produtos
- */
-function invalidateProductQueries(
-  queryClient: ReturnType<typeof useQueryClient>,
-  options?: { productId?: string; companyId?: string },
-) {
-  // Lista geral
-  queryClient.invalidateQueries({ queryKey: ["products"] });
-
-  // Lista por empresa (se soubermos a company)
-  if (options?.companyId) {
-    queryClient.invalidateQueries({
-      queryKey: ["products", "company", options.companyId],
-    });
-  } else {
-    // Se não souber, invalida todas as listas por empresa
-    queryClient.invalidateQueries({
-      queryKey: ["products", "company"],
-    });
-  }
-
-  // Produto individual
-  if (options?.productId) {
-    queryClient.invalidateQueries({
-      queryKey: ["product", options.productId],
-    });
-  }
-}
-
-/**
- * Hook para criar um produto
- */
 export const useCreateProduct = () => {
   const queryClient = useQueryClient();
 
@@ -99,12 +89,18 @@ export const useCreateProduct = () => {
       if (!response.success) {
         throw new Error(response.message || "Falha ao criar produto");
       }
-      return response.data;
+      return unwrapProduct(response.data) ?? response.data;
     },
-    onSuccess: (data, variables) => {
-      invalidateProductQueries(queryClient, {
-        companyId: variables.companyId ?? variables.company?.id,
-      });
+    onSuccess: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ["products", "company"] });
+
+      const product = unwrapProduct(data);
+      if (product) {
+        patchCompanyProductLists(queryClient, (old) =>
+          old.some((item) => item.id === product.id) ? old : [...old, product],
+        );
+      }
+
       toast.success("Produto criado com sucesso!");
     },
     onError: (error: Error) => {
@@ -113,9 +109,6 @@ export const useCreateProduct = () => {
   });
 };
 
-/**
- * Hook para atualizar um produto
- */
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
 
@@ -125,13 +118,34 @@ export const useUpdateProduct = () => {
       if (!response.success) {
         throw new Error(response.message || "Falha ao atualizar produto");
       }
-      return response.data;
+      return unwrapProduct(response.data) ?? response.data;
     },
-    onSuccess: (data, variables) => {
-      invalidateProductQueries(queryClient, {
-        productId: variables.id,
-        companyId: variables.data?.companyId ?? data?.companyId,
-      });
+    onSuccess: async (data, variables) => {
+      await queryClient.cancelQueries({ queryKey: ["products", "company"] });
+
+      const product = unwrapProduct(data);
+      patchCompanyProductLists(queryClient, (old) =>
+        old.map((item) =>
+          item.id === variables.id
+            ? {
+                ...item,
+                ...(product ?? variables.data),
+                id: variables.id,
+                imageURL: product?.imageURL?.length
+                  ? product.imageURL
+                  : item.imageURL,
+                productCategories: product?.productCategories?.length
+                  ? product.productCategories
+                  : item.productCategories,
+              }
+            : item,
+        ),
+      );
+
+      if (product) {
+        queryClient.setQueryData(["product", variables.id], product);
+      }
+
       toast.success("Produto atualizado com sucesso!");
     },
     onError: (error: Error) => {
@@ -140,16 +154,13 @@ export const useUpdateProduct = () => {
   });
 };
 
-/**
- * Hook para deletar um produto
- */
 export const useDeleteProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (productId: string) => {
       const response = await apiService.deleteProduct(productId);
-      if (!response.success) {
+      if (!response.success && response.status !== 404) {
         const error = new Error(
           response.message || "Falha ao deletar produto",
         ) as any;
@@ -158,8 +169,12 @@ export const useDeleteProduct = () => {
       }
       return response.data;
     },
-    onSuccess: (_data, productId) => {
-      invalidateProductQueries(queryClient, { productId });
+    onSuccess: async (_data, productId) => {
+      await queryClient.cancelQueries({ queryKey: ["products", "company"] });
+      patchCompanyProductLists(queryClient, (old) =>
+        old.filter((item) => item.id !== productId),
+      );
+      queryClient.removeQueries({ queryKey: ["product", productId] });
       toast.success("Produto removido com sucesso!");
     },
     onError: (error: any) => {

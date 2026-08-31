@@ -105,7 +105,7 @@ export function DeliveryForm({
 
       if (!response.ok) {
         toast.error(
-          response.status === 404 ? "CEP nao encontrado" : "Erro ao buscar CEP",
+          response.status === 404 ? "CEP não encontrado" : "Erro ao buscar CEP",
         );
         return;
       }

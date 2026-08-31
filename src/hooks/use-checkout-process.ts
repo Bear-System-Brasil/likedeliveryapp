@@ -417,12 +417,12 @@ export const useCheckoutProcess = () => {
         restaurant.id,
       );
 
-      // Chegando aqui o pedido ja esta gravado no banco. Sem o UUID nao da para
+      // Chegando aqui o pedido ja esta gravado no banco. Sem o UUID não da para
       // registrar pagamento e entrega, mas cancelar o fluxo seria mentira - o
       // pedido existe e precisa aparecer em "Meus pedidos".
       if (!finalOrderId) {
         toast.warning(
-          "Pedido registrado, mas nao conseguimos identificar o numero dele. Confira em Meus pedidos.",
+          "Pedido registrado, mas não conseguimos identificar o numero dele. Confira em Meus pedidos.",
         );
       }
 
@@ -455,7 +455,7 @@ export const useCheckoutProcess = () => {
 
           const paymentResponse = await apiService.payments.create(paymentData);
 
-          // `apiRequest` nao lanca excecao em 4xx - sem checar `success` a falha
+          // `apiRequest` não lanca excecao em 4xx - sem checar `success` a falha
           // de pagamento passava batida e o cliente via "pedido realizado".
           if (!paymentResponse.success) {
             toast.error(
@@ -493,7 +493,7 @@ export const useCheckoutProcess = () => {
             await apiService.deliveries.create(deliveryData);
 
           // O pedido ja existe em "Meus pedidos" mesmo sem entrega registrada,
-          // mas sem ela nao ha rastreio - a falha precisa aparecer.
+          // mas sem ela não ha rastreio - a falha precisa aparecer.
           if (!deliveryResponse.success) {
             toast.error(
               deliveryResponse.message ||

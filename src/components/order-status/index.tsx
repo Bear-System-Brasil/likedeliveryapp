@@ -74,7 +74,7 @@ export function OrderStatus({ data }: Props) {
               Status do Pedido
             </h2>
 
-            {/* Pedido cancelado nao tem progresso: a linha do tempo daria a
+            {/* Pedido cancelado não tem progresso: a linha do tempo daria a
                 entender que ele ainda esta em andamento. */}
             {order.isCanceled ? (
               <div className="mt-4 rounded-[10px] bg-red-50 px-[13px] py-[11px]">
@@ -82,7 +82,7 @@ export function OrderStatus({ data }: Props) {
                   Pedido cancelado
                 </p>
                 <p className="mt-[5px] text-[11.5px] font-semibold text-red-600">
-                  Este pedido foi cancelado e nao sera preparado.
+                  Este pedido foi cancelado e não será preparado.
                 </p>
               </div>
             ) : (
