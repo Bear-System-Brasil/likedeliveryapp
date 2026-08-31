@@ -56,6 +56,17 @@ export function getItemName(item: KitchenOrderItem): string {
   return item.product?.name || `Produto ${item.productId.slice(0, 6)}`;
 }
 
+/**
+ * Existe adicional ou variação em algum item do pedido? O card não lista
+ * cada um (viraria uma parede de "+ Adicional"); só indica presença e manda
+ * pro modal, que já mostra o nome de verdade de cada um.
+ */
+export function hasAddOnsOrVariations(order: KitchenOrder): boolean {
+  return (order.orderedItems ?? []).some(
+    (item) => (item.addOns?.length ?? 0) > 0 || (item.variations?.length ?? 0) > 0,
+  );
+}
+
 export function getOrderLabel(order: KitchenOrder): string {
   return String(order.orderNumber ?? order.id.slice(0, 6));
 }

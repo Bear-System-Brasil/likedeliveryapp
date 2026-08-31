@@ -2,7 +2,17 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Bike, Clock, Eye, MessageSquareWarning, Printer, Store, X } from "lucide-react";
+import {
+  Bike,
+  Clock,
+  Eye,
+  MessageSquareWarning,
+  Package,
+  PackagePlus,
+  Printer,
+  Store,
+  X,
+} from "lucide-react";
 import {
   getCustomerName,
   getElapsed,
@@ -11,6 +21,7 @@ import {
   getItemName,
   getOrderLabel,
   getPaymentLabel,
+  hasAddOnsOrVariations,
 } from "./helpers";
 import type { KitchenOrder } from "./types";
 
@@ -44,6 +55,7 @@ export function KitchenOrderCard({
   const observations = order.observations?.trim();
   const hasActions = actionLabel !== null;
   const isCanceled = order.status === "CANCELED";
+  const hasExtras = hasAddOnsOrVariations(order);
 
   return (
     <article
@@ -56,21 +68,9 @@ export function KitchenOrderCard({
       )}
     >
       <header className="flex items-center justify-between gap-3 border-b px-4 py-3">
-        <div className="flex items-center gap-1.5">
-          <span className="text-2xl font-black leading-none tracking-tight">
-            #{getOrderLabel(order)}
-          </span>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 cursor-pointer text-muted-foreground"
-            onClick={() => onViewDetails(order)}
-            aria-label={`Ver detalhes do pedido ${getOrderLabel(order)}`}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-        </div>
+        <span className="text-2xl font-black leading-none tracking-tight">
+          #{getOrderLabel(order)}
+        </span>
 
         <span
           className={cn(
@@ -89,41 +89,40 @@ export function KitchenOrderCard({
           {getCustomerName(order)}
         </p>
 
-        <ul className="space-y-2.5">
-          {items.map((item) => {
-            const addOns = item.addOns ?? [];
-            const variations = item.variations ?? [];
-
-            return (
-              <li key={item.id}>
-                <p className="text-lg leading-snug text-slate-900">
-                  <span className="font-black">{item.quantity}×</span>{" "}
-                  <span className="font-semibold">{getItemName(item)}</span>
-                </p>
-
-                {(addOns.length > 0 || variations.length > 0) && (
-                  <ul className="mt-1 space-y-0.5 border-l-2 border-slate-200 pl-3">
-                    {addOns.map((addOn) => (
-                      <li key={addOn.id} className="text-base text-slate-600">
-                        + {addOn.productAddOns?.description ?? "Adicional"}
-                        {addOn.quantity > 1 && ` (${addOn.quantity}×)`}
-                      </li>
-                    ))}
-                    {variations.map((variation) => (
-                      <li key={variation.id} className="text-base text-slate-600">
-                        {variation.productVariation?.description ?? "Variação"}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
+        <ul className="space-y-1.5">
+          {items.map((item) => (
+            <li key={item.id} className="text-lg leading-snug text-slate-900">
+              <span className="font-black">{item.quantity}×</span>{" "}
+              <span className="font-semibold">{getItemName(item)}</span>
+            </li>
+          ))}
 
           {items.length === 0 && (
             <li className="text-base text-muted-foreground">Sem itens registrados</li>
           )}
         </ul>
+
+        <button
+          type="button"
+          onClick={() => onViewDetails(order)}
+          aria-label={`Ver detalhes do pedido ${getOrderLabel(order)}`}
+          className={cn(
+            "flex w-full cursor-pointer items-center justify-between rounded-xl border px-3 py-2 text-left text-base font-medium",
+            hasExtras
+              ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+              : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100",
+          )}
+        >
+          <span className="flex items-center gap-1.5">
+            {hasExtras ? (
+              <PackagePlus className="h-4 w-4" />
+            ) : (
+              <Package className="h-4 w-4" />
+            )}
+            {hasExtras ? "Com adicional" : "Sem adicional"}
+          </span>
+          <Eye className="h-4 w-4 shrink-0" />
+        </button>
 
         {observations && (
           <div className="flex gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3">
