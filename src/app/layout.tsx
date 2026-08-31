@@ -6,6 +6,8 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
 import type React from "react";
+import "./globals.css";
+
 import { Suspense } from "react";
 // @ts-ignore: Cannot find module or type declarations for side-effect import of './globals.css'
 import "./globals.css";
