@@ -10,10 +10,10 @@ import {
 } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/auth-provider";
 import { useAuthStore } from "@/stores";
+import { getWorkspaceLink } from "@/constants/workspace-links";
 import { isCompanyRole } from "@/utils/role-helpers";
 import clsx from "clsx";
 import {
-  Bike,
   ChevronDown,
   LogOut,
   MapPin,
@@ -51,6 +51,7 @@ export function MainHeader({
   const { showAuthModal, logout } = useAuth();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const workspaceLink = getWorkspaceLink(user?.role);
 
   const [isMounted, setIsMounted] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -650,31 +651,17 @@ export function MainHeader({
                             </Button>
                           )}
 
-                          {user?.role === "owner" && (
+                          {workspaceLink && (
                             <Button
                               variant="outline"
                               className="w-full justify-start rounded-xl"
                               onClick={() => {
-                                router.push("/menu-management");
+                                router.push(workspaceLink.href);
                                 setMobileMenuOpen(false);
                               }}
                             >
-                              <Store className="h-4 w-4 mr-2" />
-                              Gestão
-                            </Button>
-                          )}
-
-                          {user?.role === "delivery" && (
-                            <Button
-                              variant="outline"
-                              className="w-full justify-start rounded-xl"
-                              onClick={() => {
-                                router.push("/delivery-dashboard");
-                                setMobileMenuOpen(false);
-                              }}
-                            >
-                              <Bike className="h-4 w-4 mr-2" />
-                              Minhas entregas
+                              <workspaceLink.icon className="h-4 w-4 mr-2" />
+                              {workspaceLink.label}
                             </Button>
                           )}
 

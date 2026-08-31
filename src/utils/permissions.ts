@@ -5,9 +5,9 @@
 
 export const ROUTE_PERMISSIONS: { [key: string]: string[] } = {
   // Public pages (everyone can access)
-  "/": ["owner", "admin", "manager", "cook", "delivery", "client"],
-  "/restaurants": ["owner", "admin", "manager", "cook", "delivery", "client"],
-  "/restaurant/[id]": ["owner", "admin", "manager", "cook", "delivery", "client"],
+  "/": ["owner", "admin", "manager", "cook", "delivery", "financial", "client"],
+  "/restaurants": ["owner", "admin", "manager", "cook", "delivery", "financial", "client"],
+  "/restaurant/[id]": ["owner", "admin", "manager", "cook", "delivery", "financial", "client"],
 
   // Client pages
   "/cart": ["client"],
@@ -23,18 +23,18 @@ export const ROUTE_PERMISSIONS: { [key: string]: string[] } = {
   "/kitchen": ["owner", "admin", "manager", "cook"],
 
   // Financial management
-  "/financial-management": ["owner", "admin"],
-  "/financial-management/dashboard": ["owner", "admin"],
-  "/financial-management/orders": ["owner", "admin"],
-  "/financial-management/customers": ["owner", "admin"],
-  "/financial-management/finance": ["owner", "admin"],
-  "/financial-management/settings": ["owner", "admin"],
+  "/financial-management": ["owner", "admin", "financial"],
+  "/financial-management/dashboard": ["owner", "admin", "financial"],
+  "/financial-management/orders": ["owner", "admin", "financial"],
+  "/financial-management/customers": ["owner", "admin", "financial"],
+  "/financial-management/finance": ["owner", "admin", "financial"],
+  "/financial-management/settings": ["owner", "admin", "financial"],
 
   // Company profile (owner and admin)
   "/company-profile": ["owner", "admin"],
 
   // Profile (all authenticated users)
-  "/profile": ["owner", "admin", "manager", "cook", "delivery", "client"],
+  "/profile": ["owner", "admin", "manager", "cook", "delivery", "financial", "client"],
 };
 
 /**
@@ -46,6 +46,7 @@ export const USER_ROLES = {
   MANAGER: "manager",
   COOK: "cook",
   DELIVERY: "delivery",
+  FINANCIAL: "financial",
   CLIENT: "client",
 } as const;
 
@@ -58,6 +59,7 @@ export const ROLE_LABELS: { [key: string]: string } = {
   manager: "Gerente",
   cook: "Cozinheiro",
   delivery: "Entregador",
+  financial: "Financeiro",
   client: "Cliente",
 };
 
@@ -70,6 +72,7 @@ export const ROLE_DESCRIPTIONS: { [key: string]: string } = {
   manager: "Gerente com acesso à gestão operacional",
   cook: "Cozinheiro com acesso aos pedidos em produção",
   delivery: "Entregador com acesso aos pedidos para entrega",
+  financial: "Financeiro com acesso à gestão financeira",
   client: "Cliente com acesso ao catálogo e pedidos",
 };
 
