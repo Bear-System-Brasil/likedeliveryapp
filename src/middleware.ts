@@ -19,7 +19,7 @@ const PROTECTED: { prefix: string; roles?: string[] }[] = [
   },
   { prefix: "/kitchen", roles: ["owner", "admin", "manager", "cook"] },
   { prefix: "/company-profile", roles: ["owner", "admin"] },
-  { prefix: "/financial-management", roles: ["owner", "admin"] },
+  { prefix: "/financial-management", roles: ["owner", "admin", "financial"] },
   { prefix: "/team-management", roles: ["owner", "admin", "manager"] },
   { prefix: "/delivery-dashboard", roles: ["delivery"] },
 ];
