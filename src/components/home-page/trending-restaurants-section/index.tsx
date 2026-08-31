@@ -323,7 +323,7 @@ export function TrendingRestaurantsSection({
           emptyMessage={
             shouldAskForLocation
               ? "Escolha um endereço para ver as novidades perto de você."
-              : "Ainda nao ha novidades perto de você."
+              : "Ainda não ha novidades perto de você."
           }
         />
 
@@ -365,7 +365,7 @@ export function TrendingRestaurantsSection({
               message={
                 selectedStoreCategory
                   ? "Nenhuma loja encontrada nessa categoria."
-                  : "Ainda nao ha lojas perto de você."
+                  : "Ainda não ha lojas perto de você."
               }
             />
           )}

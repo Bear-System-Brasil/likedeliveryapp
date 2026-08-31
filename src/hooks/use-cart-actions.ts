@@ -245,7 +245,7 @@ export const useCartActions = () => {
             };
           });
           setItems(cartItems);
-        } else { 
+        } else {
           setRestaurant(null);
           setItems([]);
         }
@@ -420,10 +420,10 @@ export const useCartActions = () => {
           extras,
         );
 
-        // 404 aqui significa que o orderId guardado no localStorage nao existe
+        // 404 aqui significa que o orderId guardado no localStorage não existe
         // mais no backend (pedido ja finalizado ou carrinho expirado no Redis).
         // Nesse caso abrimos um carrinho novo e tentamos de novo, em vez de
-        // insistir num id morto e falhar toda adicao de item.
+        // insistir num id morto e falhar toda adição de item.
         if (!response.success && response.status === 404) {
           const recreated = await apiService.orders.openCart(user.id, {
             companyId: item.restaurantId,

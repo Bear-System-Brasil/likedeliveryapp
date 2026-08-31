@@ -5,10 +5,10 @@ import { getSessionToken } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 /**
- * O socket.io conecta direto no NestJS (WS nao passa pelo proxy HTTP do
+ * O socket.io conecta direto no NestJS (WS não passa pelo proxy HTTP do
  * Next), entao precisa do JWT cru pra autenticar o handshake. Este endpoint
  * le o cookie httpOnly no servidor e devolve o token só pra esse uso - ele
- * nao fica em localStorage nem no Zustand, so em memoria no componente que
+ * não fica em localStorage nem no Zustand, so em memoria no componente que
  * abre o socket.
  */
 export async function GET() {

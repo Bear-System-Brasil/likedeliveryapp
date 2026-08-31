@@ -2,7 +2,7 @@ import type { Product } from "@/services/api";
 import { apiService } from "@/services/api";
 import { useAuthStore } from "@/stores";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useCategories } from "./use-categories";
 import {
@@ -23,26 +23,122 @@ interface ProductFormData {
   stockQuantity: number | undefined;
 }
 
-/**
- * Hook para gerenciar menu/produtos da empresa
- */
+function unwrapProduct(raw: unknown): Product | null {
+  if (!raw || typeof raw !== "object") return null;
+
+  const obj = raw as Record<string, unknown>;
+  if (typeof obj.id === "string" && typeof obj.name === "string") {
+    return raw as Product;
+  }
+
+  const nested = obj.data;
+  if (
+    nested &&
+    typeof nested === "object" &&
+    typeof (nested as { id?: unknown }).id === "string" &&
+    typeof (nested as { name?: unknown }).name === "string"
+  ) {
+    return nested as Product;
+  }
+
+  return null;
+}
+
+function readErrorMessage(payload: unknown, fallback: string) {
+  if (!payload || typeof payload !== "object") return fallback;
+  const body = payload as Record<string, unknown>;
+  if (typeof body.message === "string" && body.message.trim()) {
+    return body.message;
+  }
+  if (Array.isArray(body.message) && body.message.length) {
+    return String(body.message[0]);
+  }
+  if (typeof body.error === "string" && body.error.trim()) {
+    return body.error;
+  }
+  return fallback;
+}
+
+async function uploadProductImageSafe(productId: string, file: File) {
+  const fieldNames = ["image", "file", "photo"];
+  let lastMessage = "Erro ao fazer upload da imagem";
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (const field of fieldNames) {
+      const formData = new FormData();
+      formData.append(field, file, file.name);
+
+      const response = await fetch(`/api/proxy/product/image/${productId}`, {
+        method: "POST",
+        headers: { "X-Auth-Required": "1" },
+        body: formData,
+      });
+
+      const raw = await response.text();
+      let payload: unknown = null;
+      try {
+        payload = raw ? JSON.parse(raw) : null;
+      } catch {
+        payload = raw;
+      }
+
+      if (response.ok) {
+        return { success: true as const, data: payload };
+      }
+
+      lastMessage = readErrorMessage(
+        payload,
+        `Erro ${response.status} ao enviar a imagem`,
+      );
+
+      if (response.status === 404 && attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        break;
+      }
+    }
+  }
+
+  return { success: false as const, message: lastMessage };
+}
+
+function buildCategoryLink(
+  productId: string,
+  categoryId: string,
+  categoryName: string,
+): NonNullable<Product["productCategories"]> {
+  return [
+    {
+      id: `${productId}-${categoryId}`,
+      productId,
+      categoryId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      category: {
+        id: categoryId,
+        name: categoryName,
+        companyId: "",
+        description: "",
+        created_at: "",
+        updated_at: "",
+      },
+    },
+  ];
+}
+
 export const useMenuManagement = () => {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const companyId = user?.companyId || user?.id || null;
+  const productsQueryKey = ["products", "company", companyId] as const;
 
-  // React Query hooks
-  const {
-    data: products = [],
-    isLoading: loadingProducts,
-    refetch,
-  } = useCompanyProducts(user?.companyId || user?.id || null);
+  const { data: queryProducts = [], isLoading: loadingProducts } =
+    useCompanyProducts(companyId);
   const { data: categories = [], isLoading: loadingCategories } =
     useCategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
 
-  // Local state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<ProductFormData>({
@@ -62,11 +158,65 @@ export const useMenuManagement = () => {
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [createdProducts, setCreatedProducts] = useState<Product[]>([]);
+  const [removedProductIds, setRemovedProductIds] = useState<string[]>([]);
 
-  /**
-   * Produtos filtrados por busca e categoria
-   */
+  const upsertProductInCache = (product: Product) => {
+    setCreatedProducts((prev) => {
+      const index = prev.findIndex((item) => item.id === product.id);
+      if (index === -1) return [...prev, product];
+      const next = [...prev];
+      next[index] = {
+        ...next[index],
+        ...product,
+        imageURL: product.imageURL?.length
+          ? product.imageURL
+          : next[index].imageURL,
+        productCategories: product.productCategories?.length
+          ? product.productCategories
+          : next[index].productCategories,
+      };
+      return next;
+    });
+
+    queryClient.setQueryData(productsQueryKey, (old: Product[] = []) => {
+      const list = Array.isArray(old) ? old : [];
+      const index = list.findIndex((item) => item.id === product.id);
+      if (index === -1) return [...list, product];
+
+      const current = list[index];
+      const next = [...list];
+      next[index] = {
+        ...current,
+        ...product,
+        imageURL: product.imageURL?.length
+          ? product.imageURL
+          : current.imageURL,
+        productCategories: product.productCategories?.length
+          ? product.productCategories
+          : current.productCategories,
+      };
+      return next;
+    });
+  };
+
+  const products = useMemo(() => {
+    const fromQuery = (
+      Array.isArray(queryProducts) ? queryProducts : []
+    ).filter((product) => !removedProductIds.includes(product.id));
+
+    const extras = createdProducts.filter(
+      (product) =>
+        !removedProductIds.includes(product.id) &&
+        !fromQuery.some((item) => item.id === product.id),
+    );
+
+    return [...extras, ...fromQuery];
+  }, [queryProducts, createdProducts, removedProductIds]);
+
   const filteredProducts = products.filter((product: Product) => {
+    if (!product?.name) return false;
+
     const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -82,9 +232,6 @@ export const useMenuManagement = () => {
     return matchesSearch && matchesCategory;
   });
 
-  /**
-   * Abre modal para criar produto
-   */
   const handleOpenCreateModal = () => {
     setEditingProduct(null);
     setFormData({
@@ -100,9 +247,6 @@ export const useMenuManagement = () => {
     setIsModalOpen(true);
   };
 
-  /**
-   * Abre modal para editar produto
-   */
   const handleOpenEditModal = (product: Product) => {
     setEditingProduct(product);
     setFormData({
@@ -124,9 +268,6 @@ export const useMenuManagement = () => {
     setIsModalOpen(true);
   };
 
-  /**
-   * Fecha o modal e limpa o formulário
-   */
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
@@ -144,16 +285,10 @@ export const useMenuManagement = () => {
     });
   };
 
-  /**
-   * Atualiza campo do formulário
-   */
   const updateFormField = (field: keyof ProductFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  /**
-   * Valida o formulário
-   */
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
       toast.error("Nome do produto é obrigatório");
@@ -163,7 +298,6 @@ export const useMenuManagement = () => {
       toast.error("Nome do prato deve ter no máximo 80 caracteres");
       return false;
     }
-
     if (formData.description.trim().length > 300) {
       toast.error("Descrição deve ter no máximo 300 caracteres");
       return false;
@@ -172,12 +306,10 @@ export const useMenuManagement = () => {
       toast.error("Preço de venda é obrigatório e deve ser no mínimo R$ 0,01");
       return false;
     }
-
     if (formData.costPrice === undefined || formData.costPrice < 0) {
       toast.error("Preço de custo é obrigatório e deve ser não-negativo");
       return false;
     }
-
     if (
       formData.costPrice !== undefined &&
       formData.costPrice > 0 &&
@@ -188,7 +320,6 @@ export const useMenuManagement = () => {
       );
       return false;
     }
-
     if (
       formData.costPrice !== undefined &&
       formData.salePrice !== undefined &&
@@ -197,12 +328,10 @@ export const useMenuManagement = () => {
       toast.error("Preço de custo não pode ser maior que o preço de venda");
       return false;
     }
-
     if (formData.stockQuantity === undefined || formData.stockQuantity < 1) {
       toast.error("Quantidade em estoque é obrigatória e deve ser no mínimo 1");
       return false;
     }
-
     if (isCreatingCategory) {
       if (!newCategoryName.trim()) {
         toast.error("O nome da nova categoria é obrigatório");
@@ -216,20 +345,13 @@ export const useMenuManagement = () => {
         toast.error("Nome da categoria deve ter no máximo 50 caracteres");
         return false;
       }
-    }
-    // Se não, valida o select normal
-    else if (!formData.categoryId) {
+    } else if (!formData.categoryId) {
       toast.error("Selecione uma categoria");
       return false;
     }
-    // -------------------
-
     return true;
   };
 
-  /**
-   * Salva o produto (criar ou atualizar) com upload de imagem
-   */
   const handleSaveProduct = async (selectedImages?: File[]) => {
     if (!validateForm()) return;
 
@@ -239,71 +361,64 @@ export const useMenuManagement = () => {
       let productId: string | null = null;
       let finalCategoryId = formData.categoryId;
 
-      // 1. Criar a categoria primeiro, se o usuário optou por criar uma nova
       if (isCreatingCategory) {
-        try {
-          const newCategoryResponse = await apiService.createCategory({
-            name: newCategoryName,
-            description: newCategoryName.trim(),
-          });
+        const newCategoryResponse = await apiService.createCategory({
+          name: newCategoryName,
+          description: newCategoryName.trim(),
+        });
 
-          if (!newCategoryResponse.success || !newCategoryResponse.data?.id) {
-            toast.error("Erro ao criar a nova categoria. Tente novamente.");
-            setIsSaving(false);
-            return;
-          }
+        const createdCategory =
+          newCategoryResponse.data &&
+          typeof newCategoryResponse.data === "object" &&
+          "id" in newCategoryResponse.data
+            ? newCategoryResponse.data
+            : unwrapProduct(newCategoryResponse.data);
 
-          finalCategoryId = newCategoryResponse.data.id;
-
-          queryClient.invalidateQueries({ queryKey: ["categories"] });
-        } catch (catError) {
-          console.error("Erro ao criar categoria:", catError);
+        if (!newCategoryResponse.success || !createdCategory?.id) {
           toast.error("Erro ao criar a nova categoria. Tente novamente.");
-          setIsSaving(false);
           return;
         }
+
+        finalCategoryId = createdCategory.id;
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
       }
 
       if (editingProduct) {
-        // Update: send only fields the backend DTO accepts (no productCategories)
-        const updateData = {
-          name: formData.name,
-          description: formData.description,
-          costPrice: formData.costPrice ?? 0,
-          salePrice: formData.salePrice ?? 0,
-          isAvailable: formData.available,
-          stockQuantity: formData.stockQuantity ?? 0,
-        };
-
         await updateProduct.mutateAsync({
           id: editingProduct.id,
-          data: updateData,
+          data: {
+            name: formData.name,
+            description: formData.description,
+            costPrice: formData.costPrice ?? 0,
+            salePrice: formData.salePrice ?? 0,
+            isAvailable: formData.available,
+            stockQuantity: formData.stockQuantity ?? 0,
+          },
         });
         productId = editingProduct.id;
 
-        // Handle category change via category-product API
         const oldCategoryId =
-          editingProduct.productCategories?.[0]?.category?.id;
+          editingProduct.productCategories?.[0]?.category?.id ||
+          editingProduct.productCategories?.[0]?.categoryId;
 
-        // Verifica usando o finalCategoryId
         if (finalCategoryId && finalCategoryId !== oldCategoryId) {
-          // Remove old category link if it exists
           const oldLink = editingProduct.productCategories?.[0];
-          if (oldLink?.productId && oldLink?.categoryId) {
+          const oldProductId = oldLink?.productId || editingProduct.id;
+          const oldCatId = oldLink?.categoryId || oldCategoryId;
+          if (oldProductId && oldCatId) {
             try {
               await apiService.unlinkCategoryFromProduct(
-                oldLink.productId,
-                oldLink.categoryId,
+                oldProductId,
+                oldCatId,
               );
             } catch (e) {
               console.error("Erro ao remover categoria antiga:", e);
             }
           }
-          // Add new category link
           try {
             await apiService.linkCategoryToProduct(
               productId,
-              finalCategoryId, // Usa a categoria final (nova ou existente)
+              finalCategoryId,
               formData.description || formData.name,
             );
           } catch (e) {
@@ -312,175 +427,210 @@ export const useMenuManagement = () => {
           }
         }
       } else {
-        // Create: backend CreateProductInput supports productCategories
-        const createData = {
+        const result = unwrapProduct(
+          await createProduct.mutateAsync({
+            name: formData.name,
+            description: formData.description,
+            costPrice: formData.costPrice ?? 0,
+            salePrice: formData.salePrice ?? 0,
+            isAvailable: formData.available,
+            stockQuantity: formData.stockQuantity ?? 0,
+          }),
+        );
+        productId = result?.id || null;
+
+        if (!result || !productId) {
+          toast.error("Produto criado, mas a resposta não veio com ID.");
+          return;
+        }
+
+        const selectedCat = categories.find(
+          (cat) => cat.id === finalCategoryId,
+        );
+        const categoryName =
+          selectedCat?.name || newCategoryName.trim() || "Sem categoria";
+
+        if (finalCategoryId) {
+          try {
+            await apiService.linkCategoryToProduct(
+              productId,
+              finalCategoryId,
+              formData.description || formData.name,
+            );
+          } catch (e) {
+            console.error("Erro ao vincular categoria:", e);
+            toast.error("Prato criado, mas a categoria não foi vinculada.");
+          }
+        }
+
+        await queryClient.cancelQueries({ queryKey: productsQueryKey });
+        upsertProductInCache({
+          ...result,
+          companyId: result.companyId || companyId || "",
+          productCategories: result.productCategories?.length
+            ? result.productCategories
+            : finalCategoryId
+              ? buildCategoryLink(productId, finalCategoryId, categoryName)
+              : [],
+        });
+      }
+
+      if (selectedImages?.length && productId) {
+        upsertProductInCache({
+          id: productId,
           name: formData.name,
           description: formData.description,
           costPrice: formData.costPrice ?? 0,
           salePrice: formData.salePrice ?? 0,
           isAvailable: formData.available,
           stockQuantity: formData.stockQuantity ?? 0,
-          productCategories: [finalCategoryId], // Usa a categoria final (nova ou existente)
-        };
+          companyId: companyId || "",
+          orderedItems: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          imageURL: selectedImages.map((file, index) => ({
+            id: `local-${productId}-${index}`,
+            url: URL.createObjectURL(file),
+            productId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })),
+        } as Product);
 
-        const result = await createProduct.mutateAsync(createData);
-        productId = result?.id || null;
+        let latestWithImages: Product | null = null;
 
-        // Insere o produto novo direto no cache em vez de confiar só no
-        // refetch logo abaixo - um GET disparado bem em seguida do POST
-        // às vezes ainda devolve a lista sem o item recém-criado (o prato
-        // só aparecia depois de um F5). A imagem/categoria, se ainda
-        // pendentes, chegam no refetch de qualquer forma.
-        if (result) {
-          queryClient.setQueryData(
-            ["products", "company", user?.companyId || user?.id || null],
-            (old: Product[] = []) =>
-              old.some((p) => p.id === result.id) ? old : [...old, result],
-          );
-        }
-      }
-
-      // Fazer upload das imagens, se fornecidas - uma de cada vez. Chegou a
-      // rodar em paralelo (Promise.allSettled), mas o backend não lida bem
-      // com múltiplas escritas simultâneas na lista de imagens do mesmo
-      // produto (leitura-modificação-escrita concorrente derruba upload em
-      // silêncio) - voltou a ser sequencial de propósito.
-      if (selectedImages?.length && productId) {
-        let uploadedCount = 0;
         for (const image of selectedImages) {
-          try {
-            const uploadResponse = await apiService.uploadProductImage(
-              productId,
-              image,
-            );
-            if (uploadResponse.success) {
-              uploadedCount += 1;
+          const uploadResponse = await uploadProductImageSafe(productId, image);
+
+          if (uploadResponse.success) {
+            const uploadedProduct = unwrapProduct(uploadResponse.data);
+
+            if (uploadedProduct) {
+              latestWithImages = uploadedProduct;
             } else {
-              toast.error(
-                `Erro ao enviar "${image.name}": ${uploadResponse.message}`,
-              );
+              const payload = uploadResponse.data as any;
+              const image = payload?.data ?? payload;
+              const url = typeof image === "string" ? image : image?.url;
+              const imageId = typeof image === "object" ? image?.id : undefined;
+
+              if (url && productId) {
+                upsertProductInCache({
+                  id: productId,
+                  name: formData.name,
+                  description: formData.description,
+                  costPrice: formData.costPrice ?? 0,
+                  salePrice: formData.salePrice ?? 0,
+                  isAvailable: formData.available,
+                  stockQuantity: formData.stockQuantity ?? 0,
+                  companyId: companyId || "",
+                  orderedItems: [],
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  imageURL: [
+                    {
+                      id: imageId || `uploaded-${Date.now()}`,
+                      url,
+                      productId,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                    },
+                  ],
+                } as Product);
+              }
             }
-          } catch (imageError) {
-            console.error("Erro ao fazer upload da imagem:", imageError);
-            toast.error(`Erro ao enviar "${image.name}"`);
+          } else {
+            toast.error(
+              `Erro ao enviar "${image.name}": ${uploadResponse.message}`,
+            );
           }
         }
-        if (uploadedCount > 0) {
-          toast.success(
-            uploadedCount === 1
-              ? "Imagem enviada com sucesso!"
-              : `${uploadedCount} imagens enviadas com sucesso!`,
-          );
+
+        if (latestWithImages) {
+          upsertProductInCache(latestWithImages);
         }
       }
 
       handleCloseModal();
-      refetch();
     } catch (error: any) {
-      console.error(
-        "Erro detalhado ao salvar produto:",
-        error?.response?.data || error,
+      console.error("Erro detalhado ao salvar produto:", error);
+      toast.error(
+        error?.errorMessage || error?.message || "Erro ao salvar produto",
       );
-      toast.error(error?.response?.data?.message || "Erro ao salvar produto");
     } finally {
       setIsSaving(false);
     }
   };
 
-  /**
-   * Abre o dialog de confirmação de delete
-   */
   const handleRequestDelete = (product: Product) => {
     setDeleteTarget(product);
   };
 
-  /**
-   * Cancela o delete
-   */
   const handleCancelDelete = () => {
     setDeleteTarget(null);
   };
 
-  /**
-   * Confirma e deleta o produto
-   * Limpa relações (categorias e imagens) antes de deletar,
-   * pois o backend em produção não faz essa limpeza automaticamente.
-   */
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
 
+    const targetId = deleteTarget.id;
+
+    setRemovedProductIds((prev) =>
+      prev.includes(targetId) ? prev : [...prev, targetId],
+    );
+    setCreatedProducts((prev) => prev.filter((item) => item.id !== targetId));
+    queryClient.setQueryData(productsQueryKey, (old: Product[] = []) =>
+      (Array.isArray(old) ? old : []).filter((item) => item.id !== targetId),
+    );
+    setDeleteTarget(null);
+
     setIsDeleting(true);
     try {
-      // 1. Remover vínculos de categoria - um de cada vez. Chegou a rodar em
-      // paralelo, mas escritas concorrentes nas relações do mesmo produto
-      // deixavam o delete flaky (falhava na 1ª tentativa, funcionava na 2ª)
-      // - voltou a ser sequencial de propósito.
-      const categoryLinks = deleteTarget.productCategories || [];
-      for (const link of categoryLinks) {
+      for (const link of deleteTarget.productCategories || []) {
+        const productId = link.productId || targetId;
+        const categoryId = link.categoryId || link.category?.id;
+        if (!productId || !categoryId) continue;
         try {
-          await apiService.unlinkCategoryFromProduct(
-            link.productId,
-            link.categoryId,
-          );
+          await apiService.unlinkCategoryFromProduct(productId, categoryId);
         } catch (e) {
           console.warn("Erro ao desvincular categoria:", link.id, e);
         }
       }
 
-      // 2. Remover imagens
-      const images = deleteTarget.imageURL || [];
-      for (const img of images) {
+      for (const img of deleteTarget.imageURL || []) {
+        if (!img?.id || img.id.startsWith("local-")) continue;
         try {
-          await apiService.deleteProductImage(deleteTarget.id, img.id);
+          await apiService.deleteProductImage(targetId, img.id);
         } catch (e) {
           console.warn("Erro ao remover imagem:", img.id, e);
         }
       }
 
-      // 3. Deletar o produto
-      await deleteProduct.mutateAsync(deleteTarget.id);
-
-      // Remove do cache na hora - mesmo motivo do create: um GET disparado
-      // logo após o DELETE às vezes ainda devolve o item removido (só
-      // sumia da tela quando outro prato era removido em seguida).
-      queryClient.setQueryData(
-        ["products", "company", user?.companyId || user?.id || null],
-        (old: Product[] = []) =>
-          old.filter((p) => p.id !== deleteTarget.id),
-      );
-
-      toast.success("Prato removido com sucesso!");
-      setDeleteTarget(null);
+      await queryClient.cancelQueries({ queryKey: productsQueryKey });
+      await deleteProduct.mutateAsync(targetId);
     } catch (error: any) {
       console.error("Erro ao deletar produto:", error);
-      const errorMessage = error?.errorMessage || error?.message || "";
-      toast.error(errorMessage || "Não foi possível deletar este prato.");
+      toast.error(
+        error?.errorMessage ||
+          error?.message ||
+          "Não foi possível deletar este prato.",
+      );
+      setRemovedProductIds((prev) => prev.filter((id) => id !== targetId));
     } finally {
       setIsDeleting(false);
     }
   };
 
-  /**
-   * Remove uma foto específica de um prato (sem mexer nas outras) -
-   * DELETE /product/image/:productId/:imageId, endpoint que já existia mas
-   * não tinha nenhuma UI usando.
-   */
   const handleDeleteProductImage = async (
     productId: string,
     imageId: string,
   ) => {
     try {
-      const response = await apiService.deleteProductImage(
-        productId,
-        imageId,
-      );
+      const response = await apiService.deleteProductImage(productId, imageId);
       if (!response.success) {
         toast.error(response.message || "Erro ao remover imagem");
         return;
       }
 
-      // Reflete na hora tanto no modal aberto quanto na grade de pratos,
-      // sem esperar um refetch pra sumir a miniatura removida.
       setEditingProduct((prev) =>
         prev && prev.id === productId
           ? {
@@ -490,14 +640,15 @@ export const useMenuManagement = () => {
           : prev,
       );
 
-      queryClient.setQueryData(
-        ["products", "company", user?.companyId || user?.id || null],
-        (old: Product[] = []) =>
-          old.map((p) =>
-            p.id === productId
-              ? { ...p, imageURL: p.imageURL?.filter((img) => img.id !== imageId) }
-              : p,
-          ),
+      queryClient.setQueryData(productsQueryKey, (old: Product[] = []) =>
+        (Array.isArray(old) ? old : []).map((item) =>
+          item.id === productId
+            ? {
+                ...item,
+                imageURL: item.imageURL?.filter((img) => img.id !== imageId),
+              }
+            : item,
+        ),
       );
 
       toast.success("Imagem removida");
@@ -507,26 +658,16 @@ export const useMenuManagement = () => {
     }
   };
 
-  /**
-   * Alterna disponibilidade do produto
-   * Usa optimistic updates para resposta instantânea
-   */
   const handleToggleAvailability = async (product: Product) => {
-    const queryKey = [
-      "products",
-      "company",
-      user?.companyId || user?.id || null,
-    ];
+    const previousProducts = queryClient.getQueryData(productsQueryKey);
 
-    // Salva estado anterior para rollback em caso de erro
-    const previousProducts = queryClient.getQueryData(queryKey);
-
-    // Atualiza UI imediatamente (optimistic update)
-    queryClient.setQueryData(queryKey, (old: Product[] = []) => {
-      return old.map((p) =>
-        p.id === product.id ? { ...p, isAvailable: !p.isAvailable } : p,
-      );
-    });
+    queryClient.setQueryData(productsQueryKey, (old: Product[] = []) =>
+      (Array.isArray(old) ? old : []).map((item) =>
+        item.id === product.id
+          ? { ...item, isAvailable: !item.isAvailable }
+          : item,
+      ),
+    );
 
     try {
       await updateProduct.mutateAsync({
@@ -537,37 +678,29 @@ export const useMenuManagement = () => {
           costPrice: product.costPrice,
           salePrice: product.salePrice,
           isAvailable: !product.isAvailable,
-          companyId: user?.companyId || user?.id || "",
+          companyId: companyId || "",
           stockQuantity: product.stockQuantity || 0,
         },
       });
     } catch (error) {
-      // Reverte para estado anterior em caso de erro
-      queryClient.setQueryData(queryKey, previousProducts);
+      queryClient.setQueryData(productsQueryKey, previousProducts);
       console.error("Erro ao atualizar disponibilidade:", error);
       toast.error("Erro ao atualizar disponibilidade");
     }
   };
 
   return {
-    // Data
     products: filteredProducts,
     allProducts: products,
     categories,
     isLoading: loadingProducts || loadingCategories,
-
-    // Modal state
     isModalOpen,
     editingProduct,
     formData,
-
-    // Filters
     searchQuery,
     setSearchQuery,
     selectedCategory,
     setSelectedCategory,
-
-    // Actions
     handleOpenCreateModal,
     handleOpenEditModal,
     handleCloseModal,
@@ -582,8 +715,6 @@ export const useMenuManagement = () => {
     setIsCreatingCategory,
     newCategoryName,
     setNewCategoryName,
-
-    // Loading states
     isSaving,
     isDeleting,
     deleteTarget,

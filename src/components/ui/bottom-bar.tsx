@@ -1,6 +1,13 @@
 "use client";
 
-import { ClipboardList, Home, LogIn, ShoppingCart, Store, User } from "lucide-react";
+import {
+  ClipboardList,
+  Home,
+  LogIn,
+  ShoppingCart,
+  Store,
+  User,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ComponentType } from "react";
 
@@ -43,7 +50,7 @@ const managementRoutes = [
 // Fluxos focados que ja possuem barra de acao fixa no rodape (checkout) ou
 // cabecalho proprio com as acoes do papel (entregador), e a tela da cozinha
 // (operacional, sem espaço vertical de sobra) - a nav do cliente (carrinho,
-// pedidos de cliente etc.) nao faz sentido sobreposta ali.
+// pedidos de cliente etc.) não faz sentido sobreposta ali.
 const hiddenRoutes = ["/checkout", "/delivery-dashboard", "/kitchen"];
 
 function getActiveTab(pathname: string): BottomTabId {

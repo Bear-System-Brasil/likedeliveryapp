@@ -12,7 +12,7 @@ type Props = {
 
 /**
  * Mapa do entregador em tempo real. A mensagem de status fica no tracker, para
- * nao duplicar o mesmo bloco em cima do mapa.
+ * não duplicar o mesmo bloco em cima do mapa.
  */
 export function DeliveringMap({ order, lat, lng }: Props) {
   const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;

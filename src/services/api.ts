@@ -146,7 +146,10 @@ function withPagination(endpoint: string, params?: PaginationParams): string {
   return `${endpoint}${separator}${qs.toString()}`;
 }
 
-function withOrderDateRange(endpoint: string, params?: OrderDateRangeParams): string {
+function withOrderDateRange(
+  endpoint: string,
+  params?: OrderDateRangeParams,
+): string {
   if (!params) return endpoint;
   const qs = new URLSearchParams();
   if (params.page) qs.set("page", String(params.page));
@@ -973,6 +976,8 @@ export const apiService = {
     apiRequest<PaginatedResponse<Product>>(
       "GET",
       withPagination(`/product/company/${companyId}`, params),
+      undefined,
+      true,
     ),
 
   createProduct: (productData: CreateProductRequest) =>
