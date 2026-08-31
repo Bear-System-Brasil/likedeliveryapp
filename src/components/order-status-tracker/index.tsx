@@ -12,8 +12,8 @@ import {
   StepperTitle,
   StepperTrigger,
 } from "@/components/reui/stepper";
-import { CheckIcon } from "lucide-react";
-
+import { Check } from "lucide-react";
+import { ORDER_STEPS, getOrderStep } from "@/lib/order-status";
 import { Socket, io } from "socket.io-client";
 
 const DELIVERY_TRACKING_URL = process.env.NEXT_PUBLIC_API_URL
@@ -21,19 +21,6 @@ const DELIVERY_TRACKING_URL = process.env.NEXT_PUBLIC_API_URL
   : "";
 const DEBUG_DELIVERY_TRACKING =
   process.env.NEXT_PUBLIC_DELIVERY_TRACKING_DEBUG === "true";
-
-/**
- * A linha do tempo tem 4 marcos. O status "ready" (pedido pronto) e
- * "delivering" (saiu para entrega) compartilham o terceiro - o que muda entre
- * eles e o rotulo, ja que pedido de retirada nunca fica "a caminho".
- */
-const STEP_INDEX_BY_STATUS: Record<OrderStatus, number> = {
-  confirmed: 0,
-  preparing: 1,
-  ready: 2,
-  delivering: 2,
-  delivered: 3,
-};
 
 type Props = {
   data: {
@@ -59,8 +46,6 @@ export function OrderStatusTracker({ data }: Props) {
     let socket: Socket | null = null;
     let cancelled = false;
 
-    // O JWT não fica no client - busca no BFF (cookie httpOnly) só na hora
-    // de abrir o handshake do socket, que conecta direto no NestJS.
     fetch("/api/auth/socket-token")
       .then((res) => res.json())
       .then(({ token }: { token: string | null }) => {
@@ -108,48 +93,42 @@ export function OrderStatusTracker({ data }: Props) {
 
   if (!order) return null;
 
-  const currentIndex = STEP_INDEX_BY_STATUS[order.status] ?? 0;
-  const stepLabels = [
-    "Confirmado",
-    "Preparando",
-    order.delivery ? "A caminho" : "Pronto",
-    "Entregue",
-  ];
+  const step = getOrderStep({
+    status: order.rawStatus,
+    delivery: order.delivery,
+  });
 
   const showLiveMap = order.status === "delivering" && Boolean(order.delivery);
 
   return (
     <div>
-      {/* Marco atual conta como "alcançado" - mesma leitura da versão
-          anterior, que já marcava o passo em andamento com check. */}
       <Stepper
-        value={currentIndex + 1}
+        value={step + 1}
         indicators={{
-          completed: <CheckIcon className="size-3.5" />,
-          active: <CheckIcon className="size-3.5" />,
+          completed: <Check className="size-3" />,
+          active: <Check className="size-3" />,
         }}
       >
         <StepperNav>
-          {stepLabels.map((label, index) => {
-            const step = index + 1;
-            return (
-              <StepperItem
-                key={label}
-                step={step}
-                className="relative flex-1 flex-col items-center"
-              >
-                <StepperSeparator className="absolute inset-x-0 top-3.5 z-0 m-0 h-0.5 w-full bg-[#e9eaee] data-[state=completed]:bg-success" />
+          {ORDER_STEPS.map((label, index) => (
+            <StepperItem
+              key={label}
+              step={index + 1}
+              className="relative flex-1 flex-col items-center"
+            >
+              {index < ORDER_STEPS.length - 1 && (
+                <StepperSeparator className="absolute left-1/2 top-2.5 z-0 m-0 h-px w-full bg-[#e9eaee] data-[state=completed]:bg-success" />
+              )}
 
-                <StepperTrigger className="flex flex-col items-center gap-1.5">
-                  <StepperIndicator className="relative z-10 size-[30px] border-2 border-[#e4e6ea] bg-white text-transparent duration-500 data-[state=active]:border-success data-[state=active]:bg-white data-[state=active]:text-success data-[state=completed]:border-success data-[state=completed]:bg-success data-[state=completed]:text-white" />
+              <StepperTrigger className="flex flex-col items-center gap-2">
+                <StepperIndicator className="relative z-10 size-5 border-2 border-[#d6d8dd] bg-white text-transparent data-[state=active]:border-success data-[state=active]:bg-success data-[state=active]:text-white data-[state=active]:ring-4 data-[state=active]:ring-success/10 data-[state=completed]:border-success data-[state=completed]:bg-success data-[state=completed]:text-white" />
 
-                  <StepperTitle className="text-center text-[10.5px] font-semibold text-[#a2a7b0] data-[state=active]:font-extrabold data-[state=active]:text-success data-[state=completed]:font-bold data-[state=completed]:text-[#3d4149]">
-                    {label}
-                  </StepperTitle>
-                </StepperTrigger>
-              </StepperItem>
-            );
-          })}
+                <StepperTitle className="whitespace-nowrap text-[9px] font-semibold text-[#a2a6ae] data-[state=active]:text-[#3d4149] data-[state=completed]:text-[#3d4149] sm:text-[10px]">
+                  {label}
+                </StepperTitle>
+              </StepperTrigger>
+            </StepperItem>
+          ))}
         </StepperNav>
       </Stepper>
 
