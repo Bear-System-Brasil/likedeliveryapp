@@ -587,7 +587,9 @@ function MenuManagementContent() {
                     const validFiles: File[] = [];
                     for (const file of files) {
                       if (file.size > 5 * 1024 * 1024) {
-                        toast.error(`"${file.name}" é muito grande. Máximo 5MB`);
+                        toast.error(
+                          `"${file.name}" é muito grande. Máximo 5MB`,
+                        );
                         continue;
                       }
                       validFiles.push(file);
@@ -613,7 +615,10 @@ function MenuManagementContent() {
                   editingProduct.imageURL.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {editingProduct.imageURL.map((img) => (
-                        <div key={img.id} className="relative h-16 w-16 shrink-0">
+                        <div
+                          key={img.id}
+                          className="relative h-16 w-16 shrink-0"
+                        >
                           <img
                             src={img.url}
                             alt="Foto do prato"
@@ -622,7 +627,10 @@ function MenuManagementContent() {
                           <button
                             type="button"
                             onClick={() =>
-                              handleDeleteProductImage(editingProduct.id, img.id)
+                              handleDeleteProductImage(
+                                editingProduct.id,
+                                img.id,
+                              )
                             }
                             className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#D64545] text-white shadow-sm transition hover:bg-[#B83232]"
                             aria-label="Remover foto"
@@ -638,7 +646,10 @@ function MenuManagementContent() {
                 {imagePreviews.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {imagePreviews.map((preview, index) => (
-                      <div key={preview} className="relative h-16 w-16 shrink-0">
+                      <div
+                        key={preview}
+                        className="relative h-16 w-16 shrink-0"
+                      >
                         <img
                           src={preview}
                           alt={`Nova foto ${index + 1}`}

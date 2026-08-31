@@ -24,6 +24,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-provider";
+import { LikeDeliveryLogo } from "../ui/likedelivery-logo";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -169,17 +170,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex h-full flex-col bg-white text-[#14161A]">
       <div className="flex shrink-0 items-center justify-between px-[18px] py-4">
-        <Link
-          href="/"
-          onClick={onClose}
-          className="flex min-w-0 items-center gap-[9px]"
-        >
-          <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[#FF6B00] text-white">
-            <ThumbsUp className="h-[15px] w-[15px]" />
-          </div>
-          <span className="truncate text-[15px] font-extrabold tracking-normal">
-            Like Delivery
-          </span>
+        <Link href="/" className="shrink-0">
+          <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
         </Link>
 
         {onClose && (
