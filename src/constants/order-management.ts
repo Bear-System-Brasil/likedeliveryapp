@@ -174,7 +174,12 @@ export function getElapsedTime(dateString: string): string {
   return `${minutes}min`
 }
 
-export function getOrderItemDisplayName(item: CompanyOrderItem): string {
+/**
+ * Só lê `product.name`/`productId` — aceita qualquer item de pedido com essa
+ * forma mínima (não só `CompanyOrderItem`), pra dar pra reusar em telas com
+ * outro tipo de item de pedido (ex.: `/kitchen`).
+ */
+export function getOrderItemDisplayName(item: { productId: string; product?: { name: string } | null }): string {
   if (item.product?.name) return item.product.name
   return `Produto #${item.productId.slice(0, 6)}`
 }
@@ -185,7 +190,19 @@ export function getOrderItemDisplayName(item: CompanyOrderItem): string {
 // ProductAddOn/ProductVariation), então checar só `.description` como
 // antes deixava o rótulo sempre caindo no genérico "Adicional"/"Variação".
 // Mesma cadeia de fallback usada em use-cart-actions.ts para o carrinho.
-export function getAddOnLabel(addon: NonNullable<CompanyOrderItem['addOns']>[number]): string {
+//
+// Tipado pela forma mínima que a função lê (todos os campos opcionais), não
+// por `CompanyOrderItem['addOns']`, pra dar pra reusar com o item de pedido
+// de outras telas (ex.: `/kitchen`) sem precisar bater 1:1 com esse tipo.
+interface AddOnLabelSource {
+  productAddOn?: { name?: string; description?: string } | null
+  productAddOns?: { name?: string; description?: string } | null
+  addOn?: { name?: string; description?: string } | null
+  name?: string | null
+  description?: string | null
+}
+
+export function getAddOnLabel(addon: AddOnLabelSource): string {
   return (
     addon.productAddOn?.name ||
     addon.productAddOns?.name ||
@@ -197,7 +214,14 @@ export function getAddOnLabel(addon: NonNullable<CompanyOrderItem['addOns']>[num
   )
 }
 
-export function getVariationLabel(variation: NonNullable<CompanyOrderItem['variations']>[number]): string {
+interface VariationLabelSource {
+  variation?: { name?: string; description?: string } | null
+  productVariation?: { name?: string; description?: string } | null
+  name?: string | null
+  description?: string | null
+}
+
+export function getVariationLabel(variation: VariationLabelSource): string {
   return (
     variation.variation?.name ||
     variation.productVariation?.name ||

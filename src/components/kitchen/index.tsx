@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { OrderDetailSheet } from "@/components/order-detail-sheet";
 import { getCustomerName, getItemName, getOrderLabel, toDateInputValue } from "./helpers";
 import { useKitchenOrders } from "@/hooks/use-kitchen-orders";
 import { useAuthStore } from "@/stores";
@@ -21,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { CancelKitchenOrderDialog } from "./cancel-kitchen-order-dialog";
 import { KitchenColumn } from "./kitchen-column";
 import {
+  KITCHEN_COLUMN_BY_STATUS,
   KITCHEN_PERIOD_LABELS,
   type KitchenColumnConfig,
   type KitchenOrder,
@@ -170,6 +172,7 @@ export default function Kitchen() {
   const restaurantName = restaurantUser?.tradeName || restaurantUser?.legalName || "Cozinha";
 
   const [cancelTarget, setCancelTarget] = useState<KitchenOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<KitchenOrder | null>(null);
   const [printOrder, setPrintOrder] = useState<KitchenOrder | null>(null);
   const printRef = useRef(false);
 
@@ -194,6 +197,7 @@ export default function Kitchen() {
   }, [printOrder]);
 
   const handlePrint = (order: KitchenOrder) => setPrintOrder(order);
+  const handleViewDetails = (order: KitchenOrder) => setSelectedOrder(order);
 
   const columnProps = (status: KitchenStatus) => ({
     column: columns[status],
@@ -202,6 +206,7 @@ export default function Kitchen() {
     onAdvance: advanceOrder,
     onCancel: setCancelTarget,
     onPrint: handlePrint,
+    onViewDetails: handleViewDetails,
   });
 
   const handleCustomDateChange = (value: string) => {
@@ -351,6 +356,18 @@ export default function Kitchen() {
         onClose={() => setCancelTarget(null)}
         onConfirm={cancelOrder}
         isLoading={isCanceling}
+      />
+
+      {/* Mesmas funções do hook que o card usa — otimista e rollback ficam consistentes. */}
+      <OrderDetailSheet
+        order={selectedOrder}
+        open={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        actionLabel={selectedOrder ? KITCHEN_COLUMN_BY_STATUS[selectedOrder.status]?.actionLabel : null}
+        onAction={advanceOrder}
+        onCancel={setCancelTarget}
+        onPrint={handlePrint}
+        isUpdating={!!selectedOrder && advancingOrderId === selectedOrder.id}
       />
 
       <KitchenPrintArea order={printOrder} />
