@@ -115,6 +115,9 @@ export interface KitchenOrder {
   status: KitchenStatus;
   observations?: string | null;
   totalValue?: number;
+  /** Compõem o resumo financeiro do modal de detalhe. */
+  discount?: number;
+  totalShipping?: number;
   created_at: string;
   updated_at?: string;
   /** Quando entrou no `status` atual — referência do cronômetro da coluna. */

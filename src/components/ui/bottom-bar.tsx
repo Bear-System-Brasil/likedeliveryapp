@@ -91,11 +91,6 @@ export function BottomBar({ activeTab }: BottomBarProps) {
     return null;
   }
 
-  // GET /order/customer/me é exclusivo de role client no backend: pra cook
-  // (que também usa o app como cliente final) esta aba não pode apontar pro
-  // histórico de pedidos do cliente, e sim pro quadro que é o "pedidos" dele.
-  const ordersHref = user?.role === "cook" ? "/kitchen" : "/orders";
-
   const clientTabs: Tab[] = [
     { id: "home", label: "Início", icon: Home, href: "/" },
     {
@@ -109,7 +104,7 @@ export function BottomBar({ activeTab }: BottomBarProps) {
       id: "orders",
       label: "Pedidos",
       icon: ClipboardList,
-      href: ordersHref,
+      href: "/orders",
       protected: true,
     },
     {

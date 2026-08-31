@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   type ColumnId,
   type CompanyOrder,
+  COLUMN_ACTIONS,
   COLUMNS,
   formatCurrency,
   getAddOnLabel,
@@ -28,10 +29,10 @@ import {
   Truck,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { OrderDetailSheet } from "@/components/order-detail-sheet";
 import { AcceptOrderDialog } from "./accept-order-dialog";
 import { CancelOrderDialog } from "./cancel-order-dialog";
 import { OrderCard } from "./order-card";
-import { OrderDetailSheet } from "./order-detail-sheet";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-componentes internos
@@ -558,7 +559,9 @@ export default function OrderManagement() {
         order={selectedOrder}
         open={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
-        columnId={selectedOrder ? getColumnIdForOrder(selectedOrder) : "new"}
+        actionLabel={
+          selectedOrder ? (COLUMN_ACTIONS[getColumnIdForOrder(selectedOrder)]?.label ?? null) : null
+        }
         onAction={setActionTarget}
         onCancel={setCancelTarget}
         onPrint={handlePrint}

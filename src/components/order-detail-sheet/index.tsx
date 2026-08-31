@@ -1,18 +1,24 @@
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+"use client";
+
+/**
+ * Modal de detalhe de pedido — compartilhado entre /order-management e
+ * /kitchen (e qualquer outra tela que precise do mesmo resumo). Não conhece
+ * `ColumnId`/`COLUMN_ACTIONS` nem `KitchenStatus`/`KITCHEN_COLUMNS`: quem
+ * chama já resolve o rótulo do botão principal para a própria tela.
+ */
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
-  type ColumnId,
-  type CompanyOrder,
-  COLUMN_ACTIONS,
   formatCurrency,
   getAddOnLabel,
   getElapsedTime,
   getOrderItemDisplayName,
   getPaymentMethodLabel,
   getVariationLabel,
-} from '@/constants/order-management'
+} from "@/constants/order-management";
 import {
   Clock,
   CreditCard,
@@ -23,52 +29,97 @@ import {
   Truck,
   User,
   X,
-} from 'lucide-react'
+} from "lucide-react";
 
-interface OrderDetailSheetProps {
-  order: CompanyOrder | null
-  open: boolean
-  onClose: () => void
-  columnId: ColumnId
-  onAction?: (order: CompanyOrder) => void
-  onCancel?: (order: CompanyOrder) => void
-  onPrint?: (order: CompanyOrder) => void
-  isUpdating?: boolean
+/** O mínimo que o modal precisa ler — CompanyOrder e KitchenOrder satisfazem isso estruturalmente. */
+export interface DetailableOrder {
+  id: string;
+  orderNumber?: number | string;
+  status: string;
+  created_at: string;
+  observations?: string | null;
+  totalValue?: number;
+  discount?: number;
+  totalShipping?: number;
+  cancelReason?: string | null;
+  customer?: { name?: string; phone?: string } | null;
+  orderedItems?: Array<{
+    id: string;
+    quantity: number;
+    unitPrice?: number;
+    productId: string;
+    product?: { name: string } | null;
+    addOns?: Array<{
+      productAddOn?: { name?: string; description?: string } | null;
+      productAddOns?: { name?: string; description?: string } | null;
+      addOn?: { name?: string; description?: string } | null;
+      name?: string | null;
+      description?: string | null;
+    }> | null;
+    variations?: Array<{
+      variation?: { name?: string; description?: string } | null;
+      productVariation?: { name?: string; description?: string } | null;
+      name?: string | null;
+      description?: string | null;
+    }> | null;
+  }> | null;
+  payments?: Array<{ paymentMethod: string }> | null;
+  delivery?: {
+    deliveryPerson?: { name: string; phone?: string } | null;
+  } | null;
 }
 
-const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  ORDERED: { label: 'Novo', variant: 'default' },
-  IN_PRODUCTION: { label: 'Em Preparo', variant: 'secondary' },
-  READY_FOR_PICKUP: { label: 'Pronto', variant: 'secondary' },
-  COMPLETED: { label: 'Concluído', variant: 'outline' },
-  CANCELED: { label: 'Cancelado', variant: 'destructive' },
+interface OrderDetailSheetProps<TOrder extends DetailableOrder> {
+  order: TOrder | null;
+  open: boolean;
+  onClose: () => void;
+  /** Rótulo do botão principal; `null`/ausente esconde o botão. */
+  actionLabel?: string | null;
+  onAction?: (order: TOrder) => void;
+  onCancel?: (order: TOrder) => void;
+  onPrint?: (order: TOrder) => void;
+  isUpdating?: boolean;
 }
 
-export function OrderDetailSheet({
+const STATUS_LABELS: Record<
+  string,
+  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+> = {
+  ORDERED: { label: "Novo", variant: "default" },
+  IN_PRODUCTION: { label: "Em Preparo", variant: "secondary" },
+  READY_FOR_PICKUP: { label: "Pronto", variant: "secondary" },
+  COMPLETED: { label: "Concluído", variant: "outline" },
+  CANCELED: { label: "Cancelado", variant: "destructive" },
+};
+
+export function OrderDetailSheet<TOrder extends DetailableOrder>({
   order,
   open,
   onClose,
-  columnId,
+  actionLabel,
   onAction,
   onCancel,
   onPrint,
   isUpdating,
-}: OrderDetailSheetProps) {
-  if (!order) return null
+}: OrderDetailSheetProps<TOrder>) {
+  if (!order) return null;
 
-  const items = order.orderedItems || []
-  const orderNumber = order.orderNumber || order.id.slice(0, 6)
-  const customerName = order.customer?.name || 'Cliente'
-  const customerPhone = order.customer?.phone
-  const payment = order.payments?.[0]
-  const action = COLUMN_ACTIONS[columnId]
-  const statusInfo = STATUS_LABELS[order.status] || { label: order.status, variant: 'outline' as const }
-  const isCanceled = order.status === 'CANCELED'
-  const isCompleted = order.status === 'COMPLETED'
-  const isDone = isCanceled || isCompleted
+  const items = order.orderedItems || [];
+  const orderNumber = order.orderNumber || order.id.slice(0, 6);
+  const customerName = order.customer?.name || "Cliente";
+  const customerPhone = order.customer?.phone;
+  const payment = order.payments?.[0];
+  const statusInfo = STATUS_LABELS[order.status] || { label: order.status, variant: "outline" as const };
+  const isCanceled = order.status === "CANCELED";
+  const isCompleted = order.status === "COMPLETED";
+  const isDone = isCanceled || isCompleted;
 
-  const deliveryAddress = order.delivery?.deliveryAddress as any
-  const deliveryPerson = order.delivery?.deliveryPerson
+  // `deliveryAddress` não faz parte do contrato mínimo (só a cozinha ainda
+  // não expõe endereço) — lido de forma defensiva, igual ao `as any` original.
+  const deliveryAddress = (
+    order.delivery as { deliveryAddress?: Record<string, unknown> } | null | undefined
+  )?.deliveryAddress;
+  const deliveryPerson = order.delivery?.deliveryPerson;
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -129,7 +180,7 @@ export function OrderDetailSheet({
                     ))}
                   </div>
                   <span className="text-sm font-medium">
-                    {formatCurrency(item.unitPrice * item.quantity)}
+                    {formatCurrency((item.unitPrice ?? 0) * item.quantity)}
                   </span>
                 </div>
               ))}
@@ -164,14 +215,17 @@ export function OrderDetailSheet({
                 </h3>
                 <div className="text-sm text-muted-foreground space-y-0.5">
                   <p>
-                    {deliveryAddress.street}, {deliveryAddress.number}
-                    {deliveryAddress.complement ? ` - ${deliveryAddress.complement}` : ''}
+                    {String(deliveryAddress.street ?? "")}, {String(deliveryAddress.number ?? "")}
+                    {deliveryAddress.complement ? ` - ${deliveryAddress.complement}` : ""}
                   </p>
                   <p>
-                    {deliveryAddress.neighborhood} — {deliveryAddress.city}/{deliveryAddress.state}
+                    {String(deliveryAddress.neighborhood ?? "")} — {String(deliveryAddress.city ?? "")}/
+                    {String(deliveryAddress.state ?? "")}
                   </p>
-                  <p>CEP: {deliveryAddress.zipCode}</p>
-                  {deliveryAddress.reference && <p className="text-xs">Ref: {deliveryAddress.reference}</p>}
+                  <p>CEP: {String(deliveryAddress.zipCode ?? "")}</p>
+                  {deliveryAddress.reference ? (
+                    <p className="text-xs">Ref: {String(deliveryAddress.reference)}</p>
+                  ) : null}
                 </div>
               </section>
             </>
@@ -212,7 +266,11 @@ export function OrderDetailSheet({
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatCurrency((order.totalValue || 0) - (order.totalShipping || 0) + (order.discount || 0))}</span>
+                <span>
+                  {formatCurrency(
+                    (order.totalValue || 0) - (order.totalShipping || 0) + (order.discount || 0),
+                  )}
+                </span>
               </div>
               {(order.discount || 0) > 0 && (
                 <div className="flex justify-between text-emerald-600">
@@ -237,36 +295,40 @@ export function OrderDetailSheet({
           </section>
 
           {/* Ações */}
-          {!isDone && (
+          {!isDone && (onAction || onCancel || onPrint) && (
             <>
               <Separator />
               <div className="flex gap-2 pb-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer"
-                  onClick={() => onPrint?.(order)}
-                >
-                  <Printer className="h-4 w-4 mr-1.5" />
-                  Imprimir
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => onCancel?.(order)}
-                >
-                  <X className="h-4 w-4 mr-1.5" />
-                  Cancelar
-                </Button>
-                {action && (
+                {onPrint && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    onClick={() => onPrint(order)}
+                  >
+                    <Printer className="h-4 w-4 mr-1.5" />
+                    Imprimir
+                  </Button>
+                )}
+                {onCancel && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => onCancel(order)}
+                  >
+                    <X className="h-4 w-4 mr-1.5" />
+                    Cancelar
+                  </Button>
+                )}
+                {actionLabel && onAction && (
                   <Button
                     size="sm"
                     className="flex-1 cursor-pointer"
-                    onClick={() => onAction?.(order)}
+                    onClick={() => onAction(order)}
                     disabled={isUpdating}
                   >
-                    {isUpdating ? 'Atualizando...' : action.label}
+                    {isUpdating ? "Atualizando..." : actionLabel}
                   </Button>
                 )}
               </div>
@@ -275,5 +337,5 @@ export function OrderDetailSheet({
         </div>
       </SheetContent>
     </Sheet>
-  )
+  );
 }

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Bike, Clock, MessageSquareWarning, Printer, Store, X } from "lucide-react";
+import { Bike, Clock, Eye, MessageSquareWarning, Printer, Store, X } from "lucide-react";
 import {
   getCustomerName,
   getElapsed,
@@ -21,6 +21,7 @@ interface KitchenOrderCardProps {
   onAdvance: (order: KitchenOrder) => void;
   onCancel: (order: KitchenOrder) => void;
   onPrint: (order: KitchenOrder) => void;
+  onViewDetails: (order: KitchenOrder) => void;
   isAdvancing?: boolean;
   /** Destaque momentâneo de pedido recém-chegado. */
   isNew?: boolean;
@@ -32,6 +33,7 @@ export function KitchenOrderCard({
   onAdvance,
   onCancel,
   onPrint,
+  onViewDetails,
   isAdvancing,
   isNew,
 }: KitchenOrderCardProps) {
@@ -54,9 +56,21 @@ export function KitchenOrderCard({
       )}
     >
       <header className="flex items-center justify-between gap-3 border-b px-4 py-3">
-        <span className="text-2xl font-black leading-none tracking-tight">
-          #{getOrderLabel(order)}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-2xl font-black leading-none tracking-tight">
+            #{getOrderLabel(order)}
+          </span>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 cursor-pointer text-muted-foreground"
+            onClick={() => onViewDetails(order)}
+            aria-label={`Ver detalhes do pedido ${getOrderLabel(order)}`}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+        </div>
 
         <span
           className={cn(
