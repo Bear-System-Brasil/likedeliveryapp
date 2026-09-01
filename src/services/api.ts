@@ -126,6 +126,48 @@ export interface PaginationParams {
   limit?: number;
 }
 
+/**
+ * Normaliza o corpo de uma rota paginada em `{ items, meta }`.
+ *
+ * O envelope oficial é `{ data, meta }` (ver pagination.md), mas algumas
+ * rotas mais antigas ainda respondem com o array cru. Ler `.data` direto
+ * como array é justamente o que deixa a tela vazia quando vem o envelope -
+ * este helper cobre os dois formatos num lugar só, e sempre devolve um
+ * `meta` utilizável (derivado do array quando o backend não manda um).
+ */
+export function toPaginated<T>(
+  body: PaginatedResponse<T> | T[] | null | undefined,
+  fallback?: PaginationParams,
+): { items: T[]; meta: PaginatedResponse<T>["meta"] } {
+  const page = fallback?.page ?? 1;
+  const limit = fallback?.limit ?? 0;
+
+  if (Array.isArray(body)) {
+    return {
+      items: body,
+      meta: {
+        page,
+        limit: limit || body.length,
+        total: body.length,
+        totalPages: 1,
+      },
+    };
+  }
+
+  const items = Array.isArray(body?.data) ? body.data : [];
+  const meta = body?.meta;
+
+  return {
+    items,
+    meta: {
+      page: meta?.page ?? page,
+      limit: meta?.limit ?? (limit || items.length),
+      total: meta?.total ?? items.length,
+      totalPages: meta?.totalPages ?? 1,
+    },
+  };
+}
+
 /** `getCompanyOrders` / `getCompanyOrdersByStatus` — filtro de intervalo (ISO 8601, inclusivo). */
 export interface OrderDateRangeParams extends PaginationParams {
   startDate?: string;
@@ -144,6 +186,24 @@ function withPagination(endpoint: string, params?: PaginationParams): string {
   if (params.limit) qs.set("limit", String(params.limit));
   const separator = endpoint.includes("?") ? "&" : "?";
   return `${endpoint}${separator}${qs.toString()}`;
+}
+
+function withCashMovementFilters(
+  endpoint: string,
+  params?: CashMovementListParams,
+): string {
+  if (!params) return endpoint;
+  const qs = new URLSearchParams();
+  if (params.page) qs.set("page", String(params.page));
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.cashRegisterId) qs.set("cashRegisterId", params.cashRegisterId);
+  if (params.type) qs.set("type", params.type);
+  if (params.source) qs.set("source", params.source);
+  if (params.paymentMethod) qs.set("paymentMethod", params.paymentMethod);
+  const query = qs.toString();
+  if (!query) return endpoint;
+  const separator = endpoint.includes("?") ? "&" : "?";
+  return `${endpoint}${separator}${query}`;
 }
 
 function withOrderDateRange(
@@ -795,6 +855,47 @@ export interface CashRefundRequest {
   orderId?: string;
 }
 
+export enum CashMovementType {
+  SALE = "SALE",
+  DEPOSIT = "DEPOSIT",
+  WITHDRAWAL = "WITHDRAWAL",
+  REFUND = "REFUND",
+}
+
+/** AUTOMATIC = gerado por um pedido; MANUAL = lançado pelo operador. */
+export enum CashMovementSource {
+  AUTOMATIC = "AUTOMATIC",
+  MANUAL = "MANUAL",
+}
+
+/**
+ * Linha do extrato de GET /cash-movement. O backend nem sempre devolve
+ * relação/origem em todo movimento (sangria não tem pedido, venda automática
+ * não tem descrição), então tudo além de id/type/amount é opcional.
+ */
+export interface CashMovement {
+  id: string;
+  type: CashMovementType;
+  amount: number;
+  description?: string;
+  paymentMethod?: PaymentMethod;
+  source?: CashMovementSource;
+  cashRegisterId?: string;
+  orderId?: string;
+  userId?: string;
+  user?: CustomerRef;
+  createdAt?: string;
+  created_at?: string;
+}
+
+/** Todos os filtros são opcionais (ver cash-movement.md). */
+export interface CashMovementListParams extends PaginationParams {
+  cashRegisterId?: string;
+  type?: CashMovementType;
+  source?: CashMovementSource;
+  paymentMethod?: PaymentMethod;
+}
+
 // ======================
 // Cash Register types
 // ======================
@@ -818,7 +919,20 @@ export interface CashRegister {
   status?: string;
 }
 
+/**
+ * Resumo do caixa aberto (GET /cash-movement/summary/current).
+ *
+ * ATENÇÃO: os totais por método de pagamento (`totalCash`, `totalCredit`,
+ * `totalDebit`, `totalPix`, `totalTransfer`) já vêm LÍQUIDOS do backend -
+ * `SALE + DEPOSIT − WITHDRAWAL − REFUND` daquele método. Ou seja, sangria e
+ * reembolso já estão descontados: subtrair `totalWithdrawals`/`totalRefunds`
+ * de novo conta a saída duas vezes, e um método pode vir negativo (mais
+ * sangria do que venda no turno). `totalSales`, `totalDeposits`,
+ * `totalWithdrawals` e `totalRefunds` são os brutos por tipo de movimento,
+ * úteis só como detalhamento - nunca para recompor o líquido.
+ */
 export interface CashMovementSummary {
+  /** Dinheiro esperado na gaveta: fundo de troco + `totalCash` (líquido). */
   availableBalance: number;
   totalSales: number;
   totalWithdrawals: number;
@@ -1939,6 +2053,18 @@ export const apiService = {
       apiRequest<CashMovementSummary>(
         "GET",
         "/cash-movement/summary/current",
+        undefined,
+        true,
+      ),
+
+    /**
+     * Extrato paginado de movimentos - todos os filtros são opcionais.
+     * Ex: /cash-movement?page=1&limit=20&type=SALE&paymentMethod=PIX
+     */
+    list: (params?: CashMovementListParams) =>
+      apiRequest<PaginatedResponse<CashMovement>>(
+        "GET",
+        withCashMovementFilters("/cash-movement", params),
         undefined,
         true,
       ),

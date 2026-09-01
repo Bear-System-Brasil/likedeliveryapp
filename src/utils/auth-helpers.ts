@@ -110,6 +110,7 @@ export function getUserRoleLabel(): string {
     manager: "Gerente",
     cook: "Cozinheiro",
     delivery: "Entregador",
+    financial: "Financeiro",
     client: "Cliente",
   };
 
