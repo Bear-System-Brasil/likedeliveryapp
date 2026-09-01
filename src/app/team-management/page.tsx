@@ -32,18 +32,21 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 
+// A ordem daqui é a ordem do seletor de função do convite, e as chaves são
+// o StaffRoleEnum do backend - função nova entra nos dois mapas junto com o
+// enum. `admin` ficou de fora de propósito (ver StaffRole).
 const ROLE_LABELS: Record<StaffRole, string> = {
-  admin: "Administrador",
   manager: "Gerente",
   cook: "Cozinheiro",
   delivery: "Entregador",
+  financial: "Financeiro",
 };
 
 const ROLE_BADGE_CLASSES: Record<StaffRole, string> = {
-  admin: "bg-[#EAF2FF] text-[#2563EB]",
   manager: "bg-[#F3EAFF] text-[#7C3AED]",
   cook: "bg-[#FFF4DE] text-[#B7791F]",
   delivery: "bg-[#E9F7EF] text-[#1B7F4C]",
+  financial: "bg-[#EAF2FF] text-[#2563EB]",
 };
 
 function formatDate(date: string) {

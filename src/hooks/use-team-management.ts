@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-export type StaffRole = "admin" | "manager" | "cook" | "delivery";
+/**
+ * Espelha o StaffRoleEnum do backend - são as únicas funções que a API de
+ * convite aceita. `admin` NÃO entra aqui: é provisionada fora dessa API, e
+ * mandá-la no convite volta como erro de validação.
+ */
+export type StaffRole = "manager" | "cook" | "delivery" | "financial";
 
 export interface StaffMember {
   id: string;
