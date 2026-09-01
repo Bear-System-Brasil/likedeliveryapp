@@ -630,14 +630,20 @@ export type StaffRole = "manager" | "cook" | "delivery" | "financial";
 
 export interface InviteStaffRequest {
   email: string;
-  role: StaffRole;
+  /**
+   * O DTO do backend valida `staffRole`, não `role` (ver company.md) - e o
+   * class-validator roda em whitelist, então mandar `role` volta 400 com
+   * "property role should not exist". A tela guarda o campo como `role` no
+   * formulário; a tradução pro contrato acontece na borda, aqui.
+   */
+  staffRole: StaffRole;
 }
 
 /** Convite recém-criado (POST /company/invite). */
 export interface StaffInvite {
   id?: string;
   email?: string;
-  role?: StaffRole;
+  staffRole?: StaffRole;
   status?: string;
   invitedAt?: string;
   createdAt?: string;

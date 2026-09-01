@@ -126,7 +126,7 @@ export const useTeamManagement = () => {
         id: invite?.id || `invite-${Date.now()}`,
         name: variables.email.split("@")[0],
         email: variables.email,
-        role: variables.role,
+        role: variables.staffRole,
         status: "pending",
         invitedAt:
           invite?.invitedAt ||
@@ -153,7 +153,8 @@ export const useTeamManagement = () => {
       return;
     }
 
-    inviteMutation.mutate({ email, role: formData.role });
+    // `role` no formulário, `staffRole` no corpo - é o nome que o DTO valida.
+    inviteMutation.mutate({ email, staffRole: formData.role });
   };
 
   const handleRequestRemove = (member: StaffMember) => {
