@@ -20,6 +20,7 @@ const PROTECTED: { prefix: string; roles?: string[] }[] = [
   { prefix: "/kitchen", roles: ["owner", "admin", "manager", "cook"] },
   { prefix: "/company-profile", roles: ["owner", "admin"] },
   { prefix: "/financial-management", roles: ["owner", "admin", "financial"] },
+  { prefix: "/reports", roles: ["owner", "admin", "financial"] },
   { prefix: "/team-management", roles: ["owner", "admin", "manager"] },
   { prefix: "/delivery-dashboard", roles: ["delivery"] },
 ];
@@ -63,6 +64,7 @@ export const config = {
     "/kitchen/:path*",
     "/company-profile/:path*",
     "/financial-management/:path*",
+    "/reports/:path*",
     "/team-management/:path*",
     "/delivery-dashboard/:path*",
   ],

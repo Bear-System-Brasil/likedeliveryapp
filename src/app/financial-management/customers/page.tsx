@@ -4,7 +4,7 @@ import { AdminPageLayout } from "@/components/admin-page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiService, type User } from "@/services/api";
+import { apiService, toPaginated, type User } from "@/services/api";
 import { useAuthStore } from "@/stores";
 import { formatPhone, formatPhoneRegex } from "@/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -46,24 +46,27 @@ export default function CustomersPage() {
   // paginada e ordenada por nome, sem usuários excluídos. Antes essa tela
   // derivava a lista varrendo todas as páginas de pedidos da empresa, o que
   // só enxergava quem já tinha comprado e exibia o UUID no lugar do nome.
+  //
+  // A resposta é o envelope `{ data, meta }`: a lista está em
+  // `response.data.data` e o total em `response.data.meta.total`. Ler
+  // `response.data` como array é o que deixa a tela vazia - `toPaginated`
+  // resolve os dois formatos.
   const { data, isLoading, isFetching, isError } = useQuery({
     queryKey: ["financial", "customers", page],
     queryFn: async () => {
-      const response = await apiService.getCompanyCustomers({
-        page,
-        limit: PAGE_SIZE,
-      });
+      const params = { page, limit: PAGE_SIZE };
+      const response = await apiService.getCompanyCustomers(params);
       if (!response.success || !response.data) {
         throw new Error(response.message || "Falha ao carregar clientes");
       }
-      return response.data;
+      return toPaginated<User>(response.data, params);
     },
     enabled: !!isAuthenticated,
     staleTime: 60_000,
     placeholderData: (previousData) => previousData,
   });
 
-  const customers = useMemo(() => data?.data ?? [], [data]);
+  const customers = useMemo(() => data?.items ?? [], [data]);
   const meta = data?.meta;
   const totalPages = meta?.totalPages ?? 1;
   const total = meta?.total ?? 0;

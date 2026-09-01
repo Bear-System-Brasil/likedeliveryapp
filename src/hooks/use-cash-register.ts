@@ -40,7 +40,7 @@ export const useOpenCashRegister = () => {
     onSuccess: (response) => {
       if (response.success) {
         queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-        queryClient.invalidateQueries({ queryKey: ['cash-movement', 'summary'] })
+        queryClient.invalidateQueries({ queryKey: ['cash-movement'] })
         toast.success('Caixa aberto com sucesso!')
       } else {
         toast.error(response.message || 'Erro ao abrir caixa')
@@ -59,7 +59,7 @@ export const useCloseCashRegister = () => {
     onSuccess: (response) => {
       if (response.success) {
         queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-        queryClient.invalidateQueries({ queryKey: ['cash-movement', 'summary'] })
+        queryClient.invalidateQueries({ queryKey: ['cash-movement'] })
         toast.success('Caixa fechado com sucesso!')
       } else {
         toast.error(response.message || 'Erro ao fechar caixa')
