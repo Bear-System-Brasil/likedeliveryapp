@@ -621,6 +621,29 @@ export interface Company {
   updated_at: string;
 }
 
+/**
+ * Espelha o StaffRoleEnum do backend - são as únicas funções que
+ * POST /company/invite aceita. `admin` NÃO entra aqui: é provisionada fora
+ * dessa API, e mandá-la no convite volta 400.
+ */
+export type StaffRole = "manager" | "cook" | "delivery" | "financial";
+
+export interface InviteStaffRequest {
+  email: string;
+  role: StaffRole;
+}
+
+/** Convite recém-criado (POST /company/invite). */
+export interface StaffInvite {
+  id?: string;
+  email?: string;
+  role?: StaffRole;
+  status?: string;
+  invitedAt?: string;
+  createdAt?: string;
+  created_at?: string;
+}
+
 // Address types
 export interface Address {
   id: string;
@@ -1452,6 +1475,16 @@ export const apiService = {
         };
       }
     },
+
+    /**
+     * Convida um membro para a equipe da empresa autenticada. A empresa vem
+     * do token, então o corpo é só e-mail + função (ver company.md).
+     * O backend valida `role` contra o StaffRoleEnum e responde 400 para
+     * função fora dele, 403 para quem não pode convidar e 409 para e-mail
+     * já convidado/já na equipe.
+     */
+    invite: (data: InviteStaffRequest) =>
+      apiRequest<StaffInvite>("POST", "/company/invite", data, true),
   },
 
   // Upload endpoint (S3)

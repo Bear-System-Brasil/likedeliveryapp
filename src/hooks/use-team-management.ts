@@ -1,12 +1,44 @@
+import { apiService, type InviteStaffRequest, type StaffRole } from "@/services/api";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
+// O tipo mora em services/api.ts, junto do contrato de POST /company/invite.
+// Reexportado aqui porque a tela importa de "@/hooks".
+export type { StaffRole };
+
 /**
- * Espelha o StaffRoleEnum do backend - são as únicas funções que a API de
- * convite aceita. `admin` NÃO entra aqui: é provisionada fora dessa API, e
- * mandá-la no convite volta como erro de validação.
+ * Mensagem por status quando o backend não manda uma própria. `apiRequest`
+ * preenche `message` com "Erro 409: Conflict" nesse caso, o que não ajuda
+ * ninguém na tela - daí o regex que detecta esse texto genérico.
  */
-export type StaffRole = "manager" | "cook" | "delivery" | "financial";
+const INVITE_ERROR_BY_STATUS: Record<number, string> = {
+  400: "Convite inválido. Confira o e-mail e a função selecionada.",
+  403: "Você não tem permissão para convidar membros para esta equipe.",
+  409: "Esse e-mail já está na equipe ou já tem um convite pendente.",
+};
+
+const GENERIC_API_MESSAGE = /^Erro \d+:/;
+
+/**
+ * Escolhe o que mostrar quando o convite falha: a mensagem do backend tem
+ * prioridade, o mapa por status cobre quando ela veio genérica ou nem veio,
+ * e o texto final é a rede de segurança (ex.: falha de conexão, sem status).
+ */
+export function resolveInviteErrorMessage(response: {
+  message?: string;
+  status?: number;
+}): string {
+  const fromBackend =
+    response.message && !GENERIC_API_MESSAGE.test(response.message)
+      ? response.message
+      : undefined;
+  const byStatus = response.status
+    ? INVITE_ERROR_BY_STATUS[response.status]
+    : undefined;
+
+  return fromBackend || byStatus || "Não foi possível enviar o convite";
+}
 
 export interface StaffMember {
   id: string;
@@ -24,9 +56,10 @@ interface InviteFormData {
 
 const emptyInvite: InviteFormData = { email: "", role: "cook" };
 
-// TODO(backend): sem endpoint de listagem de staff ainda - dado mock local,
-// não persiste entre sessões. POST /company/invite (já documentado) resolve
-// só o convite, não a listagem de quem já está na equipe.
+// TODO(backend): o convite já é real (POST /company/invite), mas ainda não
+// existe endpoint de listagem de staff - então esta lista é mock local e não
+// persiste entre sessões. Um convite enviado com sucesso é ecoado aqui só
+// pra dar retorno visual; quem manda é o servidor.
 const MOCK_INITIAL_STAFF: StaffMember[] = [
   {
     id: "mock-1",
@@ -48,8 +81,9 @@ const MOCK_INITIAL_STAFF: StaffMember[] = [
 
 /**
  * Hook para gerenciar a equipe da empresa.
- * MOCK: estado local, sem chamada de API - aguardando endpoint de listagem
- * de staff no backend.
+ *
+ * O convite chama POST /company/invite de verdade. A listagem e a remoção
+ * continuam locais (mock) enquanto o backend não expõe os endpoints.
  */
 export const useTeamManagement = () => {
   const [staff, setStaff] = useState<StaffMember[]>(MOCK_INITIAL_STAFF);
@@ -78,32 +112,48 @@ export const useTeamManagement = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const inviteMutation = useMutation({
+    mutationFn: async (data: InviteStaffRequest) => {
+      const response = await apiService.companies.invite(data);
+      if (!response.success) {
+        throw new Error(resolveInviteErrorMessage(response));
+      }
+      return response.data;
+    },
+    onSuccess: (invite, variables) => {
+      // Eco local do convite aceito pelo servidor - a lista ainda é mock.
+      const newMember: StaffMember = {
+        id: invite?.id || `invite-${Date.now()}`,
+        name: variables.email.split("@")[0],
+        email: variables.email,
+        role: variables.role,
+        status: "pending",
+        invitedAt:
+          invite?.invitedAt ||
+          invite?.createdAt ||
+          invite?.created_at ||
+          new Date().toISOString(),
+      };
+
+      setStaff((prev) => [...prev, newMember]);
+      toast.success(`Convite enviado para ${variables.email}`);
+      handleCloseModal();
+    },
+    onError: (error: Error) =>
+      toast.error(error.message || "Não foi possível enviar o convite"),
+  });
+
+  // A checagem de duplicado saiu daqui de propósito: ela só enxergava o mock
+  // local, e quem sabe de verdade quem já foi convidado é o backend - que
+  // responde 409 nesse caso.
   const handleSendInvite = () => {
-    if (!formData.email.trim()) {
+    const email = formData.email.trim();
+    if (!email) {
       toast.error("Informe o e-mail do convidado");
       return;
     }
 
-    const alreadyInvited = staff.some(
-      (member) => member.email.toLowerCase() === formData.email.toLowerCase(),
-    );
-    if (alreadyInvited) {
-      toast.error("Esse e-mail já foi convidado");
-      return;
-    }
-
-    const newMember: StaffMember = {
-      id: `mock-${Date.now()}`,
-      name: formData.email.split("@")[0],
-      email: formData.email.trim(),
-      role: formData.role,
-      status: "pending",
-      invitedAt: new Date().toISOString(),
-    };
-
-    setStaff((prev) => [...prev, newMember]);
-    toast.success(`Convite enviado para ${formData.email}`);
-    handleCloseModal();
+    inviteMutation.mutate({ email, role: formData.role });
   };
 
   const handleRequestRemove = (member: StaffMember) => {
@@ -130,6 +180,7 @@ export const useTeamManagement = () => {
     isModalOpen,
     formData,
     removeTarget,
+    isInviting: inviteMutation.isPending,
 
     handleOpenInviteModal,
     handleCloseModal,

@@ -62,6 +62,7 @@ function TeamManagementContent() {
     isModalOpen,
     formData,
     removeTarget,
+    isInviting,
     handleOpenInviteModal,
     handleCloseModal,
     updateFormField,
@@ -94,9 +95,10 @@ function TeamManagementContent() {
     >
       <div className="mx-auto max-w-7xl">
         <div className="mb-3 rounded-[10px] border border-[#FFE1CC] bg-[#FFF7ED] px-3.5 py-2.5 text-[11.5px] font-semibold text-[#B7791F]">
-          Tela em construção: os convites e remoções abaixo ainda não são
-          salvos no servidor - assim que o backend tiver a listagem de
-          equipe, isso passa a persistir de verdade.
+          Os convites são enviados de verdade e chegam ao servidor. A lista
+          abaixo, porém, ainda é provisória: enquanto o backend não expõe a
+          listagem de equipe, ela mostra dados de exemplo e as remoções valem
+          só nesta sessão.
         </div>
 
         <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
@@ -273,15 +275,17 @@ function TeamManagementContent() {
             <Button
               variant="outline"
               onClick={handleCloseModal}
-              className="cursor-pointer rounded-[8px] border-[#E9EAEE] text-xs"
+              disabled={isInviting}
+              className="cursor-pointer rounded-[8px] border-[#E9EAEE] text-xs disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleSendInvite}
-              className="cursor-pointer rounded-[8px] bg-[#FF6B00] text-xs font-bold text-white hover:bg-[#E05F00]"
+              disabled={isInviting}
+              className="cursor-pointer rounded-[8px] bg-[#FF6B00] text-xs font-bold text-white hover:bg-[#E05F00] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Enviar Convite
+              {isInviting ? "Enviando..." : "Enviar Convite"}
             </Button>
           </DialogFooter>
         </DialogContent>
