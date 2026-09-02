@@ -35,7 +35,14 @@ type NavLink = {
   href: string;
   label: string;
   icon: typeof House;
-  /** Sem role = visível para qualquer usuário autenticado. */
+  /**
+   * Sem role = visível para qualquer usuário autenticado.
+   *
+   * Isto é visibilidade de menu, não autorização: quem decide o acesso é o
+   * ROUTE_PERMISSIONS + middleware. A lista aqui é subconjunto do que a role
+   * pode abrir - nunca deve listar rota que ela não acessa, senão o item
+   * leva direto pro "Acesso Negado".
+   */
   roles?: string[];
 };
 
@@ -86,31 +93,31 @@ const navGroups: { label: string; links: NavLink[] }[] = [
         href: "/financial-management/dashboard",
         label: "Dashboard",
         icon: LayoutDashboard,
-        roles: ["owner", "admin"],
+        roles: ["owner", "admin", "financial"],
       },
       {
         href: "/financial-management/finance",
         label: "Finanças",
         icon: TrendingUp,
-        roles: ["owner", "admin"],
+        roles: ["owner", "admin", "financial"],
       },
       {
         href: "/financial-management/cash-register",
         label: "Caixa",
         icon: Wallet,
-        roles: ["owner", "admin"],
+        roles: ["owner", "admin", "financial"],
       },
       {
         href: "/financial-management/orders",
         label: "Pedidos",
         icon: ClipboardList,
-        roles: ["owner", "admin"],
+        roles: ["owner", "admin", "financial"],
       },
       {
         href: "/financial-management/customers",
         label: "Clientes",
         icon: Users,
-        roles: ["owner", "admin"],
+        roles: ["owner", "admin", "financial"],
       },
       {
         href: "/financial-management/settings",
@@ -133,7 +140,7 @@ const navGroups: { label: string; links: NavLink[] }[] = [
         href: "/profile",
         label: "Perfil",
         icon: User,
-        roles: ["manager", "cook", "delivery", "client"],
+        roles: ["manager", "cook", "delivery", "financial", "client"],
       },
       {
         href: "/checkout",
