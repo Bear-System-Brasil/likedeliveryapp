@@ -26,10 +26,36 @@ import {
 import { useAuthStore, useFinancialPreferencesStore } from "@/stores";
 import { formatCurrency } from "@/utils";
 import { Banknote, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { type ReactNode, useState } from "react";
 
 type MovementType = "withdrawal" | "deposit" | "sale" | "refund";
 type DialogKind = "open-register" | "movement" | null;
+
+/**
+ * Tipos cujo POST exige `paymentMethod` no corpo. O backend calcula saldo
+ * por método, então movimento sem método não entra em total nenhum: era o
+ * caso do suprimento, que sumia do saldo disponível e aparecia com "—" na
+ * coluna de método do extrato.
+ *
+ * Sangria fica de fora porque é retirada de dinheiro físico da gaveta -
+ * sempre em espécie - e vinha sendo aceita sem o campo. Reembolso também,
+ * até o contrato do endpoint ser confirmado.
+ */
+const MOVEMENT_REQUIRES_METHOD: Record<MovementType, boolean> = {
+  withdrawal: false,
+  deposit: true,
+  sale: true,
+  refund: false,
+};
+
+/** O método preferido vem do localStorage; um valor obsoleto ali não pode
+ *  virar corpo de requisição, então cai pra "sem seleção". */
+function toPaymentMethod(value?: string): PaymentMethod | "" {
+  return Object.values(PaymentMethod).includes(value as PaymentMethod)
+    ? (value as PaymentMethod)
+    : "";
+}
 
 const MOVEMENT_OPTIONS: { value: MovementType; label: string }[] = [
   { value: "withdrawal", label: "Sangria" },
@@ -250,8 +276,9 @@ export default function CashRegisterPage() {
   const [countedTotal, setCountedTotal] = useState("");
   const [closeObs, setCloseObs] = useState("");
   const [amount, setAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>(defaultPaymentMethod);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(() =>
+    toPaymentMethod(defaultPaymentMethod),
+  );
   const [description, setDescription] = useState("");
   const [closeConfirmed, setCloseConfirmed] = useState(false);
 
@@ -312,7 +339,7 @@ export default function CashRegisterPage() {
   const resetMovementForm = () => {
     setAmount("");
     setDescription("");
-    setPaymentMethod(defaultPaymentMethod);
+    setPaymentMethod(toPaymentMethod(defaultPaymentMethod));
   };
 
   const closeDialog = () => {
@@ -357,22 +384,40 @@ export default function CashRegisterPage() {
     setDialog("movement");
   };
 
+  const requiresPaymentMethod = MOVEMENT_REQUIRES_METHOD[movementType];
+  const missingPaymentMethod = requiresPaymentMethod && !paymentMethod;
+
   const handleConfirmMovement = async () => {
     const value = parseFloat(amount.replace(",", "."));
     if (isNaN(value) || value <= 0 || !description.trim()) return;
 
     if (movementType === "withdrawal") {
       await withdrawalMutation.mutateAsync({ amount: value, description });
-    } else if (movementType === "deposit") {
-      await depositMutation.mutateAsync({ amount: value, description });
-    } else if (movementType === "sale") {
-      await saleMutation.mutateAsync({
-        amount: value,
-        paymentMethod,
-        description,
-      });
-    } else {
+    } else if (movementType === "refund") {
       await refundMutation.mutateAsync({ amount: value, description });
+    } else {
+      // Venda e suprimento - os dois com MOVEMENT_REQUIRES_METHOD true. A
+      // guarda também estreita o tipo, então o corpo sai sem cast: sem
+      // método o backend não soma o movimento a nenhum total e o saldo
+      // disponível ignora o lançamento.
+      if (!paymentMethod) {
+        toast.error("Selecione o método de pagamento");
+        return;
+      }
+
+      if (movementType === "deposit") {
+        await depositMutation.mutateAsync({
+          amount: value,
+          paymentMethod,
+          description,
+        });
+      } else {
+        await saleMutation.mutateAsync({
+          amount: value,
+          paymentMethod,
+          description,
+        });
+      }
     }
 
     closeDialog();
@@ -1173,16 +1218,22 @@ export default function CashRegisterPage() {
             ))}
           </div>
 
-          {movementType === "sale" && (
+          {requiresPaymentMethod && (
             <>
-              <FieldLabel>Método de pagamento</FieldLabel>
+              <FieldLabel>Método de pagamento *</FieldLabel>
               <select
                 value={paymentMethod}
-                onChange={(e) =>
-                  setPaymentMethod(e.target.value as PaymentMethod)
-                }
-                className={cn(fieldClass, "mb-3 h-[38px] bg-[#FAFAFB]")}
+                onChange={(e) => setPaymentMethod(toPaymentMethod(e.target.value))}
+                aria-invalid={missingPaymentMethod}
+                className={cn(
+                  fieldClass,
+                  "mb-3 h-[38px] bg-[#FAFAFB]",
+                  missingPaymentMethod && "border-[#C0392B]",
+                )}
               >
+                <option value="" disabled>
+                  Selecione o método
+                </option>
                 {Object.values(PaymentMethod).map((m) => (
                   <option key={m} value={m}>
                     {PAYMENT_METHOD_LABELS[m]}
@@ -1219,7 +1270,12 @@ export default function CashRegisterPage() {
             </CompactButton>
             <Button
               onClick={handleConfirmMovement}
-              disabled={isMovementPending || !amount || !description}
+              disabled={
+                isMovementPending ||
+                !amount ||
+                !description ||
+                missingPaymentMethod
+              }
               className="h-9 flex-1 rounded-[9px] bg-[#FF6B00] text-xs font-extrabold text-white transition-colors hover:bg-[#E86000] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isMovementPending ? "Registrando..." : "Registrar"}

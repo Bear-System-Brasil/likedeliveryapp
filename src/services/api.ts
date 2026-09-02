@@ -867,14 +867,21 @@ export interface CashWithdrawalRequest {
   description?: string;
 }
 
+/**
+ * POST /cash-movement/deposit exige os três campos. `paymentMethod` é
+ * obrigatório porque o backend passou a calcular saldo por método:
+ * suprimento sem método não entra em total nenhum, some do saldo disponível
+ * e aparece com "—" na coluna de método do extrato.
+ */
 export interface CashDepositRequest {
   amount: number;
-  description?: string;
+  paymentMethod: PaymentMethod;
+  description: string;
 }
 
 export interface CashSaleRequest {
   amount: number;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   description?: string;
 }
 
