@@ -292,6 +292,34 @@ export interface ReportsTopProduct {
   totalQuantity: number;
 }
 
+/**
+ * Receita agrupada por status do pedido. O backend reaproveita a forma de
+ * `ordersByStatus` aqui, mas o número é dinheiro, não contagem - e o nome do
+ * campo não está firme no contrato. Lemos os dois e deixamos a escolha num
+ * helper só (ver `revenueOfStatus` em services/financial-dashboard).
+ */
+export interface ReportsRevenueByStatus {
+  status: string;
+  totalRevenue?: number;
+  totalOrders?: number;
+}
+
+export interface ReportsExpenses {
+  ingredientsCost: number;
+  productsCost: number;
+  shippingCost: number;
+  discounts: number;
+  totalExpenses: number;
+}
+
+/**
+ * Capital parado em estoque. É uma foto do momento, não despesa do período:
+ * não muda com o filtro de data e não entra em nenhum cálculo de margem.
+ */
+export interface ReportsStockCosts {
+  totalStockCost: number;
+}
+
 export interface ReportsSummary {
   totalRevenue: number;
   totalOrders: number;
@@ -301,14 +329,9 @@ export interface ReportsSummary {
   ordersByStatus?: ReportsOrdersByStatus[];
   revenueByDay?: ReportsRevenueByDay[];
   topProducts?: ReportsTopProduct[];
-  revenueByOrderStatus?: ReportsOrdersByStatus[];
-  totalExpenses?: {
-    ingredientsCost: number;
-    productsCost: number;
-    shippingCost: number;
-    discounts: number;
-    totalExpenses: number;
-  };
+  revenueByOrderStatus?: ReportsRevenueByStatus[];
+  totalExpenses?: ReportsExpenses;
+  stockCosts?: ReportsStockCosts;
 }
 
 export interface ReportsParams {
@@ -1950,6 +1973,18 @@ export const apiService = {
           `/payment?${new URLSearchParams(filters as Record<string, string>).toString()}`,
           params,
         ),
+        undefined,
+        true,
+      ),
+
+    /**
+     * `GET /payment?status=PENDING` - a contagem confiável vem de
+     * `meta.total`; somar valor exige percorrer a página devolvida.
+     */
+    findByStatus: (status: PaymentStatus, params?: PaginationParams) =>
+      apiRequest<PaginatedResponse<Payment>>(
+        "GET",
+        withPagination(`/payment?status=${status}`, params),
         undefined,
         true,
       ),
