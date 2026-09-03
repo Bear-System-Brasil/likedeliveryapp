@@ -32,23 +32,6 @@ import { type ReactNode, useState } from "react";
 type MovementType = "withdrawal" | "deposit" | "sale" | "refund";
 type DialogKind = "open-register" | "movement" | null;
 
-/**
- * Tipos cujo POST exige `paymentMethod` no corpo. O backend calcula saldo
- * por método, então movimento sem método não entra em total nenhum: era o
- * caso do suprimento, que sumia do saldo disponível e aparecia com "—" na
- * coluna de método do extrato.
- *
- * Sangria fica de fora porque é retirada de dinheiro físico da gaveta -
- * sempre em espécie - e vinha sendo aceita sem o campo. Reembolso também,
- * até o contrato do endpoint ser confirmado.
- */
-const MOVEMENT_REQUIRES_METHOD: Record<MovementType, boolean> = {
-  withdrawal: false,
-  deposit: true,
-  sale: true,
-  refund: false,
-};
-
 /** O método preferido vem do localStorage; um valor obsoleto ali não pode
  *  virar corpo de requisição, então cai pra "sem seleção". */
 function toPaymentMethod(value?: string): PaymentMethod | "" {
@@ -384,40 +367,30 @@ export default function CashRegisterPage() {
     setDialog("movement");
   };
 
-  const requiresPaymentMethod = MOVEMENT_REQUIRES_METHOD[movementType];
-  const missingPaymentMethod = requiresPaymentMethod && !paymentMethod;
+  const missingPaymentMethod = !paymentMethod;
 
   const handleConfirmMovement = async () => {
     const value = parseFloat(amount.replace(",", "."));
     if (isNaN(value) || value <= 0 || !description.trim()) return;
 
-    if (movementType === "withdrawal") {
-      await withdrawalMutation.mutateAsync({ amount: value, description });
-    } else if (movementType === "refund") {
-      await refundMutation.mutateAsync({ amount: value, description });
-    } else {
-      // Venda e suprimento - os dois com MOVEMENT_REQUIRES_METHOD true. A
-      // guarda também estreita o tipo, então o corpo sai sem cast: sem
-      // método o backend não soma o movimento a nenhum total e o saldo
-      // disponível ignora o lançamento.
-      if (!paymentMethod) {
-        toast.error("Selecione o método de pagamento");
-        return;
-      }
+    // O cash-movement.md documenta o mesmo corpo nos quatro POST -
+    // { amount, paymentMethod, description }. A guarda também estreita o
+    // tipo de `paymentMethod`, então o payload sai sem cast.
+    if (!paymentMethod) {
+      toast.error("Selecione o método de pagamento");
+      return;
+    }
 
-      if (movementType === "deposit") {
-        await depositMutation.mutateAsync({
-          amount: value,
-          paymentMethod,
-          description,
-        });
-      } else {
-        await saleMutation.mutateAsync({
-          amount: value,
-          paymentMethod,
-          description,
-        });
-      }
+    const payload = { amount: value, paymentMethod, description };
+
+    if (movementType === "withdrawal") {
+      await withdrawalMutation.mutateAsync(payload);
+    } else if (movementType === "deposit") {
+      await depositMutation.mutateAsync(payload);
+    } else if (movementType === "sale") {
+      await saleMutation.mutateAsync(payload);
+    } else {
+      await refundMutation.mutateAsync(payload);
     }
 
     closeDialog();
@@ -1218,30 +1191,26 @@ export default function CashRegisterPage() {
             ))}
           </div>
 
-          {requiresPaymentMethod && (
-            <>
-              <FieldLabel>Método de pagamento *</FieldLabel>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(toPaymentMethod(e.target.value))}
-                aria-invalid={missingPaymentMethod}
-                className={cn(
-                  fieldClass,
-                  "mb-3 h-[38px] bg-[#FAFAFB]",
-                  missingPaymentMethod && "border-[#C0392B]",
-                )}
-              >
-                <option value="" disabled>
-                  Selecione o método
-                </option>
-                {Object.values(PaymentMethod).map((m) => (
-                  <option key={m} value={m}>
-                    {PAYMENT_METHOD_LABELS[m]}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
+          <FieldLabel>Método de pagamento *</FieldLabel>
+          <select
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(toPaymentMethod(e.target.value))}
+            aria-invalid={missingPaymentMethod}
+            className={cn(
+              fieldClass,
+              "mb-3 h-[38px] bg-[#FAFAFB]",
+              missingPaymentMethod && "border-[#C0392B]",
+            )}
+          >
+            <option value="" disabled>
+              Selecione o método
+            </option>
+            {Object.values(PaymentMethod).map((m) => (
+              <option key={m} value={m}>
+                {PAYMENT_METHOD_LABELS[m]}
+              </option>
+            ))}
+          </select>
 
           <FieldLabel>Descrição</FieldLabel>
           <input

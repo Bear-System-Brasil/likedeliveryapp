@@ -884,17 +884,21 @@ export interface UpdatePaymentRequest {
 // ======================
 // Cash Movement types
 // ======================
+/**
+ * Os quatro POST de /cash-movement levam o mesmo corpo — { amount,
+ * paymentMethod, description } (ver cash-movement.md).
+ *
+ * `paymentMethod` é obrigatório nos quatro porque o backend calcula saldo e
+ * valida por método: movimento sem método não entra em total nenhum, some do
+ * saldo disponível e aparece com "—" na coluna de método do extrato. Foi o
+ * defeito do suprimento, e sangria e reembolso tinham o mesmo.
+ */
 export interface CashWithdrawalRequest {
   amount: number;
-  description?: string;
+  paymentMethod: PaymentMethod;
+  description: string;
 }
 
-/**
- * POST /cash-movement/deposit exige os três campos. `paymentMethod` é
- * obrigatório porque o backend passou a calcular saldo por método:
- * suprimento sem método não entra em total nenhum, some do saldo disponível
- * e aparece com "—" na coluna de método do extrato.
- */
 export interface CashDepositRequest {
   amount: number;
   paymentMethod: PaymentMethod;
@@ -904,12 +908,13 @@ export interface CashDepositRequest {
 export interface CashSaleRequest {
   amount: number;
   paymentMethod: PaymentMethod;
-  description?: string;
+  description: string;
 }
 
 export interface CashRefundRequest {
   amount: number;
-  description?: string;
+  paymentMethod: PaymentMethod;
+  description: string;
   orderId?: string;
 }
 
