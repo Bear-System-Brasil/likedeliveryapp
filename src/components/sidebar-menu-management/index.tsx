@@ -15,7 +15,6 @@ import {
   TrendingUp,
   User,
   UserCog,
-  Users,
   UtensilsCrossed,
   Wallet,
   X,
@@ -113,12 +112,18 @@ const navGroups: { label: string; links: NavLink[] }[] = [
         icon: ClipboardList,
         roles: ["owner", "admin", "financial"],
       },
-      {
-        href: "/financial-management/customers",
-        label: "Clientes",
-        icon: Users,
-        roles: ["owner", "admin", "financial"],
-      },
+      // TODO(backend): item "Clientes" escondido enquanto
+      // GET /user/company/customers responde 200 com lista vazia - o vínculo
+      // cliente-empresa ainda não é populado. A tela e a rota continuam de
+      // pé (/financial-management/customers segue no ROUTE_PERMISSIONS e no
+      // middleware); quando o backend popular o vínculo, é só devolver o
+      // item abaixo:
+      // {
+      //   href: "/financial-management/customers",
+      //   label: "Clientes",
+      //   icon: Users,
+      //   roles: ["owner", "admin", "financial"],
+      // },
       {
         href: "/financial-management/settings",
         label: "Configurações",
