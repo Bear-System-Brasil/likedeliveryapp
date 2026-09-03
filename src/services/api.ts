@@ -293,15 +293,14 @@ export interface ReportsTopProduct {
 }
 
 /**
- * Receita agrupada por status do pedido. O backend reaproveita a forma de
- * `ordersByStatus` aqui, mas o número é dinheiro, não contagem - e o nome do
- * campo não está firme no contrato. Lemos os dois e deixamos a escolha num
- * helper só (ver `revenueOfStatus` em services/financial-dashboard).
+ * Receita agrupada por status do pedido. A forma lembra a de
+ * `ordersByStatus`, mas o número é dinheiro, não contagem: o campo é
+ * `totalRevenue`, igual em GET /reports e em
+ * GET /reports/payment/revenue-by-status (ver reports.md).
  */
 export interface ReportsRevenueByStatus {
   status: string;
-  totalRevenue?: number;
-  totalOrders?: number;
+  totalRevenue: number;
 }
 
 export interface ReportsExpenses {

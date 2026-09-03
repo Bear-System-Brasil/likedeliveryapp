@@ -207,24 +207,28 @@ export function averageTicket(
   return revenue / orders;
 }
 
-/** Pedido concluído e pedido cancelado não são receita presa. */
-const SETTLED_STATUSES = ["COMPLETED", "CANCELED", "CANCELLED"];
-
-/** O número de receita por status, sob qualquer um dos dois nomes possíveis. */
-export function revenueOfStatus(row: ReportsRevenueByStatus): number {
-  return row.totalRevenue ?? row.totalOrders ?? 0;
-}
-
 /**
- * Venda feita e não realizada: tudo que não fechou nem foi cancelado.
- * Segue a regra literal do contrato - qualquer status fora de COMPLETED e
- * CANCELED entra, inclusive carrinho e abandonado.
+ * Status que contam como receita presa: o pedido existe e ainda não virou
+ * dinheiro na mão.
+ *
+ * É uma lista fechada, não "tudo menos COMPLETED e CANCELED": CART e
+ * ABANDONED são carrinho ativo e carrinho abandonado, nunca viraram pedido,
+ * e inflariam a métrica com venda que não foi feita. Status novo no backend
+ * fica de fora até alguém decidir aqui - errar para menos, não para mais.
  */
+const STUCK_STATUSES = [
+  "ORDERED",
+  "AWAITING_PAYMENT",
+  "IN_PRODUCTION",
+  "READY_FOR_PICKUP",
+];
+
+/** Venda feita e ainda não realizada. */
 export function stuckRevenue(rows?: ReportsRevenueByStatus[]): number {
   if (!rows?.length) return 0;
   return rows
-    .filter((row) => !SETTLED_STATUSES.includes(row.status?.toUpperCase()))
-    .reduce((sum, row) => sum + revenueOfStatus(row), 0);
+    .filter((row) => STUCK_STATUSES.includes(row.status?.toUpperCase()))
+    .reduce((sum, row) => sum + (row.totalRevenue ?? 0), 0);
 }
 
 export interface CancellationRate {
