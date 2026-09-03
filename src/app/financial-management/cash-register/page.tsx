@@ -40,6 +40,25 @@ function toPaymentMethod(value?: string): PaymentMethod | "" {
     : "";
 }
 
+/** Tipo com que o diálogo de movimento abre. */
+const INITIAL_MOVEMENT_TYPE: MovementType = "withdrawal";
+
+/**
+ * Sangria abre SEM método pré-selecionado. É a única operação que retira
+ * dinheiro, e um padrão aceito por inércia pode significar retirar de um
+ * método sem saldo - exatamente o que o backend passou a barrar agora que
+ * valida saldo por método.
+ *
+ * Os outros três mantêm a preferência: venda e suprimento se repetem muito
+ * dentro do turno, e reembolso costuma estar amarrado a um pagamento.
+ */
+function initialPaymentMethod(
+  type: MovementType,
+  preferred?: string,
+): PaymentMethod | "" {
+  return type === "withdrawal" ? "" : toPaymentMethod(preferred);
+}
+
 const MOVEMENT_OPTIONS: { value: MovementType; label: string }[] = [
   { value: "withdrawal", label: "Sangria" },
   { value: "deposit", label: "Suprimento" },
@@ -252,7 +271,8 @@ export default function CashRegisterPage() {
   const refundMutation = useCashRefund();
 
   const [dialog, setDialog] = useState<DialogKind>(null);
-  const [movementType, setMovementType] = useState<MovementType>("withdrawal");
+  const [movementType, setMovementType] =
+    useState<MovementType>(INITIAL_MOVEMENT_TYPE);
 
   const [openingBalance, setOpeningBalance] = useState("");
   const [openObs, setOpenObs] = useState("");
@@ -260,7 +280,7 @@ export default function CashRegisterPage() {
   const [closeObs, setCloseObs] = useState("");
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(() =>
-    toPaymentMethod(defaultPaymentMethod),
+    initialPaymentMethod(INITIAL_MOVEMENT_TYPE, defaultPaymentMethod),
   );
   const [description, setDescription] = useState("");
   const [closeConfirmed, setCloseConfirmed] = useState(false);
@@ -319,17 +339,17 @@ export default function CashRegisterPage() {
   const hasMovementFilters =
     movementTypeFilter !== "ALL" || movementMethodFilter !== "ALL";
 
-  const resetMovementForm = () => {
+  const resetMovementForm = (type: MovementType) => {
     setAmount("");
     setDescription("");
-    setPaymentMethod(toPaymentMethod(defaultPaymentMethod));
+    setPaymentMethod(initialPaymentMethod(type, defaultPaymentMethod));
   };
 
   const closeDialog = () => {
     setDialog(null);
     setOpeningBalance("");
     setOpenObs("");
-    resetMovementForm();
+    resetMovementForm(movementType);
   };
 
   const handleRefresh = () => {
@@ -363,8 +383,16 @@ export default function CashRegisterPage() {
 
   const openMovementDialog = (type: MovementType) => {
     setMovementType(type);
-    resetMovementForm();
+    resetMovementForm(type);
     setDialog("movement");
+  };
+
+  // Trocar o tipo dentro do diálogo é trocar de operação, então o método é
+  // reaplicado pela regra do tipo novo. Sem isso o padrão da venda vazaria
+  // para a sangria por um clique no seletor.
+  const switchMovementType = (type: MovementType) => {
+    setMovementType(type);
+    setPaymentMethod(initialPaymentMethod(type, defaultPaymentMethod));
   };
 
   const missingPaymentMethod = !paymentMethod;
@@ -1178,7 +1206,7 @@ export default function CashRegisterPage() {
             {MOVEMENT_OPTIONS.map((opt) => (
               <Button
                 key={opt.value}
-                onClick={() => setMovementType(opt.value)}
+                onClick={() => switchMovementType(opt.value)}
                 className={cn(
                   "h-[30px] rounded-[8px] text-[11px] font-bold transition-colors",
                   movementType === opt.value
@@ -1193,13 +1221,13 @@ export default function CashRegisterPage() {
 
           <FieldLabel>Método de pagamento *</FieldLabel>
           <select
+            required
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(toPaymentMethod(e.target.value))}
-            aria-invalid={missingPaymentMethod}
             className={cn(
               fieldClass,
-              "mb-3 h-[38px] bg-[#FAFAFB]",
-              missingPaymentMethod && "border-[#C0392B]",
+              "h-[38px] bg-[#FAFAFB]",
+              movementType === "withdrawal" ? "mb-1.5" : "mb-3",
             )}
           >
             <option value="" disabled>
@@ -1211,6 +1239,12 @@ export default function CashRegisterPage() {
               </option>
             ))}
           </select>
+          {movementType === "withdrawal" && (
+            <p className="mb-3 text-[10.5px] leading-snug text-[#8A9099]">
+              A sangria não usa o método padrão: escolha de onde o dinheiro
+              sai.
+            </p>
+          )}
 
           <FieldLabel>Descrição</FieldLabel>
           <input
