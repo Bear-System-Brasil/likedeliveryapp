@@ -6,7 +6,6 @@
 export const ROUTE_PERMISSIONS: { [key: string]: string[] } = {
   // Public pages (everyone can access)
   "/": ["owner", "admin", "manager", "cook", "delivery", "financial", "client"],
-  "/restaurants": ["owner", "admin", "manager", "cook", "delivery", "financial", "client"],
   "/restaurant/[id]": ["owner", "admin", "manager", "cook", "delivery", "financial", "client"],
 
   // Client pages

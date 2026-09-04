@@ -7,7 +7,6 @@ import { Restaurant } from "@/components/ui/restaurant";
 import { Restaurant as RestaurantType } from "@/types/restaurant";
 import { NoRestaurantNear } from "@/components/ui/no-restaurant-near";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {

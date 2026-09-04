@@ -1328,7 +1328,7 @@ export const apiService = {
   },
 
   // Category endpoints
-  // Listagem pública (para a tela /restaurants do cliente) - Todos têm acesso
+  // Listagem pública (para a tela inicial do cliente) - Todos têm acesso
   getAllCategories: () => apiRequest<Category[]>("GET", "/categories"),
 
   // Listagem administrativa (Painel da Empresa) - Exige auth (Admin, Owner, Manager)
