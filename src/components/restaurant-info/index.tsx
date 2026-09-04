@@ -32,6 +32,17 @@ import { useAuthStore } from "@/stores/auth-store";
 import { formatCurrency } from "@/utils/format-currency";
 import { toast } from "sonner";
 
+// Função para gerar IDs seguros e sem colisão
+function slugify(text: string) {
+  if (!text) return "";
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-") // Troca espaços e caracteres especiais por hífen
+    .replace(/(^-|-$)+/g, ""); // Remove hifens sobrando nas pontas
+}
+
 function getProductCategoryName(
   productCategory: any,
   categoryMap: Record<string, string>,
@@ -123,6 +134,9 @@ export default function RestaurantPage() {
 
   // 3. Efeito para mudar a aba ativa no menu enquanto o usuário rola a página
   useEffect(() => {
+    // Interrompe imediatamente se não houver categorias
+    if (categories.length === 0) return; 
+
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
       const headerOffset = 150; // Compensação da altura do cabeçalho fixo
@@ -130,7 +144,8 @@ export default function RestaurantPage() {
       let currentActive = categories[0];
 
       categories.forEach((category) => {
-        const element = document.getElementById(`category-${category}`);
+        // Busca usando o slug seguro
+        const element = document.getElementById(`category-${slugify(category)}`);
         if (element) {
           const elementTop = element.offsetTop;
           if (scrollPosition >= elementTop - headerOffset) {
@@ -139,17 +154,21 @@ export default function RestaurantPage() {
         }
       });
 
-      setSelectedCategory(currentActive);
+      if (currentActive) {
+        setSelectedCategory(currentActive);
+      }
     };
 
-    window.addEventListener("scroll", handleScroll);
+    // Adicionado { passive: true } para performance no mobile
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [categories]);
 
   // 4. Efeito para centralizar o botão da categoria no menu horizontal
   useEffect(() => {
     if (navRef.current && selectedCategory) {
-      const activeButton = document.getElementById(`nav-btn-${selectedCategory}`);
+      // Busca usando o slug seguro
+      const activeButton = document.getElementById(`nav-btn-${slugify(selectedCategory)}`);
       if (activeButton) {
         const nav = navRef.current;
         // Calcula a posição para centralizar o botão no scroll horizontal
@@ -161,7 +180,8 @@ export default function RestaurantPage() {
 
   // Função de Clique para rolar até a categoria
   const scrollToCategory = (categoryName: string) => {
-    const element = document.getElementById(`category-${categoryName}`);
+    // Busca usando o slug seguro
+    const element = document.getElementById(`category-${slugify(categoryName)}`);
     if (element) {
       // Usa 120 para compensar o header fixo e a barra de categorias
       const y = element.getBoundingClientRect().top + window.scrollY - 120;
@@ -231,7 +251,7 @@ export default function RestaurantPage() {
             </Card>
           ) : (
             <>
-              {/* === CABEÇALHO DO RESTAURANTE (MANTIDO) === */}
+              {/* === CABEÇALHO DO RESTAURANTE === */}
               <section className="overflow-hidden rounded-[14px] border border-[#e9eaee] bg-white shadow-sm">
                 <div className="relative h-32 bg-[#edeef1] sm:h-40 md:h-[158px]">
                   <Image
@@ -335,7 +355,7 @@ export default function RestaurantPage() {
                   return (
                     <button
                       key={category}
-                      id={`nav-btn-${category}`}
+                      id={`nav-btn-${slugify(category)}`} // Uso do slug
                       type="button"
                       onClick={() => scrollToCategory(category)}
                       className={`shrink-0 rounded-lg border px-3.5 py-1.5 text-xs font-bold transition-all ${
@@ -362,8 +382,8 @@ export default function RestaurantPage() {
                   Object.entries(groupedItems).map(([category, items]) => (
                     <div 
                       key={category} 
-                      id={`category-${category}`}
-                      className="scroll-mt-[130px]" // Garante que a categoria não fique escondida atrás do header
+                      id={`category-${slugify(category)}`} // Uso do slug
+                      className="scroll-mt-[130px]"
                     >
                       <h2 className="mb-4 text-xl font-extrabold text-gray-900">
                         {category}
@@ -374,64 +394,61 @@ export default function RestaurantPage() {
                           const isAvailable = item.isAvailable !== false;
 
                           return (
-<Card
-  key={item.id}
-  onClick={() => isAvailable && handleOpenModal(item)}
-  // Adicionado min-w-0 aqui na primeira linha do className
-  className={`group flex min-w-0 min-h-[116px] gap-3 overflow-visible rounded-[13px] border border-[#e9eaee] bg-white p-3 shadow-sm transition hover:border-[#dddfe4] hover:shadow-md ${
-    isAvailable ? "cursor-pointer" : "cursor-default"
-  }`}
->
+                            <Card
+                              key={item.id}
+                              onClick={() => isAvailable && handleOpenModal(item)}
+                              className={`group flex min-w-0 min-h-[116px] gap-3 overflow-visible rounded-[13px] border border-[#e9eaee] bg-white p-3 shadow-sm transition hover:border-[#dddfe4] hover:shadow-md ${
+                                isAvailable ? "cursor-pointer" : "cursor-default"
+                              }`}
+                            >
+                              <div className="flex min-w-0 flex-1 flex-col">
+                                <h3 className="line-clamp-2 break-words text-sm font-bold tracking-[-0.01em] text-[#14161a]">
+                                  {item.name}
+                                </h3>
+                                
+                                {item.description && (
+                                  <p className="mt-1 line-clamp-2 break-words text-xs font-medium leading-relaxed text-[#8a8f99]">
+                                    {item.description}
+                                  </p>
+                                )}
+                                
+                                <div className="mt-auto flex items-center gap-2 pt-3">
+                                  <span className="text-[15px] font-extrabold tracking-[-0.02em] text-[#14161a]">
+                                    {formatCurrency(Number(item.salePrice || 0))}
+                                  </span>
+                                </div>
+                              </div>
 
-  <div className="flex min-w-0 flex-1 flex-col">
-    <h3 className="line-clamp-2 wrap-break-word text-sm font-bold tracking-[-0.01em] text-[#14161a]">
-      {item.name}
-    </h3>
-    
+                              <div className="relative h-[92px] w-[92px] shrink-0">
+                                <Image
+                                  width={184}
+                                  height={184}
+                                  src={getImageUrl(item)}
+                                  alt={item.name}
+                                  className={`h-full w-full rounded-[10px] bg-[#edeef1] object-cover ${
+                                    !isAvailable ? "opacity-60" : ""
+                                  }`}
+                                />
 
-    {item.description && (
-      <p className="mt-1 line-clamp-2 wrap-break-word text-xs font-medium leading-relaxed text-[#8a8f99]">
-        {item.description}
-      </p>
-    )}
-    
-    <div className="mt-auto flex items-center gap-2 pt-3">
-      <span className="text-[15px] font-extrabold tracking-[-0.02em] text-[#14161a]">
-        {formatCurrency(Number(item.salePrice || 0))}
-      </span>
-    </div>
-  </div>
-
-  <div className="relative h-[92px] w-[92px] shrink-0">
-    <Image
-      width={184}
-      height={184}
-      src={getImageUrl(item)}
-      alt={item.name}
-      className={`h-full w-full rounded-[10px] bg-[#edeef1] object-cover ${
-        !isAvailable ? "opacity-60" : ""
-      }`}
-    />
-
-    {!isAvailable ? (
-      <Badge className="absolute inset-x-1 bottom-1 justify-center border-0 bg-black/70 px-1 py-1 text-[10px] text-white">
-        Indisponível
-      </Badge>
-    ) : (
-      <Button
-        type="button"
-        size="icon"
-        onClick={(event) => {
-          event.stopPropagation();
-          handleOpenModal(item);
-        }}
-        className="absolute -bottom-1 -right-1 h-7 w-7 rounded-lg border-2 border-white bg-orange-500 text-white shadow-md hover:bg-orange-600"
-      >
-        <Plus className="h-4 w-4" />
-      </Button>
-    )}
-  </div>
-</Card>
+                                {!isAvailable ? (
+                                  <Badge className="absolute inset-x-1 bottom-1 justify-center border-0 bg-black/70 px-1 py-1 text-[10px] text-white">
+                                    Indisponível
+                                  </Badge>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleOpenModal(item);
+                                    }}
+                                    className="absolute -bottom-1 -right-1 h-7 w-7 rounded-lg border-2 border-white bg-orange-500 text-white shadow-md hover:bg-orange-600"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </Card>
                           );
                         })}
                       </div>

@@ -1,5 +1,6 @@
-import RestaurantInfoPage from "@/components/restaurant-info/restaurant-info";
+import RestaurantPage from "@/components/restaurant-info";
+
 
 export default function RestaurantInfo() {
-  return <RestaurantInfoPage />;
+  return <RestaurantPage />;
 }
