@@ -11,7 +11,7 @@ import {
 import { useAuth } from "@/contexts/auth-provider";
 import { useAuthStore } from "@/stores";
 import { getWorkspaceLink } from "@/constants/workspace-links";
-import { isCompanyRole } from "@/utils/role-helpers";
+import { getProfileRoute } from "@/utils/role-helpers";
 import clsx from "clsx";
 import {
   ChevronDown,
@@ -233,11 +233,7 @@ export function MainHeader({
   const canShowAuthUI = isMounted && hasHydrated;
 
   const handleProfileClick = () => {
-    if (isCompanyRole(user?.role)) {
-      router.push("/company-profile");
-    } else {
-      router.push("/profile");
-    }
+    router.push(getProfileRoute(user?.role));
     setMobileMenuOpen(false);
   };
 

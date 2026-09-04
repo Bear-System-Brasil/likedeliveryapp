@@ -32,18 +32,21 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 
+// A ordem daqui é a ordem do seletor de função do convite, e as chaves são
+// o StaffRoleEnum do backend - função nova entra nos dois mapas junto com o
+// enum. `admin` ficou de fora de propósito (ver StaffRole).
 const ROLE_LABELS: Record<StaffRole, string> = {
-  admin: "Administrador",
   manager: "Gerente",
   cook: "Cozinheiro",
   delivery: "Entregador",
+  financial: "Financeiro",
 };
 
 const ROLE_BADGE_CLASSES: Record<StaffRole, string> = {
-  admin: "bg-[#EAF2FF] text-[#2563EB]",
   manager: "bg-[#F3EAFF] text-[#7C3AED]",
   cook: "bg-[#FFF4DE] text-[#B7791F]",
   delivery: "bg-[#E9F7EF] text-[#1B7F4C]",
+  financial: "bg-[#EAF2FF] text-[#2563EB]",
 };
 
 function formatDate(date: string) {
@@ -59,6 +62,7 @@ function TeamManagementContent() {
     isModalOpen,
     formData,
     removeTarget,
+    isInviting,
     handleOpenInviteModal,
     handleCloseModal,
     updateFormField,
@@ -91,9 +95,10 @@ function TeamManagementContent() {
     >
       <div className="mx-auto max-w-7xl">
         <div className="mb-3 rounded-[10px] border border-[#FFE1CC] bg-[#FFF7ED] px-3.5 py-2.5 text-[11.5px] font-semibold text-[#B7791F]">
-          Tela em construção: os convites e remoções abaixo ainda não são
-          salvos no servidor - assim que o backend tiver a listagem de
-          equipe, isso passa a persistir de verdade.
+          Os convites são enviados de verdade e chegam ao servidor. A lista
+          abaixo, porém, ainda é provisória: enquanto o backend não expõe a
+          listagem de equipe, ela mostra dados de exemplo e as remoções valem
+          só nesta sessão.
         </div>
 
         <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
@@ -270,15 +275,17 @@ function TeamManagementContent() {
             <Button
               variant="outline"
               onClick={handleCloseModal}
-              className="cursor-pointer rounded-[8px] border-[#E9EAEE] text-xs"
+              disabled={isInviting}
+              className="cursor-pointer rounded-[8px] border-[#E9EAEE] text-xs disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleSendInvite}
-              className="cursor-pointer rounded-[8px] bg-[#FF6B00] text-xs font-bold text-white hover:bg-[#E05F00]"
+              disabled={isInviting}
+              className="cursor-pointer rounded-[8px] bg-[#FF6B00] text-xs font-bold text-white hover:bg-[#E05F00] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Enviar Convite
+              {isInviting ? "Enviando..." : "Enviar Convite"}
             </Button>
           </DialogFooter>
         </DialogContent>

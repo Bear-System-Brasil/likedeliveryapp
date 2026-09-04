@@ -298,6 +298,33 @@ export interface ReportsTopProduct {
   totalQuantity: number;
 }
 
+/**
+ * Receita agrupada por status do pedido. A forma lembra a de
+ * `ordersByStatus`, mas o número é dinheiro, não contagem: o campo é
+ * `totalRevenue`, igual em GET /reports e em
+ * GET /reports/payment/revenue-by-status (ver reports.md).
+ */
+export interface ReportsRevenueByStatus {
+  status: string;
+  totalRevenue: number;
+}
+
+export interface ReportsExpenses {
+  ingredientsCost: number;
+  productsCost: number;
+  shippingCost: number;
+  discounts: number;
+  totalExpenses: number;
+}
+
+/**
+ * Capital parado em estoque. É uma foto do momento, não despesa do período:
+ * não muda com o filtro de data e não entra em nenhum cálculo de margem.
+ */
+export interface ReportsStockCosts {
+  totalStockCost: number;
+}
+
 export interface ReportsSummary {
   totalRevenue: number;
   totalOrders: number;
@@ -307,14 +334,9 @@ export interface ReportsSummary {
   ordersByStatus?: ReportsOrdersByStatus[];
   revenueByDay?: ReportsRevenueByDay[];
   topProducts?: ReportsTopProduct[];
-  revenueByOrderStatus?: ReportsOrdersByStatus[];
-  totalExpenses?: {
-    ingredientsCost: number;
-    productsCost: number;
-    shippingCost: number;
-    discounts: number;
-    totalExpenses: number;
-  };
+  revenueByOrderStatus?: ReportsRevenueByStatus[];
+  totalExpenses?: ReportsExpenses;
+  stockCosts?: ReportsStockCosts;
 }
 
 export interface ReportsParams {
@@ -627,6 +649,35 @@ export interface Company {
   updated_at: string;
 }
 
+/**
+ * Espelha o StaffRoleEnum do backend - são as únicas funções que
+ * POST /company/invite aceita. `admin` NÃO entra aqui: é provisionada fora
+ * dessa API, e mandá-la no convite volta 400.
+ */
+export type StaffRole = "manager" | "cook" | "delivery" | "financial";
+
+export interface InviteStaffRequest {
+  email: string;
+  /**
+   * O DTO do backend valida `staffRole`, não `role` (ver company.md) - e o
+   * class-validator roda em whitelist, então mandar `role` volta 400 com
+   * "property role should not exist". A tela guarda o campo como `role` no
+   * formulário; a tradução pro contrato acontece na borda, aqui.
+   */
+  staffRole: StaffRole;
+}
+
+/** Convite recém-criado (POST /company/invite). */
+export interface StaffInvite {
+  id?: string;
+  email?: string;
+  staffRole?: StaffRole;
+  status?: string;
+  invitedAt?: string;
+  createdAt?: string;
+  created_at?: string;
+}
+
 // Address types
 export interface Address {
   id: string;
@@ -839,25 +890,37 @@ export interface UpdatePaymentRequest {
 // ======================
 // Cash Movement types
 // ======================
+/**
+ * Os quatro POST de /cash-movement levam o mesmo corpo — { amount,
+ * paymentMethod, description } (ver cash-movement.md).
+ *
+ * `paymentMethod` é obrigatório nos quatro porque o backend calcula saldo e
+ * valida por método: movimento sem método não entra em total nenhum, some do
+ * saldo disponível e aparece com "—" na coluna de método do extrato. Foi o
+ * defeito do suprimento, e sangria e reembolso tinham o mesmo.
+ */
 export interface CashWithdrawalRequest {
   amount: number;
-  description?: string;
+  paymentMethod: PaymentMethod;
+  description: string;
 }
 
 export interface CashDepositRequest {
   amount: number;
-  description?: string;
+  paymentMethod: PaymentMethod;
+  description: string;
 }
 
 export interface CashSaleRequest {
   amount: number;
-  paymentMethod: string;
-  description?: string;
+  paymentMethod: PaymentMethod;
+  description: string;
 }
 
 export interface CashRefundRequest {
   amount: number;
-  description?: string;
+  paymentMethod: PaymentMethod;
+  description: string;
   orderId?: string;
 }
 
@@ -1458,6 +1521,16 @@ export const apiService = {
         };
       }
     },
+
+    /**
+     * Convida um membro para a equipe da empresa autenticada. A empresa vem
+     * do token, então o corpo é só e-mail + função (ver company.md).
+     * O backend valida `role` contra o StaffRoleEnum e responde 400 para
+     * função fora dele, 403 para quem não pode convidar e 409 para e-mail
+     * já convidado/já na equipe.
+     */
+    invite: (data: InviteStaffRequest) =>
+      apiRequest<StaffInvite>("POST", "/company/invite", data, true),
   },
 
   // Upload endpoint (S3)
@@ -1910,6 +1983,18 @@ export const apiService = {
           `/payment?${new URLSearchParams(filters as Record<string, string>).toString()}`,
           params,
         ),
+        undefined,
+        true,
+      ),
+
+    /**
+     * `GET /payment?status=PENDING` - a contagem confiável vem de
+     * `meta.total`; somar valor exige percorrer a página devolvida.
+     */
+    findByStatus: (status: PaymentStatus, params?: PaginationParams) =>
+      apiRequest<PaginatedResponse<Payment>>(
+        "GET",
+        withPagination(`/payment?status=${status}`, params),
         undefined,
         true,
       ),

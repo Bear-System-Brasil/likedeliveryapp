@@ -1,7 +1,7 @@
 import { apiService } from "@/services/api";
 import { useAuthStore } from "@/stores";
 import { onlyNumbers } from "@/utils";
-import { isCompanyRole } from "@/utils/role-helpers";
+import { isCompanyAdminRole } from "@/utils/role-helpers";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -101,7 +101,9 @@ export const useProfileManagement = () => {
       return;
     }
 
-    if (isCompanyRole(user?.role)) {
+    // Só quem edita o cadastro da empresa é levado pra lá; staff como
+    // financial e manager usa /profile mesmo.
+    if (isCompanyAdminRole(user?.role)) {
       router.push("/company-profile");
     }
   }, [isMounted, _hasHydrated, isAuthenticated, user?.role, router]);
@@ -128,7 +130,7 @@ export const useProfileManagement = () => {
       isMounted &&
       _hasHydrated &&
       isAuthenticated &&
-      !isCompanyRole(user?.role),
+      !isCompanyAdminRole(user?.role),
     staleTime: 5 * 60 * 1000, // 5 min
   });
 
