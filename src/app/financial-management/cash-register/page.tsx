@@ -26,10 +26,38 @@ import {
 import { useAuthStore, useFinancialPreferencesStore } from "@/stores";
 import { formatCurrency } from "@/utils";
 import { Banknote, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { type ReactNode, useState } from "react";
 
 type MovementType = "withdrawal" | "deposit" | "sale" | "refund";
 type DialogKind = "open-register" | "movement" | null;
+
+/** O método preferido vem do localStorage; um valor obsoleto ali não pode
+ *  virar corpo de requisição, então cai pra "sem seleção". */
+function toPaymentMethod(value?: string): PaymentMethod | "" {
+  return Object.values(PaymentMethod).includes(value as PaymentMethod)
+    ? (value as PaymentMethod)
+    : "";
+}
+
+/** Tipo com que o diálogo de movimento abre. */
+const INITIAL_MOVEMENT_TYPE: MovementType = "withdrawal";
+
+/**
+ * Sangria abre SEM método pré-selecionado. É a única operação que retira
+ * dinheiro, e um padrão aceito por inércia pode significar retirar de um
+ * método sem saldo - exatamente o que o backend passou a barrar agora que
+ * valida saldo por método.
+ *
+ * Os outros três mantêm a preferência: venda e suprimento se repetem muito
+ * dentro do turno, e reembolso costuma estar amarrado a um pagamento.
+ */
+function initialPaymentMethod(
+  type: MovementType,
+  preferred?: string,
+): PaymentMethod | "" {
+  return type === "withdrawal" ? "" : toPaymentMethod(preferred);
+}
 
 const MOVEMENT_OPTIONS: { value: MovementType; label: string }[] = [
   { value: "withdrawal", label: "Sangria" },
@@ -243,15 +271,17 @@ export default function CashRegisterPage() {
   const refundMutation = useCashRefund();
 
   const [dialog, setDialog] = useState<DialogKind>(null);
-  const [movementType, setMovementType] = useState<MovementType>("withdrawal");
+  const [movementType, setMovementType] =
+    useState<MovementType>(INITIAL_MOVEMENT_TYPE);
 
   const [openingBalance, setOpeningBalance] = useState("");
   const [openObs, setOpenObs] = useState("");
   const [countedTotal, setCountedTotal] = useState("");
   const [closeObs, setCloseObs] = useState("");
   const [amount, setAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>(defaultPaymentMethod);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(() =>
+    initialPaymentMethod(INITIAL_MOVEMENT_TYPE, defaultPaymentMethod),
+  );
   const [description, setDescription] = useState("");
   const [closeConfirmed, setCloseConfirmed] = useState(false);
 
@@ -309,17 +339,17 @@ export default function CashRegisterPage() {
   const hasMovementFilters =
     movementTypeFilter !== "ALL" || movementMethodFilter !== "ALL";
 
-  const resetMovementForm = () => {
+  const resetMovementForm = (type: MovementType) => {
     setAmount("");
     setDescription("");
-    setPaymentMethod(defaultPaymentMethod);
+    setPaymentMethod(initialPaymentMethod(type, defaultPaymentMethod));
   };
 
   const closeDialog = () => {
     setDialog(null);
     setOpeningBalance("");
     setOpenObs("");
-    resetMovementForm();
+    resetMovementForm(movementType);
   };
 
   const handleRefresh = () => {
@@ -353,26 +383,42 @@ export default function CashRegisterPage() {
 
   const openMovementDialog = (type: MovementType) => {
     setMovementType(type);
-    resetMovementForm();
+    resetMovementForm(type);
     setDialog("movement");
   };
+
+  // Trocar o tipo dentro do diálogo é trocar de operação, então o método é
+  // reaplicado pela regra do tipo novo. Sem isso o padrão da venda vazaria
+  // para a sangria por um clique no seletor.
+  const switchMovementType = (type: MovementType) => {
+    setMovementType(type);
+    setPaymentMethod(initialPaymentMethod(type, defaultPaymentMethod));
+  };
+
+  const missingPaymentMethod = !paymentMethod;
 
   const handleConfirmMovement = async () => {
     const value = parseFloat(amount.replace(",", "."));
     if (isNaN(value) || value <= 0 || !description.trim()) return;
 
+    // O cash-movement.md documenta o mesmo corpo nos quatro POST -
+    // { amount, paymentMethod, description }. A guarda também estreita o
+    // tipo de `paymentMethod`, então o payload sai sem cast.
+    if (!paymentMethod) {
+      toast.error("Selecione o método de pagamento");
+      return;
+    }
+
+    const payload = { amount: value, paymentMethod, description };
+
     if (movementType === "withdrawal") {
-      await withdrawalMutation.mutateAsync({ amount: value, description });
+      await withdrawalMutation.mutateAsync(payload);
     } else if (movementType === "deposit") {
-      await depositMutation.mutateAsync({ amount: value, description });
+      await depositMutation.mutateAsync(payload);
     } else if (movementType === "sale") {
-      await saleMutation.mutateAsync({
-        amount: value,
-        paymentMethod,
-        description,
-      });
+      await saleMutation.mutateAsync(payload);
     } else {
-      await refundMutation.mutateAsync({ amount: value, description });
+      await refundMutation.mutateAsync(payload);
     }
 
     closeDialog();
@@ -1160,7 +1206,7 @@ export default function CashRegisterPage() {
             {MOVEMENT_OPTIONS.map((opt) => (
               <Button
                 key={opt.value}
-                onClick={() => setMovementType(opt.value)}
+                onClick={() => switchMovementType(opt.value)}
                 className={cn(
                   "h-[30px] rounded-[8px] text-[11px] font-bold transition-colors",
                   movementType === opt.value
@@ -1173,23 +1219,31 @@ export default function CashRegisterPage() {
             ))}
           </div>
 
-          {movementType === "sale" && (
-            <>
-              <FieldLabel>Método de pagamento</FieldLabel>
-              <select
-                value={paymentMethod}
-                onChange={(e) =>
-                  setPaymentMethod(e.target.value as PaymentMethod)
-                }
-                className={cn(fieldClass, "mb-3 h-[38px] bg-[#FAFAFB]")}
-              >
-                {Object.values(PaymentMethod).map((m) => (
-                  <option key={m} value={m}>
-                    {PAYMENT_METHOD_LABELS[m]}
-                  </option>
-                ))}
-              </select>
-            </>
+          <FieldLabel>Método de pagamento *</FieldLabel>
+          <select
+            required
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(toPaymentMethod(e.target.value))}
+            className={cn(
+              fieldClass,
+              "h-[38px] bg-[#FAFAFB]",
+              movementType === "withdrawal" ? "mb-1.5" : "mb-3",
+            )}
+          >
+            <option value="" disabled>
+              Selecione o método
+            </option>
+            {Object.values(PaymentMethod).map((m) => (
+              <option key={m} value={m}>
+                {PAYMENT_METHOD_LABELS[m]}
+              </option>
+            ))}
+          </select>
+          {movementType === "withdrawal" && (
+            <p className="mb-3 text-[10.5px] leading-snug text-[#8A9099]">
+              A sangria não usa o método padrão: escolha de onde o dinheiro
+              sai.
+            </p>
           )}
 
           <FieldLabel>Descrição</FieldLabel>
@@ -1219,7 +1273,12 @@ export default function CashRegisterPage() {
             </CompactButton>
             <Button
               onClick={handleConfirmMovement}
-              disabled={isMovementPending || !amount || !description}
+              disabled={
+                isMovementPending ||
+                !amount ||
+                !description ||
+                missingPaymentMethod
+              }
               className="h-9 flex-1 rounded-[9px] bg-[#FF6B00] text-xs font-extrabold text-white transition-colors hover:bg-[#E86000] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isMovementPending ? "Registrando..." : "Registrar"}

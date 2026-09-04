@@ -1,20 +1,58 @@
 /**
  * Helper functions for user role management
+ *
+ * `isCompanyRole` respondia a duas perguntas diferentes com a mesma lista:
+ * "trabalha no restaurante?" (navegação de staff) e "administra o
+ * restaurante?" (telas de administração). Como a segunda é mais estreita,
+ * toda role de staff nova herdava acesso a tela de administração e era
+ * mandada pra /company-profile, que o middleware nega - foi o que
+ * aconteceria com `financial`. As duas perguntas agora têm listas próprias.
  */
 
-export const COMPANY_ROLES = ['company', 'admin', 'owner', 'manager'] as const
+/**
+ * Quem trabalha no restaurante, em oposição a cliente. Responde
+ * "trabalha no restaurante?". `company` é o valor legado do login de empresa.
+ */
+export const COMPANY_ROLES = [
+  'company',
+  'admin',
+  'owner',
+  'manager',
+  'financial',
+] as const
+
+/**
+ * Subconjunto que administra os dados cadastrais da empresa. Responde
+ * "administra o restaurante?" e espelha quem /company-profile realmente
+ * aceita (ver ROUTE_PERMISSIONS e o middleware): só owner e admin, mais o
+ * `company` legado. Role de staff que não edita cadastro - manager,
+ * financial, cook, delivery - fica de fora de propósito.
+ */
+export const COMPANY_ADMIN_ROLES = ['company', 'admin', 'owner'] as const
+
 export const CLIENT_ROLES = ['client', 'customer', 'user'] as const
 
 export type CompanyRole = typeof COMPANY_ROLES[number]
+export type CompanyAdminRole = typeof COMPANY_ADMIN_ROLES[number]
 export type ClientRole = typeof CLIENT_ROLES[number]
 export type UserRole = CompanyRole | ClientRole
 
 /**
- * Check if a role belongs to a company/restaurant
+ * Trabalha no restaurante (staff de qualquer área). Use para navegação de
+ * staff - NÃO use para liberar tela de administração.
  */
-export function isCompanyRole(role?: string): boolean {
+export function isCompanyStaffRole(role?: string): boolean {
   if (!role) return false
-  return COMPANY_ROLES.includes(role as any)
+  return COMPANY_ROLES.includes(role as CompanyRole)
+}
+
+/**
+ * Administra os dados cadastrais da empresa. Use para decidir por
+ * /company-profile e afins.
+ */
+export function isCompanyAdminRole(role?: string): boolean {
+  if (!role) return false
+  return COMPANY_ADMIN_ROLES.includes(role as CompanyAdminRole)
 }
 
 /**
@@ -22,12 +60,14 @@ export function isCompanyRole(role?: string): boolean {
  */
 export function isClientRole(role?: string): boolean {
   if (!role) return false
-  return CLIENT_ROLES.includes(role as any)
+  return CLIENT_ROLES.includes(role as ClientRole)
 }
 
 /**
- * Get the profile route based on user role
+ * Rota de perfil da role. Só quem administra o cadastro da empresa vai pra
+ * /company-profile; o resto - inclusive staff como financial e manager - vai
+ * pro perfil pessoal, que é o que essas contas precisam editar.
  */
 export function getProfileRoute(role?: string): string {
-  return isCompanyRole(role) ? '/company-profile' : '/profile'
+  return isCompanyAdminRole(role) ? '/company-profile' : '/profile'
 }

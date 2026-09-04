@@ -14,7 +14,8 @@ import { useEffect, useState, type ComponentType } from "react";
 import { useAuth } from "@/contexts/auth-provider";
 import { useCartActions } from "@/hooks";
 import { useAuthStore } from "@/stores";
-import { isCompanyRole } from "@/utils/role-helpers";
+import { getWorkspaceLink } from "@/constants/workspace-links";
+import { getProfileRoute, isCompanyStaffRole } from "@/utils/role-helpers";
 
 type BottomTabId =
   | "home"
@@ -48,10 +49,16 @@ const managementRoutes = [
 ];
 
 // Fluxos focados que ja possuem barra de acao fixa no rodape (checkout) ou
-// cabecalho proprio com as acoes do papel (entregador), e a tela da cozinha
-// (operacional, sem espaço vertical de sobra) - a nav do cliente (carrinho,
-// pedidos de cliente etc.) não faz sentido sobreposta ali.
-const hiddenRoutes = ["/checkout", "/delivery-dashboard", "/kitchen"];
+// cabecalho proprio com as acoes do papel (entregador), e as telas
+// operacionais com menu lateral proprio - cozinha e area financeira -, que
+// nao tem espaço vertical de sobra. A nav do cliente (carrinho, pedidos de
+// cliente etc.) não faz sentido sobreposta ali.
+const hiddenRoutes = [
+  "/checkout",
+  "/delivery-dashboard",
+  "/kitchen",
+  "/financial-management",
+];
 
 function getActiveTab(pathname: string): BottomTabId {
   if (pathname === "/cart" || pathname.startsWith("/checkout")) return "cart";
@@ -83,7 +90,7 @@ export function BottomBar({ activeTab }: BottomBarProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   const user = storeUser || authUser;
-  const isOwner = isCompanyRole(user?.role);
+  const isStaff = isCompanyStaffRole(user?.role);
   const currentTab = activeTab || getActiveTab(pathname);
 
   useEffect(() => {
@@ -123,20 +130,24 @@ export function BottomBar({ activeTab }: BottomBarProps) {
     },
   ];
 
-  const ownerTabs: Tab[] = [
+  // Os dois destinos saem da role, não de constantes de owner/admin: um
+  // financial mandado pra /menu-management ou /company-profile bate em
+  // "Acesso Negado", já que o middleware nega as duas.
+  const workspace = getWorkspaceLink(user?.role);
+  const staffTabs: Tab[] = [
     { id: "home", label: "Início", icon: Home, href: "/" },
     {
       id: "management",
-      label: "Gestão",
-      icon: Store,
-      href: "/menu-management",
+      label: workspace?.label ?? "Gestão",
+      icon: workspace?.icon ?? Store,
+      href: workspace?.href ?? "/menu-management",
       protected: true,
     },
     {
       id: "profile",
       label: "Perfil",
       icon: User,
-      href: "/company-profile",
+      href: getProfileRoute(user?.role),
       protected: true,
     },
   ];
@@ -158,7 +169,7 @@ export function BottomBar({ activeTab }: BottomBarProps) {
         : tab,
     );
 
-  const tabs = isOwner ? ownerTabs : isAuthenticated ? clientTabs : guestTabs;
+  const tabs = isStaff ? staffTabs : isAuthenticated ? clientTabs : guestTabs;
   const gridCols = tabs.length === 4 ? "grid-cols-4" : "grid-cols-3";
 
   const handleNavigate = (tab: Tab) => {
