@@ -157,17 +157,6 @@ function StoreCategoriesFilter({
         <h3 className="text-sm sm:text-base font-bold text-gray-700">
           Categorias
         </h3>
-        <Link
-          href="/restaurants"
-          className="group inline-flex items-center gap-1 rounded-full bg-orange-600 px-2.5 py-1.5 text-xs sm:text-sm font-semibold leading-none text-white transition-all duration-200 hover:bg-orange-700 hover:shadow-md"
-        >
-          <span>Ver todas</span>
-          <ChevronRight
-            size={16}
-            strokeWidth={2.5}
-            className="relative top-px shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
-          />
-        </Link>
       </div>
 
       <div className="relative">

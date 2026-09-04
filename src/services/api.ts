@@ -81,6 +81,12 @@ export interface CreateUserRequest {
   role?: string; // Optional - backend will assign 'client' by default if not provided
 }
 
+export interface RegisterRequest
+  extends Omit<CreateUserRequest, "cpf" | "birthDate"> {
+  cpf?: string;
+  birthDate?: string;
+}
+
 export interface UpdateUserRequest {
   name: string;
   email: string;
@@ -1077,7 +1083,7 @@ export const apiService = {
   // Auth endpoints - falam com as rotas BFF do Next (Set-Cookie httpOnly),
   // não com o proxy do NestJS.
   register: async (
-    userData: CreateUserRequest,
+    userData: RegisterRequest,
   ): Promise<ApiResponse<AuthBffResponse>> => {
     const res = await fetch("/api/auth/register", {
       method: "POST",
