@@ -1,5 +1,6 @@
 "use client";
 
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import Sidebar from "@/components/sidebar-menu-management";
 import { cn } from "@/lib/utils";
 import { Menu, type LucideIcon } from "lucide-react";
@@ -53,11 +54,10 @@ export function AdminPageLayout({
               </div>
             </div>
 
-            {actions && (
-              <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-                {actions}
-              </div>
-            )}
+            <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+              {actions}
+              <NotificationBell audience="management" />
+            </div>
           </div>
         </header>
 

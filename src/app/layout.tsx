@@ -2,6 +2,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { BottomBar } from "@/components/ui/bottom-bar";
 import { AuthProvider } from "@/contexts/auth-provider";
 import { Providers } from "@/providers";
+import { NotificationsProvider } from "@/providers/notifications-provider";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
@@ -33,10 +34,12 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <AuthProvider>
-              <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
-                <Suspense fallback={null}>{children}</Suspense>
-              </div>
-              <BottomBar />
+              <NotificationsProvider>
+                <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+                  <Suspense fallback={null}>{children}</Suspense>
+                </div>
+                <BottomBar />
+              </NotificationsProvider>
             </AuthProvider>
           </Providers>
         </ErrorBoundary>

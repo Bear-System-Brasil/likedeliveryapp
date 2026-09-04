@@ -1,5 +1,6 @@
 "use client";
 
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -576,6 +577,13 @@ const handleSearchSubmit = () => {
               >
                 <Package className="h-4 w-4" />
               </Button>
+            )}
+
+            {/* Notificações */}
+            {canShowAuthUI && isAuthenticated && user?.role === "client" && (
+              <div className={clsx(searchOpen && "max-sm:hidden")}>
+                <NotificationBell audience="customer" />
+              </div>
             )}
 
             {/* Menu / Entrar */}
