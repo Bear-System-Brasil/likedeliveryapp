@@ -129,6 +129,25 @@ function useKitchenColumnQuery(
 
 type ColumnQuery = ReturnType<typeof useKitchenColumnQuery>;
 
+/**
+ * Colunas sem filtro de data mostram tudo: vão puxando as páginas seguintes
+ * sozinhas até acabar.
+ *
+ * As três flags saem do objeto antes do efeito de propósito. O React Query
+ * devolve um objeto novo a cada render, e chamar `query.fetchNextPage()`
+ * faria o exhaustive-deps exigir o receptor inteiro na lista - o efeito
+ * voltaria a rodar em todo render, inclusive nos do tick de tempo decorrido.
+ * Com os três valores soltos, a lista é honesta e a regra consegue vigiar o
+ * hook em vez de ignorá-lo, o que ela faz quando não existe lista nenhuma.
+ */
+function useAutoPaging(query: ColumnQuery) {
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = query;
+
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+}
+
 function toColumnState(
   config: (typeof KITCHEN_COLUMNS)[number],
   query: ColumnQuery,
@@ -214,14 +233,12 @@ export function useKitchenOrders() {
   };
 
   // Novos, Em preparo e Prontos mostram tudo: puxam as páginas seguintes
-  // sozinhos. Concluídos e Cancelados só avançam quando o usuário pede "ver mais".
-  useEffect(() => {
-    KITCHEN_COLUMNS.forEach(({ status }) => {
-      if (PAGINATED_STATUSES.includes(status)) return;
-      const query = queryByStatus[status];
-      if (query.hasNextPage && !query.isFetchingNextPage) query.fetchNextPage();
-    });
-  });
+  // sozinhos. Concluídos e Cancelados só avançam quando o usuário pede "ver
+  // mais". A lista é explícita porque hook não se chama dentro de laço, então
+  // coluna nova fora de PAGINATED_STATUSES precisa de uma chamada aqui.
+  useAutoPaging(orderedQuery);
+  useAutoPaging(productionQuery);
+  useAutoPaging(readyQuery);
 
   const columns = Object.fromEntries(
     KITCHEN_COLUMNS.map((config) => [
