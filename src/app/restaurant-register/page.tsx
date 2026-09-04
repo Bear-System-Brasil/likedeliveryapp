@@ -160,61 +160,6 @@ export default function RestaurantRegisterPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="cpf"
-                      className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer"
-                    >
-                      <User className="h-4 w-4 text-orange-500" />
-                      CPF do Responsável
-                    </Label>
-                    <Input
-                      id="cpf"
-                      type="text"
-                      placeholder="000.000.000-00"
-                      value={registerData.cpf}
-                      onChange={(e) => {
-                        const numbers = e.target.value.replace(/\D/g, "");
-                        const formatted = numbers.replace(
-                          /(\d{3})(\d{3})(\d{3})(\d{2})/,
-                          "$1.$2.$3-$4",
-                        );
-                        handleInputChange("cpf", formatted);
-                      }}
-                      maxLength={14}
-                      className="h-12 rounded-xl border-2 border-gray-200 focus:border-orange-400 transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="birthDate"
-                      className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer"
-                    >
-                      <Calendar className="h-4 w-4 text-orange-500" />
-                      Data de Nascimento
-                    </Label>
-                    <Input
-                      id="birthDate"
-                      type="text"
-                      placeholder="DD/MM/AAAA"
-                      value={registerData.birthDate}
-                      onChange={(e) => {
-                        const numbers = e.target.value.replace(/\D/g, "");
-                        const formatted = numbers.replace(
-                          /(\d{2})(\d{2})(\d{4})/,
-                          "$1/$2/$3",
-                        );
-                        handleInputChange("birthDate", formatted);
-                      }}
-                      maxLength={10}
-                      className="h-12 rounded-xl border-2 border-gray-200 focus:border-orange-400 transition-colors"
-                      required
-                    />
-                  </div>
-                </div>
 
                 <div className="space-y-2">
                   <Label

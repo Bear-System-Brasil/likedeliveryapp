@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
@@ -73,45 +73,102 @@ export default function RestaurantPage() {
   } = useCompanyProducts(companyId);
   const { data: allCategories } = useAllCategories();
 
-  const [selectedCategory, setSelectedCategory] = useState("Todos");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  
+  const navRef = useRef<HTMLElement>(null);
 
   const loading = loadingRestaurant || loadingProducts;
   const error = restaurantError || productsError;
 
   const categoryMap = useMemo(() => {
     if (!allCategories) return {};
-
     return Object.fromEntries(
       allCategories.map((category: any) => [category.id, category.name]),
     );
   }, [allCategories]);
 
-  const categories = useMemo(() => {
-    const productCategories = menuItems.flatMap((item: any) =>
-      (item.productCategories || [])
-        .map((productCategory: any) =>
-          getProductCategoryName(productCategory, categoryMap),
-        )
-        .filter(Boolean),
-    );
+  // 1. Em vez de filtrar, agrupamos os itens por categoria
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, any[]> = {};
 
-    return ["Todos", ...new Set(productCategories)];
+    menuItems.forEach((item: any) => {
+      // Pega a primeira categoria do produto, ou "Outros" se não tiver
+      let catName = "Outros";
+      if (item.productCategories && item.productCategories.length > 0) {
+        const foundName = getProductCategoryName(item.productCategories[0], categoryMap);
+        if (foundName) catName = foundName;
+      }
+
+      if (!groups[catName]) {
+        groups[catName] = [];
+      }
+      groups[catName].push(item);
+    });
+
+    return groups;
   }, [categoryMap, menuItems]);
 
-  const filteredItems = useMemo(() => {
-    if (selectedCategory === "Todos") return menuItems;
+  // 2. Extrai as categorias para os botões do menu baseado nos grupos
+  const categories = useMemo(() => Object.keys(groupedItems), [groupedItems]);
 
-    return menuItems.filter((item: any) =>
-      (item.productCategories || []).some(
-        (productCategory: any) =>
-          getProductCategoryName(productCategory, categoryMap) ===
-          selectedCategory,
-      ),
-    );
-  }, [categoryMap, menuItems, selectedCategory]);
+  // Define a primeira categoria como selecionada inicialmente
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory(categories[0]);
+    }
+  }, [categories, selectedCategory]);
+
+  // 3. Efeito para mudar a aba ativa no menu enquanto o usuário rola a página
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      const headerOffset = 150; // Compensação da altura do cabeçalho fixo
+
+      let currentActive = categories[0];
+
+      categories.forEach((category) => {
+        const element = document.getElementById(`category-${category}`);
+        if (element) {
+          const elementTop = element.offsetTop;
+          if (scrollPosition >= elementTop - headerOffset) {
+            currentActive = category;
+          }
+        }
+      });
+
+      setSelectedCategory(currentActive);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [categories]);
+
+  // 4. Efeito para centralizar o botão da categoria no menu horizontal
+  useEffect(() => {
+    if (navRef.current && selectedCategory) {
+      const activeButton = document.getElementById(`nav-btn-${selectedCategory}`);
+      if (activeButton) {
+        const nav = navRef.current;
+        // Calcula a posição para centralizar o botão no scroll horizontal
+        const scrollLeft = activeButton.offsetLeft - nav.offsetWidth / 2 + activeButton.offsetWidth / 2;
+        nav.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+      }
+    }
+  }, [selectedCategory]);
+
+  // Função de Clique para rolar até a categoria
+  const scrollToCategory = (categoryName: string) => {
+    const element = document.getElementById(`category-${categoryName}`);
+    if (element) {
+      // Usa 120 para compensar o header fixo e a barra de categorias
+      const y = element.getBoundingClientRect().top + window.scrollY - 120;
+      window.scrollTo({ top: y, behavior: "smooth" });
+      setSelectedCategory(categoryName);
+    }
+  };
 
   const restaurantData = restaurant as any;
   const specialties =
@@ -134,17 +191,11 @@ export default function RestaurantPage() {
   const restaurantDescription = restaurantData?.description?.trim();
 
   const handleOpenModal = (item: any) => {
-    // Antes mandava pro /cart, uma página que não ajuda em nada quem não
-    // está logado - abre o login direto, sem sair da página do prato.
     if (!isAuthenticated) {
       showAuthModal("login");
       return;
     }
 
-    // Fazer pedido é uma ação exclusiva de conta de cliente - contas de
-    // restaurante (owner/admin/manager/cook/delivery) esbarram num 403 no
-    // backend ao tentar abrir carrinho, então bloqueia aqui com uma
-    // mensagem clara em vez de deixar o erro confuso acontecer.
     if (user?.role && user.role !== "client") {
       toast.error(
         "Contas de restaurante não podem fazer pedidos - entre com uma conta de cliente.",
@@ -180,6 +231,7 @@ export default function RestaurantPage() {
             </Card>
           ) : (
             <>
+              {/* === CABEÇALHO DO RESTAURANTE (MANTIDO) === */}
               <section className="overflow-hidden rounded-[14px] border border-[#e9eaee] bg-white shadow-sm">
                 <div className="relative h-32 bg-[#edeef1] sm:h-40 md:h-[158px]">
                   <Image
@@ -200,8 +252,6 @@ export default function RestaurantPage() {
                     type="button"
                     onClick={() => router.push("/#lojas")}
                     className="absolute left-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-gray-700 shadow-sm transition hover:bg-white"
-                    aria-label="Voltar para restaurantes"
-                    title="Voltar para restaurantes"
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </button>
@@ -210,16 +260,6 @@ export default function RestaurantPage() {
                     type="button"
                     onClick={() => setIsFavorite((favorite) => !favorite)}
                     className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-gray-700 shadow-sm transition hover:bg-white"
-                    aria-label={
-                      isFavorite
-                        ? "Remover dos favoritos"
-                        : "Adicionar aos favoritos"
-                    }
-                    title={
-                      isFavorite
-                        ? "Remover dos favoritos"
-                        : "Adicionar aos favoritos"
-                    }
                   >
                     <Heart
                       className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`}
@@ -268,11 +308,6 @@ export default function RestaurantPage() {
                             minimumFractionDigits: 1,
                             maximumFractionDigits: 1,
                           })}
-                          {totalReviews > 0 && (
-                            <span className="font-medium text-[#8a8f99]">
-                              ({totalReviews})
-                            </span>
-                          )}
                         </span>
                       )}
                       <span className="rounded-full bg-[#f4f5f7] px-2.5 py-1 text-[#3d4149]">
@@ -290,16 +325,20 @@ export default function RestaurantPage() {
                 </div>
               </section>
 
-              <nav className="sticky top-[72px] z-30 -mx-3 flex gap-2 overflow-x-auto bg-[#f4f5f7]/95 px-3 py-3 backdrop-blur sm:top-[82px] sm:-mx-5 sm:px-5">
+              {/* === BARRA DE NAVEGAÇÃO DE CATEGORIAS FIXA === */}
+              <nav
+                ref={navRef}
+                className="sticky top-[72px] z-30 -mx-3 flex gap-2 overflow-x-auto bg-[#f4f5f7]/95 px-3 py-3 backdrop-blur scrollbar-hide sm:top-[82px] sm:-mx-5 sm:px-5"
+              >
                 {categories.map((category) => {
                   const isActive = selectedCategory === category;
-
                   return (
                     <button
                       key={category}
+                      id={`nav-btn-${category}`}
                       type="button"
-                      onClick={() => setSelectedCategory(category)}
-                      className={`shrink-0 rounded-lg border px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                      onClick={() => scrollToCategory(category)}
+                      className={`shrink-0 rounded-lg border px-3.5 py-1.5 text-xs font-bold transition-all ${
                         isActive
                           ? "border-gray-900 bg-gray-900 text-white"
                           : "border-[#e9eaee] bg-white text-[#3d4149] hover:border-gray-300"
@@ -311,77 +350,93 @@ export default function RestaurantPage() {
                 })}
               </nav>
 
-              <section aria-label="Itens do cardápio">
-                {filteredItems.length === 0 ? (
+              {/* === LISTA DE PRODUTOS AGRUPADOS POR CATEGORIA === */}
+              <section aria-label="Itens do cardápio" className="mt-2 space-y-8">
+                {menuItems.length === 0 ? (
                   <Card className="border-[#e9eaee] bg-white p-10 text-center shadow-sm">
                     <p className="text-sm font-medium text-gray-600">
-                      Nenhum produto disponível nesta categoria.
+                      Nenhum produto disponível no momento.
                     </p>
                   </Card>
                 ) : (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredItems.map((item: any) => {
-                      const isAvailable = item.isAvailable !== false;
+                  Object.entries(groupedItems).map(([category, items]) => (
+                    <div 
+                      key={category} 
+                      id={`category-${category}`}
+                      className="scroll-mt-[130px]" // Garante que a categoria não fique escondida atrás do header
+                    >
+                      <h2 className="mb-4 text-xl font-extrabold text-gray-900">
+                        {category}
+                      </h2>
+                      
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {items.map((item: any) => {
+                          const isAvailable = item.isAvailable !== false;
 
-                      return (
-                        <Card
-                          key={item.id}
-                          onClick={() => isAvailable && handleOpenModal(item)}
-                          className={`group flex min-h-[116px] gap-3 overflow-visible rounded-[13px] border border-[#e9eaee] bg-white p-3 shadow-sm transition hover:border-[#dddfe4] hover:shadow-md ${
-                            isAvailable ? "cursor-pointer" : "cursor-default"
-                          }`}
-                        >
-                          <div className="flex min-w-0 flex-1 flex-col">
-                            <h2 className="truncate text-sm font-bold tracking-[-0.01em] text-[#14161a]">
-                              {item.name}
-                            </h2>
-                            {item.description && (
-                              <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-[#8a8f99]">
-                                {item.description}
-                              </p>
-                            )}
-                            <div className="mt-auto flex items-center gap-2 pt-3">
-                              <span className="text-[15px] font-extrabold tracking-[-0.02em] text-[#14161a]">
-                                {formatCurrency(Number(item.salePrice || 0))}
-                              </span>
-                            </div>
-                          </div>
+                          return (
+<Card
+  key={item.id}
+  onClick={() => isAvailable && handleOpenModal(item)}
+  // Adicionado min-w-0 aqui na primeira linha do className
+  className={`group flex min-w-0 min-h-[116px] gap-3 overflow-visible rounded-[13px] border border-[#e9eaee] bg-white p-3 shadow-sm transition hover:border-[#dddfe4] hover:shadow-md ${
+    isAvailable ? "cursor-pointer" : "cursor-default"
+  }`}
+>
 
-                          <div className="relative h-[92px] w-[92px] shrink-0">
-                            <Image
-                              width={184}
-                              height={184}
-                              src={getImageUrl(item)}
-                              alt={item.name}
-                              className={`h-full w-full rounded-[10px] bg-[#edeef1] object-cover ${
-                                !isAvailable ? "opacity-60" : ""
-                              }`}
-                            />
+  <div className="flex min-w-0 flex-1 flex-col">
+    <h3 className="line-clamp-2 wrap-break-word text-sm font-bold tracking-[-0.01em] text-[#14161a]">
+      {item.name}
+    </h3>
+    
 
-                            {!isAvailable ? (
-                              <Badge className="absolute inset-x-1 bottom-1 justify-center border-0 bg-black/70 px-1 py-1 text-[10px] text-white">
-                                Indisponível
-                              </Badge>
-                            ) : (
-                              <Button
-                                type="button"
-                                size="icon"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleOpenModal(item);
-                                }}
-                                className="absolute -bottom-1 -right-1 h-7 w-7 rounded-lg border-2 border-white bg-orange-500 text-white shadow-md hover:bg-orange-600"
-                                aria-label={`Adicionar ${item.name}`}
-                                title={`Adicionar ${item.name}`}
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
+    {item.description && (
+      <p className="mt-1 line-clamp-2 wrap-break-word text-xs font-medium leading-relaxed text-[#8a8f99]">
+        {item.description}
+      </p>
+    )}
+    
+    <div className="mt-auto flex items-center gap-2 pt-3">
+      <span className="text-[15px] font-extrabold tracking-[-0.02em] text-[#14161a]">
+        {formatCurrency(Number(item.salePrice || 0))}
+      </span>
+    </div>
+  </div>
+
+  <div className="relative h-[92px] w-[92px] shrink-0">
+    <Image
+      width={184}
+      height={184}
+      src={getImageUrl(item)}
+      alt={item.name}
+      className={`h-full w-full rounded-[10px] bg-[#edeef1] object-cover ${
+        !isAvailable ? "opacity-60" : ""
+      }`}
+    />
+
+    {!isAvailable ? (
+      <Badge className="absolute inset-x-1 bottom-1 justify-center border-0 bg-black/70 px-1 py-1 text-[10px] text-white">
+        Indisponível
+      </Badge>
+    ) : (
+      <Button
+        type="button"
+        size="icon"
+        onClick={(event) => {
+          event.stopPropagation();
+          handleOpenModal(item);
+        }}
+        className="absolute -bottom-1 -right-1 h-7 w-7 rounded-lg border-2 border-white bg-orange-500 text-white shadow-md hover:bg-orange-600"
+      >
+        <Plus className="h-4 w-4" />
+      </Button>
+    )}
+  </div>
+</Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
                 )}
               </section>
             </>

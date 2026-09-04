@@ -35,14 +35,15 @@ type NavLink = {
   href: string;
   label: string;
   icon: typeof House;
-  /** Sem role = visível para qualquer usuário autenticado. */
   roles?: string[];
 };
 
 const navGroups: { label: string; links: NavLink[] }[] = [
   {
     label: "Principal",
-    links: [{ href: "/", label: "Início", icon: House }],
+    links: [{ href: "/", label: "Início", icon: House },
+
+    ],
   },
   {
     label: "Gestão",
@@ -134,12 +135,6 @@ const navGroups: { label: string; links: NavLink[] }[] = [
         label: "Perfil",
         icon: User,
         roles: ["manager", "cook", "delivery", "client"],
-      },
-      {
-        href: "/checkout",
-        label: "Checkout",
-        icon: CreditCard,
-        roles: ["owner", "admin", "manager"],
       },
     ],
   },
