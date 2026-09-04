@@ -123,13 +123,15 @@ export default function RestaurantPage() {
 
   // 3. Efeito para mudar a aba ativa no menu enquanto o usuário rola a página
   useEffect(() => {
+    if (categories.length === 0) return;
+
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
       const headerOffset = 150; // Compensação da altura do cabeçalho fixo
 
       let currentActive = categories[0];
 
-      categories.forEach((category) => {
+      for (const category of categories) {
         const element = document.getElementById(`category-${category}`);
         if (element) {
           const elementTop = element.offsetTop;
@@ -137,12 +139,13 @@ export default function RestaurantPage() {
             currentActive = category;
           }
         }
-      });
+      }
 
       setSelectedCategory(currentActive);
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, [categories]);
 
