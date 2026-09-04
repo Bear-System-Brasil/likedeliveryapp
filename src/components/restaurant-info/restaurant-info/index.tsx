@@ -387,7 +387,7 @@ export default function RestaurantPage() {
 >
 
   <div className="flex min-w-0 flex-1 flex-col">
-    <h3 className="line-clamp-2 wrap-break-word text-sm font-bold tracking-[-0.01em] text-[#14161a]">
+    <h3 className="line-clamp-2 break-words text-sm font-bold tracking-[-0.01em] text-[#14161a]">
       {item.name}
     </h3>
     
