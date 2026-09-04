@@ -27,7 +27,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { LikeDeliveryLogo } from "../ui/likedelivery-logo";
 import Link from "next/link";
@@ -48,6 +48,7 @@ export function MainHeader({
   showNav = true,
 }: MainHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { showAuthModal, logout } = useAuth();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -79,15 +80,33 @@ export function MainHeader({
     if (searchOpen) mobileSearchInputRef.current?.focus();
   }, [searchOpen]);
 
-  const handleSearchSubmit = () => {
+const handleSearchSubmit = () => {
     const query = searchQuery.trim();
-    if (!query) return;
-    router.push(`/restaurants?search=${encodeURIComponent(query)}`);
+    if (!query) {
+      router.push("/");
+      return;
+    }
+    
+    // Redireciona para a página inicial com o parâmetro de busca
+    router.push(`/?search=${encodeURIComponent(query)}`);
+    
     setSearchOpen(false);
     searchInputRef.current?.blur();
     mobileSearchInputRef.current?.blur();
   };
+// Nova função de busca ao vivo
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    
 
+    if (pathname === "/") {
+      if (value.trim() === "") {
+        router.replace("/", { scroll: false });
+      } else {
+        router.replace(`/?search=${encodeURIComponent(value)}`, { scroll: false });
+      }
+    }
+  };
   const saveLocation = (location: {
     lat: number;
     lng: number;
@@ -455,7 +474,7 @@ export function MainHeader({
                         ref={mobileSearchInputRef}
                         placeholder="Buscar..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Escape") {
                             if (searchQuery) setSearchQuery("");
@@ -474,7 +493,7 @@ export function MainHeader({
                         <button
                           type="button"
                           onClick={() => {
-                            setSearchQuery("");
+                            handleSearchChange("");
                             mobileSearchInputRef.current?.focus();
                           }}
                           aria-label="Limpar busca"
