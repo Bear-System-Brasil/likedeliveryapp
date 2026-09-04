@@ -83,7 +83,7 @@ export default function AuthModal({
                 onValueChange={(value) => setActiveTab(value as "login" | "register")}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-2 bg-gray-200 rounded-xl">
+                <TabsList className="grid w-full grid-cols-2 gap-1 bg-gray-200 rounded-xl">
                   <TabsTrigger
                     value="login"
                     className="data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm

@@ -8,14 +8,24 @@ import {
   useNotificationsStore,
   type NotificationAudience,
 } from "@/stores/notifications-store";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 /**
  * Feed do sino para uma audiência (cliente ou gestão) + ações de leitura.
+ *
+ * O filtro por audiência não pode viver dentro do selector do Zustand: um
+ * `.filter()` ali criaria um array novo a cada chamada, e o
+ * `useSyncExternalStore` por trás do hook entende isso como "o estado mudou"
+ * pra sempre — loop infinito de re-render em todo componente que usa o sino
+ * (ou seja, em toda página, já que ele mora no header global). O selector só
+ * pode devolver uma referência estável (`state.items`); o filtro roda depois,
+ * memoizado.
  */
 export function useNotifications(audience: NotificationAudience) {
-  const items = useNotificationsStore((state) =>
-    state.items.filter((item) => item.audience === audience),
+  const allItems = useNotificationsStore((state) => state.items);
+  const items = useMemo(
+    () => allItems.filter((item) => item.audience === audience),
+    [allItems, audience],
   );
   const markAsRead = useNotificationsStore((state) => state.markAsRead);
   const markAllAsReadAction = useNotificationsStore(
