@@ -1,5 +1,5 @@
 import { useAuthStore } from "@/stores";
-import { isCompanyRole } from "@/utils/role-helpers";
+import { getProfileRoute } from "@/utils/role-helpers";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
@@ -28,11 +28,7 @@ export function useNavigation() {
   }, [router]);
 
   const navigateToProfile = useCallback(() => {
-    if (isCompanyRole(user?.role)) {
-      router.push("/company-profile");
-    } else {
-      router.push("/profile");
-    }
+    router.push(getProfileRoute(user?.role));
   }, [router, user]);
 
   const navigateToRestaurant = useCallback(

@@ -152,11 +152,9 @@ export default function RestaurantPage() {
             currentActive = category;
           }
         }
-      });
-
-      if (currentActive) {
-        setSelectedCategory(currentActive);
-      }
+      },
+      );
+      setSelectedCategory(currentActive)
     };
 
     // Adicionado { passive: true } para performance no mobile
@@ -402,12 +400,12 @@ export default function RestaurantPage() {
                               }`}
                             >
                               <div className="flex min-w-0 flex-1 flex-col">
-                                <h3 className="line-clamp-2 break-words text-sm font-bold tracking-[-0.01em] text-[#14161a]">
+                                <h3 className="line-clamp-2 wrap-break-word text-sm font-bold tracking-[-0.01em] text-[#14161a]">
                                   {item.name}
                                 </h3>
                                 
                                 {item.description && (
-                                  <p className="mt-1 line-clamp-2 break-words text-xs font-medium leading-relaxed text-[#8a8f99]">
+                                  <p className="mt-1 line-clamp-2 wrap-break-word text-xs font-medium leading-relaxed text-[#8a8f99]">
                                     {item.description}
                                   </p>
                                 )}

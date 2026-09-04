@@ -12,8 +12,6 @@ interface RestaurantFormData {
   tradeName: string
   legalName: string
   cnpj: string
-  cpf: string
-  birthDate: string
   email: string
   password: string
   confirmPassword: string
@@ -32,8 +30,6 @@ export const useRestaurantRegistration = () => {
     tradeName: '',
     legalName: '',
     cnpj: '',
-    cpf: '',
-    birthDate: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -149,7 +145,6 @@ export const useRestaurantRegistration = () => {
     try {
       const cleanPhone = onlyNumbers(registerData.phone)
       const cleanCNPJ = onlyNumbers(registerData.cnpj)
-      const cleanCPF = onlyNumbers(registerData.cpf)
 
       // Step 1: Register user account via POST /auth/register
       // Sem `role` de propósito: a conta nasce como 'client' (padrão do
@@ -160,10 +155,8 @@ export const useRestaurantRegistration = () => {
       const registerResponse = await apiService.register({
         name: registerData.tradeName,
         email: registerData.email,
-        cpf: cleanCPF,
         phone: cleanPhone,
         password: registerData.password,
-        birthDate: registerData.birthDate,
       })
 
       if (!registerResponse.success || !registerResponse.data) {
@@ -219,8 +212,6 @@ export const useRestaurantRegistration = () => {
     registerData.tradeName &&
     registerData.legalName &&
     registerData.cnpj &&
-    registerData.cpf &&
-    registerData.birthDate &&
     registerData.email &&
     registerData.phone &&
     registerData.password &&

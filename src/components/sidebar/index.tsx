@@ -10,7 +10,6 @@ import {
   Menu,
   Receipt,
   Settings,
-  Users,
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
@@ -49,11 +48,8 @@ const sidebarItems: SidebarItem[] = [
     href: "/financial-management/cash-register",
     icon: Wallet,
   },
-  {
-    label: "Clientes",
-    href: "/financial-management/customers",
-    icon: Users,
-  },
+  // TODO(backend): "Clientes" escondido - ver a nota em
+  // sidebar-menu-management. A tela e a rota continuam existindo.
   {
     label: "Configurações",
     href: "/financial-management/settings",

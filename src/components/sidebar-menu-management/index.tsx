@@ -15,7 +15,6 @@ import {
   TrendingUp,
   User,
   UserCog,
-  Users,
   UtensilsCrossed,
   Wallet,
   X,
@@ -35,6 +34,14 @@ type NavLink = {
   href: string;
   label: string;
   icon: typeof House;
+  /**
+   * Sem role = visível para qualquer usuário autenticado.
+   *
+   * Isto é visibilidade de menu, não autorização: quem decide o acesso é o
+   * ROUTE_PERMISSIONS + middleware. A lista aqui é subconjunto do que a role
+   * pode abrir - nunca deve listar rota que ela não acessa, senão o item
+   * leva direto pro "Acesso Negado".
+   */
   roles?: string[];
 };
 
@@ -87,32 +94,38 @@ const navGroups: { label: string; links: NavLink[] }[] = [
         href: "/financial-management/dashboard",
         label: "Dashboard",
         icon: LayoutDashboard,
-        roles: ["owner", "admin"],
+        roles: ["owner", "admin", "financial"],
       },
       {
         href: "/financial-management/finance",
         label: "Finanças",
         icon: TrendingUp,
-        roles: ["owner", "admin"],
+        roles: ["owner", "admin", "financial"],
       },
       {
         href: "/financial-management/cash-register",
         label: "Caixa",
         icon: Wallet,
-        roles: ["owner", "admin"],
+        roles: ["owner", "admin", "financial"],
       },
       {
         href: "/financial-management/orders",
         label: "Pedidos",
         icon: ClipboardList,
-        roles: ["owner", "admin"],
+        roles: ["owner", "admin", "financial"],
       },
-      {
-        href: "/financial-management/customers",
-        label: "Clientes",
-        icon: Users,
-        roles: ["owner", "admin"],
-      },
+      // TODO(backend): item "Clientes" escondido enquanto
+      // GET /user/company/customers responde 200 com lista vazia - o vínculo
+      // cliente-empresa ainda não é populado. A tela e a rota continuam de
+      // pé (/financial-management/customers segue no ROUTE_PERMISSIONS e no
+      // middleware); quando o backend popular o vínculo, é só devolver o
+      // item abaixo:
+      // {
+      //   href: "/financial-management/customers",
+      //   label: "Clientes",
+      //   icon: Users,
+      //   roles: ["owner", "admin", "financial"],
+      // },
       {
         href: "/financial-management/settings",
         label: "Configurações",
@@ -134,7 +147,7 @@ const navGroups: { label: string; links: NavLink[] }[] = [
         href: "/profile",
         label: "Perfil",
         icon: User,
-        roles: ["manager", "cook", "delivery", "client"],
+        roles: ["manager", "cook", "delivery", "financial", "client"],
       },
     ],
   },

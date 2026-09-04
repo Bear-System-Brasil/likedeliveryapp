@@ -7,8 +7,7 @@ import {
   CreditCard,
   Home,
   Receipt,
-  Settings,
-  Users
+  Settings
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -39,11 +38,8 @@ const sidebarItems: SidebarItem[] = [
     href: "/financial-management/finance",
     icon: CreditCard,
   },
-  {
-    label: "Clientes",
-    href: "/financial-management/customers",
-    icon: Users,
-  },
+  // TODO(backend): "Clientes" escondido - ver a nota em
+  // sidebar-menu-management. A tela e a rota continuam existindo.
   {
     label: "Configurações",
     href: "/financial-management/settings",
