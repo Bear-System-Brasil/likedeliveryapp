@@ -43,21 +43,23 @@ export const useProfileManagement = () => {
       rawAddresses.map((addr) => ({
         id: addr.id,
         type: "Endereço",
-        street: addr.street,
-        number: addr.number,
+        street: addr.street || "",
+        number: String(addr.number ?? ""),
         complement: addr.complement || "",
-        neighborhood: addr.neighborhood,
-        longitude: addr.longitude,
-        latitude: addr.latitude,
-        city: addr.city,
-        state: addr.state,
-        zipCode: addr.zipCode,
+        neighborhood: addr.neighborhood || "",
+        longitude: addr.longitude ?? undefined,
+        latitude: addr.latitude ?? undefined,
+        city: addr.city || "",
+        state: addr.state || "",
+        zipCode: addr.zipCode || "",
         isDefault: (addr as any).isDefault ?? false,
       })),
     [rawAddresses],
   );
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [editingAddressOriginalComplement, setEditingAddressOriginalComplement] =
+    useState<string>("");
 
   // CEP state
   const [isLoadingCep, setIsLoadingCep] = useState(false);
@@ -241,12 +243,12 @@ export const useProfileManagement = () => {
    */
   const handleEditAddress = (address: Address) => {
     addressForm.reset({
-      street: address.street,
-      number: address.number,
-      neighborhood: address.neighborhood,
-      city: address.city,
-      state: address.state,
-      zipCode: address.zipCode,
+      street: address.street || "",
+      number: String(address.number ?? ""),
+      neighborhood: address.neighborhood || "",
+      city: address.city || "",
+      state: address.state || "",
+      zipCode: address.zipCode || "",
       type: address.type,
       complement: address.complement || "",
       longitude: address.longitude,
@@ -255,6 +257,7 @@ export const useProfileManagement = () => {
     });
 
     setEditingAddressId(address.id);
+    setEditingAddressOriginalComplement(address.complement || "");
     setLastFetchedCep(onlyNumbers(address.zipCode));
     addingAddressState.open();
   };
@@ -264,24 +267,36 @@ export const useProfileManagement = () => {
    */
   const handleAddAddress = async (data: AddressFormData) => {
     // No PATCH (diferente do POST), complement exige mínimo de 5 caracteres
-    // quando preenchido (ver adress.md) - um endereço criado com complemento
-    // curto (ex: "301") ficaria impossível de editar sem esse aviso.
+    // quando preenchido (ver adress.md). Endereços antigos criados via POST
+    // podem ter complemento curto (ex: "301") - só bloqueamos se o usuário
+    // de fato digitou um valor novo inválido; se não mexeu no campo, o
+    // complemento herdado é omitido do PATCH para não travar o resto do form.
     const trimmedComplement = data.complement?.trim() ?? "";
+    const complementUnchanged =
+      trimmedComplement === editingAddressOriginalComplement.trim();
+
     if (
       editingAddressId &&
       trimmedComplement.length > 0 &&
-      trimmedComplement.length < 5
+      trimmedComplement.length < 5 &&
+      !complementUnchanged
     ) {
       toast.error("Complemento deve ter pelo menos 5 caracteres (ou ficar vazio)");
       return;
     }
+
+    const shouldOmitComplement =
+      editingAddressId &&
+      complementUnchanged &&
+      trimmedComplement.length > 0 &&
+      trimmedComplement.length < 5;
 
     setIsSavingAddress(true);
     try {
       const payload = {
         street: data.street,
         number: data.number,
-        complement: data.complement || undefined,
+        complement: shouldOmitComplement ? undefined : data.complement || undefined,
         neighborhood: data.neighborhood,
         city: data.city,
         state: data.state,
@@ -309,8 +324,8 @@ export const useProfileManagement = () => {
             try {
               await apiService.address.updateUserAddress(addr.id, {
                 isDefault: false,
-                latitude: addr.latitude,
-                longitude: addr.longitude,
+                latitude: addr.latitude ?? undefined,
+                longitude: addr.longitude ?? undefined,
               });
             } catch (error) {
               console.error("Erro ao desmarcar endereço padrão:", error);
@@ -338,6 +353,7 @@ export const useProfileManagement = () => {
         });
         addressForm.reset();
         setEditingAddressId(null);
+        setEditingAddressOriginalComplement("");
         addingAddressState.close();
         setLastFetchedCep(null);
 
@@ -372,6 +388,7 @@ export const useProfileManagement = () => {
     addressForm.reset();
     setLastFetchedCep(null);
     setEditingAddressId(null);
+    setEditingAddressOriginalComplement("");
     addingAddressState.close();
   };
 

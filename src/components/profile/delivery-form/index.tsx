@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { AddressForm, HandleAddAddress } from "@/components/profile/addresses";
+import { toast } from "sonner";
 
 type Props = {
   handleCloseAddressModal: () => void;
@@ -41,7 +42,13 @@ export function DeliveryForm({
         </DialogHeader>
 
         <form
-          onSubmit={addressForm.handleSubmit(handleAddAddress)}
+          onSubmit={addressForm.handleSubmit(handleAddAddress, (errors) => {
+            const firstError = Object.values(errors)[0];
+            toast.error(
+              firstError?.message ||
+                "Verifique os campos obrigatórios do endereço",
+            );
+          })}
           className="space-y-4"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -86,12 +93,22 @@ export function DeliveryForm({
                 {...addressForm.register("street")}
                 placeholder="Nome da rua"
               />
+              {addressForm.formState.errors.street && (
+                <p className="text-sm text-destructive">
+                  {addressForm.formState.errors.street.message}
+                </p>
+              )}
             </div>
 
             {/* Número */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Número *</label>
               <Input {...addressForm.register("number")} placeholder="123" />
+              {addressForm.formState.errors.number && (
+                <p className="text-sm text-destructive">
+                  {addressForm.formState.errors.number.message}
+                </p>
+              )}
             </div>
 
             {/* Complemento */}
@@ -110,6 +127,11 @@ export function DeliveryForm({
                 {...addressForm.register("neighborhood")}
                 placeholder="Nome do bairro"
               />
+              {addressForm.formState.errors.neighborhood && (
+                <p className="text-sm text-destructive">
+                  {addressForm.formState.errors.neighborhood.message}
+                </p>
+              )}
             </div>
 
             {/* Cidade */}
@@ -119,6 +141,11 @@ export function DeliveryForm({
                 {...addressForm.register("city")}
                 placeholder="Nome da cidade"
               />
+              {addressForm.formState.errors.city && (
+                <p className="text-sm text-destructive">
+                  {addressForm.formState.errors.city.message}
+                </p>
+              )}
             </div>
 
             {/* Estado */}
@@ -129,6 +156,11 @@ export function DeliveryForm({
                 placeholder="SP"
                 maxLength={2}
               />
+              {addressForm.formState.errors.state && (
+                <p className="text-sm text-destructive">
+                  {addressForm.formState.errors.state.message}
+                </p>
+              )}
             </div>
 
             {/* Checkbox Padrão */}
