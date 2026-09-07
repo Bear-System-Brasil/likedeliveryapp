@@ -111,6 +111,10 @@ export const useCompanyProfileManagement = () => {
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [editingAddressOriginal, setEditingAddressOriginal] = useState<{
+    complement: string;
+    reference: string;
+  }>({ complement: "", reference: "" });
   const [newAddress, setNewAddress] = useState<AddressFormData>({
     zipCode: "",
     state: "",
@@ -459,8 +463,8 @@ export const useCompanyProfileManagement = () => {
                 number: addr.number,
                 complement: sanitizeOptionalText(addr.complement ?? ""),
                 reference: sanitizeOptionalText(addr.reference ?? ""),
-                latitude: addr.latitude,
-                longitude: addr.longitude,
+                latitude: addr.latitude ?? undefined,
+                longitude: addr.longitude ?? undefined,
                 isDefault: false,
               });
             } catch (error) {
@@ -562,6 +566,10 @@ export const useCompanyProfileManagement = () => {
    */
   const handleEditAddress = (address: Address) => {
     setEditingAddressId(address.id);
+    setEditingAddressOriginal({
+      complement: address.complement || "",
+      reference: address.reference || "",
+    });
     setNewAddress({
       zipCode: address.zipCode,
       state: address.state,
@@ -596,17 +604,32 @@ export const useCompanyProfileManagement = () => {
     }
 
     // No PATCH (diferente do POST), complement/reference exigem mínimo de 5
-    // caracteres quando preenchidos (ver adress.md) - avisa antes de mandar
-    // pro backend em vez de deixar cair em 400 sem explicação.
+    // caracteres quando preenchidos (ver adress.md). Endereços antigos criados
+    // via POST podem ter valores curtos - só bloqueamos se o usuário de fato
+    // digitou um valor novo inválido; se não mexeu no campo, o valor herdado é
+    // omitido do PATCH para não travar o resto do formulário.
     const trimmedComplement = newAddress.complement.trim();
     const trimmedReference = newAddress.reference.trim();
-    if (trimmedComplement.length > 0 && trimmedComplement.length < 5) {
+    const complementUnchanged =
+      trimmedComplement === editingAddressOriginal.complement.trim();
+    const referenceUnchanged =
+      trimmedReference === editingAddressOriginal.reference.trim();
+
+    if (
+      trimmedComplement.length > 0 &&
+      trimmedComplement.length < 5 &&
+      !complementUnchanged
+    ) {
       toast.error(
         "Complemento deve ter pelo menos 5 caracteres (ou ficar vazio)",
       );
       return;
     }
-    if (trimmedReference.length > 0 && trimmedReference.length < 5) {
+    if (
+      trimmedReference.length > 0 &&
+      trimmedReference.length < 5 &&
+      !referenceUnchanged
+    ) {
       toast.error(
         "Referência deve ter pelo menos 5 caracteres (ou ficar vazia)",
       );
@@ -621,8 +644,14 @@ export const useCompanyProfileManagement = () => {
       });
       const payload = {
         ...addressData,
-        complement: sanitizeOptionalText(addressData.complement),
-        reference: sanitizeOptionalText(addressData.reference),
+        complement:
+          complementUnchanged && trimmedComplement.length < 5
+            ? undefined
+            : sanitizeOptionalText(addressData.complement),
+        reference:
+          referenceUnchanged && trimmedReference.length < 5
+            ? undefined
+            : sanitizeOptionalText(addressData.reference),
       };
 
       // Se o endereço editado virar padrão, desmarcar todos os outros
@@ -647,8 +676,8 @@ export const useCompanyProfileManagement = () => {
                 number: addr.number,
                 complement: sanitizeOptionalText(addr.complement ?? ""),
                 reference: sanitizeOptionalText(addr.reference ?? ""),
-                latitude: addr.latitude,
-                longitude: addr.longitude,
+                latitude: addr.latitude ?? undefined,
+                longitude: addr.longitude ?? undefined,
                 isDefault: false,
               });
             } catch (error) {
@@ -668,6 +697,7 @@ export const useCompanyProfileManagement = () => {
         await fetchAddresses();
         setIsAddingAddress(false);
         setEditingAddressId(null);
+        setEditingAddressOriginal({ complement: "", reference: "" });
         resetAddressForm();
       } else {
         toast.error(response.message || "Erro ao atualizar endereço");
@@ -693,6 +723,7 @@ export const useCompanyProfileManagement = () => {
    */
   const handleCancelAddressEdit = () => {
     setEditingAddressId(null);
+    setEditingAddressOriginal({ complement: "", reference: "" });
     setIsAddingAddress(false);
     resetAddressForm();
   };
