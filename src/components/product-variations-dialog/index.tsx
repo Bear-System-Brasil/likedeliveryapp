@@ -29,23 +29,37 @@ import { useState } from "react";
 interface Props {
   productId: string | null;
   productName?: string;
+  /**
+   * Preço base do prato. O formulário trabalha com o preço TOTAL do
+   * tamanho (o que o cliente vê e paga); o backend continua guardando
+   * `priceModifier` como delta sobre esse valor, então a conversão nos
+   * dois sentidos acontece aqui dentro.
+   */
+  salePrice: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 interface FormState {
   name: string;
-  priceModifier: number | undefined;
+  totalPrice: number | undefined;
   stockQuantity: number | undefined;
   isAvailable: boolean;
 }
 
 const emptyForm: FormState = {
   name: "",
-  priceModifier: undefined,
+  totalPrice: undefined,
   stockQuantity: undefined,
   isAvailable: true,
 };
+
+/**
+ * Somar e subtrair o preço base a cada ida e volta acumula dízima binária
+ * (30,10 - 20,00 = 10.099999999999998). Arredonda pra centavo antes de
+ * mandar pro backend e antes de exibir.
+ */
+const roundToCents = (value: number) => Math.round(value * 100) / 100;
 
 const fieldClassName =
   "h-9 rounded-[10px] border-[#E9EAEE] bg-white text-xs shadow-none focus-visible:ring-1 focus-visible:ring-[#FF6B00]";
@@ -53,6 +67,7 @@ const fieldClassName =
 export function ProductVariationsDialog({
   productId,
   productName,
+  salePrice,
   open,
   onOpenChange,
 }: Props) {
@@ -68,6 +83,10 @@ export function ProductVariationsDialog({
   const isSaving = createVariation.isPending || updateVariation.isPending;
 
   const trimmedName = form.name.trim();
+  // Total abaixo da base viraria priceModifier negativo, ou seja, um
+  // tamanho que barateia o prato - não é o que a tela promete.
+  const isBelowBasePrice =
+    form.totalPrice !== undefined && form.totalPrice < salePrice;
   const isDuplicateName = variations.some(
     (v) =>
       v.id !== editingId &&
@@ -83,7 +102,7 @@ export function ProductVariationsDialog({
     setEditingId(variation.id);
     setForm({
       name: variation.name,
-      priceModifier: variation.priceModifier,
+      totalPrice: roundToCents(salePrice + variation.priceModifier),
       stockQuantity: variation.stockQuantity,
       isAvailable: variation.isAvailable,
     });
@@ -93,16 +112,16 @@ export function ProductVariationsDialog({
     if (!productId) return;
     if (
       !form.name.trim() ||
-      form.priceModifier === undefined ||
+      form.totalPrice === undefined ||
       form.stockQuantity === undefined
     ) {
       return;
     }
-    if (isDuplicateName) return;
+    if (isDuplicateName || isBelowBasePrice) return;
 
     const data = {
       name: form.name.trim(),
-      priceModifier: form.priceModifier,
+      priceModifier: roundToCents(form.totalPrice - salePrice),
       stockQuantity: form.stockQuantity,
       isAvailable: form.isAvailable,
     };
@@ -178,17 +197,26 @@ export function ProductVariationsDialog({
               </div>
               <div className="grid gap-1">
                 <Label className="text-[11px] font-bold text-[#3D4149]">
-                  Preço extra *
+                  Preço *
                 </Label>
                 <CurrencyCentsInput
-                  value={form.priceModifier}
+                  value={form.totalPrice}
                   onValueChange={(value) =>
-                    setForm((prev) => ({ ...prev, priceModifier: value }))
+                    setForm((prev) => ({ ...prev, totalPrice: value }))
                   }
                   maskWhileTyping
                   placeholder="R$ 0,01"
-                  className={fieldClassName}
+                  className={cn(
+                    fieldClassName,
+                    isBelowBasePrice &&
+                      "border-red-400 focus-visible:ring-red-400",
+                  )}
                 />
+                {isBelowBasePrice && (
+                  <p className="text-[10.5px] font-semibold text-red-500">
+                    Mín. {formatCurrency(salePrice)}
+                  </p>
+                )}
               </div>
               <div className="grid gap-1">
                 <Label className="text-[11px] font-bold text-[#3D4149]">
@@ -240,9 +268,10 @@ export function ProductVariationsDialog({
                   disabled={
                     isSaving ||
                     !form.name.trim() ||
-                    form.priceModifier === undefined ||
+                    form.totalPrice === undefined ||
                     form.stockQuantity === undefined ||
-                    isDuplicateName
+                    isDuplicateName ||
+                    isBelowBasePrice
                   }
                   className="h-8 cursor-pointer rounded-[8px] bg-[#FF6B00] px-2.5 text-[11.5px] font-extrabold text-white hover:bg-[#E05A00]"
                 >
@@ -301,9 +330,9 @@ export function ProductVariationsDialog({
                     </p>
                   </div>
                   <span className="shrink-0 text-[12.5px] font-extrabold text-[#14161A]">
-                    {variation.priceModifier > 0
-                      ? `+ ${formatCurrency(variation.priceModifier)}`
-                      : "Incluso"}
+                    {formatCurrency(
+                      roundToCents(salePrice + variation.priceModifier),
+                    )}
                   </span>
                   <div className="flex shrink-0 gap-1">
                     <button

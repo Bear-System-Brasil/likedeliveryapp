@@ -57,6 +57,38 @@ export const usePublicProductVariations = (
   });
 };
 
+/**
+ * Todas as variações da empresa numa tacada só, pro cardápio público
+ * montar o "A partir de" de cada card sem disparar uma request por prato:
+ * o backend ignora o filtro `productId` e devolve a empresa inteira de
+ * qualquer jeito (ver usePublicProductVariations), então buscar por prato
+ * seria baixar a mesma lista N vezes. O agrupamento por produto fica na
+ * tela que consome.
+ *
+ * A queryKey é deliberadamente diferente da usada pelo fetchQuery em
+ * use-cart-actions: lá o cache guarda o envelope cru (`{ success, data }`)
+ * e aqui guarda só o array já desembrulhado - compartilhar a chave faria
+ * um lado ler o formato do outro.
+ */
+export const usePublicCompanyProductVariations = (
+  companyId?: string | null,
+) => {
+  return useQuery({
+    queryKey: ["product-variations", "public", "by-company", companyId],
+    queryFn: async () => {
+      const response = await apiService.productVariations.getAllPublic(
+        companyId ?? undefined,
+      );
+      if (!response.success || !response.data) return [];
+      return response.data;
+    },
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: false,
+  });
+};
+
 export const useCreateProductVariation = () => {
   const queryClient = useQueryClient();
 
