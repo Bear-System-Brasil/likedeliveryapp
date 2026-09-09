@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/contexts/auth-provider";
 import { useAuthStore } from "@/stores";
 import { getWorkspaceLink } from "@/constants/workspace-links";
-import { getProfileRoute } from "@/utils/role-helpers";
+import { getProfileRoute, isCompanyStaffRole } from "@/utils/role-helpers";
 import clsx from "clsx";
 import {
   ChevronDown,
@@ -55,6 +55,10 @@ export function MainHeader({
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const workspaceLink = getWorkspaceLink(user?.role);
+  // Staff de restaurante (owner, cook, delivery etc.) não compra pelo
+  // próprio app - o carrinho é uma tela de cliente, não faz sentido
+  // aparecer pra quem já está logado como funcionário.
+  const isStaffAccount = isAuthenticated && isCompanyStaffRole(user?.role);
 
   const [isMounted, setIsMounted] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -552,20 +556,22 @@ export function MainHeader({
               </>
             )}
             {/* Carrinho */}
-            <Button
-              variant="outline"
-              size="icon"
-              className="relative hidden h-9 w-9 rounded-xl border-0 bg-muted/50 md:flex md:h-10 md:w-10"
-              onClick={handleCartClick}
-              aria-label="Carrinho"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              {isMounted && cartItems > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
-                  {cartItems}
-                </span>
-              )}
-            </Button>
+            {!isStaffAccount && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="relative hidden h-9 w-9 rounded-xl border-0 bg-muted/50 md:flex md:h-10 md:w-10"
+                onClick={handleCartClick}
+                aria-label="Carrinho"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                {isMounted && cartItems > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                    {cartItems}
+                  </span>
+                )}
+              </Button>
+            )}
 
             {/* Meus Pedidos */}
             {canShowAuthUI && isAuthenticated && user?.role === "client" && (
@@ -639,19 +645,21 @@ export function MainHeader({
                             Perfil
                           </Button>
 
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start rounded-xl"
-                            onClick={handleCartClick}
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            Carrinho
-                            {cartItems > 0 && (
-                              <span className="ml-auto bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-                                {cartItems}
-                              </span>
-                            )}
-                          </Button>
+                          {!isStaffAccount && (
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start rounded-xl"
+                              onClick={handleCartClick}
+                            >
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                              Carrinho
+                              {cartItems > 0 && (
+                                <span className="ml-auto bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                                  {cartItems}
+                                </span>
+                              )}
+                            </Button>
+                          )}
 
                           {user?.role === "client" && (
                             <Button

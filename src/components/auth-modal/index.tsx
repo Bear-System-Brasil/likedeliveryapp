@@ -150,7 +150,7 @@ export default function AuthModal({
                 </TabsContent>
 
                 <TabsContent value="register" className="space-y-2.5 sm:space-y-3 mt-3 sm:mt-4">
-                  <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-linear-to-r from-orange-50 to-orange-50 border border-orange-200 dark:border-orange-800/50 rounded-xl">
+                  <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-linear-to-r from-orange-50 to-orange-50 dark:from-orange-950/40 dark:to-orange-950/40 border border-orange-200 dark:border-orange-800/50 rounded-xl">
                     <p className="text-[10px] sm:text-xs text-foreground">
                       <strong className="text-orange-600 dark:text-orange-400">Cadastro:</strong>{" "}
                       Você receberá um código no WhatsApp. Use-o na tela de login.

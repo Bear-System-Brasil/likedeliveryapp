@@ -4,13 +4,19 @@ import { decodeJwt, isExpired } from "@/lib/jwt";
 const SESSION_COOKIE = "like_session";
 
 /** Config central: rota nova entra aqui e já fica coberta. */
-const PROTECTED: { prefix: string; roles?: string[] }[] = [
+const PROTECTED: { prefix: string; roles?: string[]; guestAllowed?: boolean }[] = [
   // Pedidos do cliente logado: GET /order/customer/me é exclusivo de role
   // client no backend, então abrir esta rota pra outras roles não resolveria
   // nada — elas continuam usando o carrinho/checkout normalmente, só o
   // histórico de pedidos é que é uma tela de cliente de verdade.
   { prefix: "/orders", roles: ["client"] },
   { prefix: "/profile" },
+  // Carrinho/checkout são de cliente - staff de restaurante (owner, cook,
+  // delivery etc.) não compra pelo próprio app. `guestAllowed` mantém o
+  // visitante sem login passando (ele monta carrinho antes de logar), só
+  // barra quem já está logado com role de staff.
+  { prefix: "/cart", roles: ["client"], guestAllowed: true },
+  { prefix: "/checkout", roles: ["client"], guestAllowed: true },
   { prefix: "/menu-management", roles: ["owner", "admin", "manager"] },
   { prefix: "/category-management", roles: ["owner", "admin", "manager"] },
   {
@@ -37,6 +43,8 @@ export function middleware(request: NextRequest) {
   const payload = token ? decodeJwt(token) : null;
 
   if (!payload || isExpired(payload)) {
+    if (rule.guestAllowed) return NextResponse.next();
+
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";
@@ -58,6 +66,8 @@ export const config = {
   matcher: [
     "/orders/:path*",
     "/profile/:path*",
+    "/cart/:path*",
+    "/checkout/:path*",
     "/menu-management/:path*",
     "/category-management/:path*",
     "/order-management/:path*",
