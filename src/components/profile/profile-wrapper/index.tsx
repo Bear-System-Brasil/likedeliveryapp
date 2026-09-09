@@ -25,7 +25,7 @@ function ProfileShell({
   const router = useRouter();
 
   return (
-    <AnimatedBackground showBlobs={false} className="min-h-screen bg-gray-50 py-0">
+    <AnimatedBackground showBlobs={false} className="min-h-screen bg-muted py-0">
       <MainHeader
         cartItems={cartItems}
         onCartClick={() => router.push("/cart")}
@@ -85,7 +85,7 @@ export function ProfileWrapper() {
 
   if (!isMounted || !hasHydrated) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
           <Skeleton className="h-24 w-full rounded-xl" />
           <Skeleton className="h-64 w-full rounded-xl" />
@@ -102,7 +102,7 @@ export function ProfileWrapper() {
 
   if (isLoadingProfile) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
           <div className="space-y-4">
             <Skeleton className="h-8 w-48 rounded-xl" />
@@ -121,11 +121,11 @@ export function ProfileWrapper() {
       <ProfileShell cartItems={totalItems}>
         <div className="flex min-h-[70vh] items-center justify-center pt-24">
           <div className="text-center max-w-md p-6">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="text-red-500 dark:text-red-400 text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">
               Erro ao Carregar Perfil
             </h2>
-            <p className="text-gray-600 mb-4">{profileError}</p>
+            <p className="text-muted-foreground mb-4">{profileError}</p>
             <GradientButton onClick={() => router.refresh()}>
               Tentar Novamente
             </GradientButton>
@@ -143,15 +143,15 @@ export function ProfileWrapper() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition hover:border-gray-300"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground transition hover:border-border"
             aria-label="Voltar"
             title="Voltar"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Meu Perfil</h1>
-            <p className="text-gray-600">Gerencie suas informações pessoais</p>
+            <h1 className="text-2xl font-bold text-foreground">Meu Perfil</h1>
+            <p className="text-muted-foreground">Gerencie suas informações pessoais</p>
           </div>
         </div>
 

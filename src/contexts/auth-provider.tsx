@@ -1,8 +1,8 @@
 "use client";
 
 import AuthModal from "@/components/auth-modal";
-import { apiService } from "@/services/api";
-import { useAuthStore } from "@/stores/auth-store";
+import { apiService, type RawAuthUser } from "@/services/api";
+import { normalizeAuthUser, useAuthStore, type User } from "@/stores/auth-store";
 import {
   createContext,
   useContext,
@@ -11,31 +11,14 @@ import {
   type ReactNode,
 } from "react";
 
-interface User {
-  id?: string;
-  name?: string;
-  email: string;
-  cpf?: string;
-  cnpj?: string;
-  phone?: string;
-  birthDate?: string;
-  role: string;
-  companyId?: string;
-  photoUrl?: string;
-  tradeName?: string;
-  legalName?: string;
-  logo_url?: string;
-  cover_url?: string;
-}
-
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   showAuthModal: (tab?: "login" | "register") => void;
   hideAuthModal: () => void;
-  login: (userData?: User) => void;
+  login: (userData?: RawAuthUser) => void;
   logout: () => void;
-  updateUser: (userData: User) => void;
+  updateUser: (userData: Partial<User>) => void;
   hasPermission: (allowedRoles: string[]) => boolean;
   isOwner: () => boolean;
   isAdmin: () => boolean;
@@ -77,14 +60,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     apiService.getSession().then(({ authenticated, user }) => {
       if (cancelled) return;
 
+      // `authStore` aqui é o snapshot do render em que este efeito rodou
+      // (deps: []) - ler `.isAuthenticated` dele checaria sempre o valor do
+      // boot, não o atual. Se o usuário logar pelo modal enquanto esse
+      // fetch ainda está em voo, essa leitura desatualizada não veria o
+      // login e sobrescreveria o dado rico recém-salvo pelo mais pobre do
+      // /user/me. `getState()` lê o estado ao vivo no momento em que a
+      // promise resolve.
+      const currentlyAuthenticated = useAuthStore.getState().isAuthenticated;
+
       if (authenticated && user) {
         // Só preenche se ainda não tem usuário local: o /user/me devolve um
         // shape mais pobre que o persistido no login (sem tradeName/logo da
         // empresa) - não queremos substituir dado rico por um mais pobre.
-        if (!authStore.isAuthenticated) {
-          authStore.login(user as any);
+        if (!currentlyAuthenticated) {
+          authStore.login(normalizeAuthUser(user));
         }
-      } else if (authStore.isAuthenticated) {
+      } else if (currentlyAuthenticated) {
         storeLogout();
       }
     });
@@ -102,12 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hideAuthModal = () => setIsAuthModalOpen(false);
 
-  const login = (userData?: User) => {
+  const login = (userData?: RawAuthUser) => {
     if (userData) {
       // Sessão já foi criada via cookie httpOnly pelo BFF (/api/auth/login
       // ou /api/auth/register) - aqui só sincroniza o Zustand com os dados
       // do usuário.
-      authStore.login(userData as any);
+      authStore.login(normalizeAuthUser(userData));
       hideAuthModal();
     }
   };
@@ -120,8 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void apiService.logout();
   };
 
-  const updateUser = (userData: User) => {
-    authStore.updateUser(userData as any);
+  const updateUser = (userData: Partial<User>) => {
+    authStore.updateUser(userData);
   };
 
   const hasPermission = (allowedRoles: string[]): boolean => {
@@ -153,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         isAuthenticated: authStore.isAuthenticated,
-        user: authStore.user as User | null,
+        user: authStore.user,
         showAuthModal,
         hideAuthModal,
         login,

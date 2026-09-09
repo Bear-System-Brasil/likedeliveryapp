@@ -1,6 +1,7 @@
-import type { Product } from "@/services/api";
+import type { CreateProductRequest, Product, UpdateProductRequest } from "@/services/api";
 import { apiService } from "@/services/api";
 import { getCompanyProducts } from "@/services/products";
+import { getErrorMessage } from "@/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -84,7 +85,7 @@ export const useCreateProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (productData: any) => {
+    mutationFn: async (productData: CreateProductRequest) => {
       const response = await apiService.createProduct(productData);
       if (!response.success) {
         throw new Error(response.message || "Falha ao criar produto");
@@ -113,7 +114,13 @@ export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateProductRequest;
+    }) => {
       const response = await apiService.updateProduct(id, data);
       if (!response.success) {
         throw new Error(response.message || "Falha ao atualizar produto");
@@ -161,11 +168,7 @@ export const useDeleteProduct = () => {
     mutationFn: async (productId: string) => {
       const response = await apiService.deleteProduct(productId);
       if (!response.success && response.status !== 404) {
-        const error = new Error(
-          response.message || "Falha ao deletar produto",
-        ) as any;
-        error.errorMessage = response.message;
-        throw error;
+        throw new Error(response.message || "Falha ao deletar produto");
       }
       return response.data;
     },
@@ -177,10 +180,8 @@ export const useDeleteProduct = () => {
       queryClient.removeQueries({ queryKey: ["product", productId] });
       toast.success("Produto removido com sucesso!");
     },
-    onError: (error: any) => {
-      toast.error(
-        error.errorMessage || error.message || "Erro ao deletar produto",
-      );
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "Erro ao deletar produto"));
     },
   });
 };

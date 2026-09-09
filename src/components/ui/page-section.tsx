@@ -131,14 +131,14 @@ export const PageSection = React.memo<PageSectionProps>(
               <div className="flex-1 space-y-1">
                 {title && (
                   <div className="flex items-center gap-2">
-                    {Icon && <Icon className="h-5 w-5 text-gray-600" />}
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                    {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
+                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">
                       {title}
                     </h2>
                   </div>
                 )}
                 {description && (
-                  <p className="text-sm sm:text-base text-gray-600">
+                  <p className="text-sm sm:text-base text-muted-foreground">
                     {description}
                   </p>
                 )}
@@ -150,7 +150,7 @@ export const PageSection = React.memo<PageSectionProps>(
 
             {/* Divider */}
             {divider && (
-              <div className="h-px bg-linear-to-r from-orange-200 via-orange-200 to-transparent" />
+              <div className="h-px bg-linear-to-r from-orange-200 via-orange-200 to-transparent dark:from-orange-800 dark:via-orange-800" />
             )}
           </div>
         )}
@@ -216,14 +216,14 @@ export const PageHeader = React.memo<PageHeaderProps>(
                   "text-2xl sm:text-3xl md:text-4xl font-bold",
                   gradient
                     ? "bg-linear-to-r from-orange-500 to-orange-500 bg-clip-text text-transparent"
-                    : "text-gray-900",
+                    : "text-foreground",
                 )}
               >
                 {title}
               </h1>
             </div>
             {subtitle && (
-              <p className="text-sm sm:text-base text-gray-600 max-w-2xl">
+              <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
                 {subtitle}
               </p>
             )}
@@ -259,7 +259,7 @@ export const SectionCard = React.memo<SectionCardProps>(
     return (
       <div
         className={cn(
-          "bg-white rounded-2xl shadow-sm border border-gray-100",
+          "bg-card rounded-2xl shadow-sm border border-border",
           cardPaddingClasses[padding],
           className,
         )}

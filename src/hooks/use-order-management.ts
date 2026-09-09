@@ -226,11 +226,17 @@ export const useOrderManagement = () => {
 
   const advanceOrder = useCallback(
     (orderId: string, nextStatus: string) => {
-      stopAlert()
+      // Só cala o alarme de vez se esse pedido era o único ainda em "Novos" -
+      // dois pedidos podem chegar juntos tocando o mesmo loop, e avançar um
+      // não pode silenciar o aviso do outro que continua sem nenhuma ação.
+      const stillHasOtherNewOrders = columns.new.some((o) => o.id !== orderId)
+      if (!stillHasOtherNewOrders) {
+        stopAlert()
+      }
       updateStatusMutation.mutate({ orderId, status: nextStatus })
       setActionTarget(null)
     },
-    [updateStatusMutation, stopAlert],
+    [columns.new, updateStatusMutation, stopAlert],
   )
 
   const cancelOrder = useCallback(

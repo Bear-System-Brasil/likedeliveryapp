@@ -4,11 +4,15 @@ import {
   PaymentMethod,
   PaymentStatus,
   type Address,
+  type CreateOrderRequest,
 } from "@/services/api";
 import { useAuthStore, useCartStore } from "@/stores";
+import { getDeliveryDiscount, getPromoDiscount } from "@/stores/cart-store";
+import { getErrorMessage } from "@/utils";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useRestaurant } from "./use-restaurants";
 import { useUserAddresses } from "./use-addresses";
 
 export interface DeliveryInfo {
@@ -55,14 +59,17 @@ function isPersistedOrderId(value: unknown): value is string {
  * do cliente.
  */
 async function resolveFinalOrderId(
-  finishedOrder: any,
+  finishedOrder: unknown,
   companyId: string,
 ): Promise<string | null> {
-  const fromResponse = [
-    finishedOrder?.id,
-    finishedOrder?.orderId,
-    finishedOrder?.order?.id,
-  ].find(isPersistedOrderId);
+  const record = (finishedOrder ?? {}) as {
+    id?: unknown;
+    orderId?: unknown;
+    order?: { id?: unknown };
+  };
+  const fromResponse = [record.id, record.orderId, record.order?.id].find(
+    isPersistedOrderId,
+  );
 
   if (fromResponse) return fromResponse;
 
@@ -99,11 +106,18 @@ export const useCheckoutProcess = () => {
     items: cartItems,
     restaurant,
     orderId: cartOrderId,
+    appliedPromo,
     getTotal,
     getSubtotal,
     clearCart,
     setOrderId,
   } = cartStore;
+
+  // O cart-store só guarda {id, name} do restaurante (ver cart-store.ts) -
+  // a taxa de entrega de verdade vem do mesmo catálogo que a tela /cart usa,
+  // senão o checkout sempre cobra frete R$0 mesmo quando o carrinho mostrou
+  // um valor de frete real.
+  const { data: restaurantDetails } = useRestaurant(restaurant?.id ?? null);
 
   // Address management
   const { data: userAddresses = [], isLoading: loadingAddresses } =
@@ -150,10 +164,19 @@ export const useCheckoutProcess = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Calculated values
+  // Calculated values - mesma fórmula da tela /cart, pra nunca cobrar um
+  // total diferente do que o cliente viu antes de finalizar o pedido.
   const subtotal = getSubtotal();
-  const deliveryFee = 0;
-  const total = getTotal();
+  const rawDeliveryFee = Number.parseFloat(
+    String(restaurantDetails?.deliveryFee ?? "0").replace(",", "."),
+  );
+  const deliveryFee = Number.isFinite(rawDeliveryFee) ? rawDeliveryFee : 0;
+  const deliveryDiscount = getDeliveryDiscount(appliedPromo, deliveryFee);
+  const promoDiscount = getPromoDiscount(appliedPromo, subtotal);
+  const total = Math.max(
+    0,
+    getTotal(deliveryFee) - deliveryDiscount - promoDiscount,
+  );
 
   /**
    * Carrega dados de um endereço no formulário
@@ -379,9 +402,9 @@ export const useCheckoutProcess = () => {
       let currentOrderId = cartOrderId;
 
       if (!currentOrderId) {
-        const orderData: any = {
+        const orderData: CreateOrderRequest = {
           companyId: restaurant.id,
-          discount: 0,
+          discount: deliveryDiscount + promoDiscount,
           totalShipping: deliveryFee,
           totalValue: total,
           status: "CART",
@@ -411,9 +434,8 @@ export const useCheckoutProcess = () => {
         );
       }
 
-      const finalizedOrder = finishOrderResponse.data as any;
       const finalOrderId = await resolveFinalOrderId(
-        finalizedOrder,
+        finishOrderResponse.data,
         restaurant.id,
       );
 
@@ -427,10 +449,16 @@ export const useCheckoutProcess = () => {
       }
 
       // --------------------------------------------------
-      // 3️⃣ PAGAMENTO
+      // 3️⃣ PAGAMENTO e 4️⃣ DELIVERY (USANDO O MESMO ADDRESS)
       // --------------------------------------------------
+      // Nenhum dos dois depende do resultado do outro - rodar em paralelo
+      // poupa um round-trip inteiro no passo mais sensível a latência do
+      // app (o clique de "finalizar pedido"). Delivery é pulado quando é
+      // retirada no local.
 
-      if (finalOrderId) {
+      const createPayment = async () => {
+        if (!finalOrderId) return;
+
         try {
           const paymentData = {
             orderId: finalOrderId,
@@ -464,23 +492,20 @@ export const useCheckoutProcess = () => {
             );
           }
 
-          if (
-            paymentResponse.data &&
-            (paymentResponse.data as any).gatewayUrl
-          ) {
-            setPaymentGatewayUrl((paymentResponse.data as any).gatewayUrl);
+          if (paymentResponse.data?.gatewayUrl) {
+            setPaymentGatewayUrl(paymentResponse.data.gatewayUrl);
           }
         } catch (error) {
           console.error("Erro no pagamento:", error);
           toast.error("Pedido criado, mas falhou ao registrar o pagamento.");
         }
-      }
+      };
 
-      // --------------------------------------------------
-      // 4️⃣ DELIVERY (USANDO O MESMO ADDRESS) — pulado quando é retirada no local
-      // --------------------------------------------------
+      const createDelivery = async () => {
+        if (!finalOrderId || orderType !== "delivery" || !deliveryAddressId) {
+          return;
+        }
 
-      if (finalOrderId && orderType === "delivery" && deliveryAddressId) {
         try {
           const deliveryData = {
             orderId: finalOrderId,
@@ -504,7 +529,9 @@ export const useCheckoutProcess = () => {
           console.error("Erro no delivery:", error);
           toast.error("Pedido criado, mas falhou ao registrar a entrega.");
         }
-      }
+      };
+
+      await Promise.all([createPayment(), createDelivery()]);
 
       // O endereço precisa existir pra delivery referenciar deliveryAddressId
       // - não dá pra pular a criação. Mas se o cliente desmarcou "Salvar este
@@ -531,9 +558,9 @@ export const useCheckoutProcess = () => {
         clearCart();
         setIsNavigating(false);
       }, 1500);
-    } catch (error: any) {
+    } catch (error) {
       toast.error(
-        error.message || "Erro ao processar pedido. Tente novamente.",
+        getErrorMessage(error, "Erro ao processar pedido. Tente novamente."),
       );
     } finally {
       setIsProcessing(false);
@@ -606,6 +633,7 @@ export const useCheckoutProcess = () => {
     // Calculated values
     subtotal,
     deliveryFee,
+    discount: deliveryDiscount + promoDiscount,
     total,
     cartItems,
     restaurant,

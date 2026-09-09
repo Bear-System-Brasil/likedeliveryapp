@@ -187,7 +187,7 @@ export function BottomBar({ activeTab }: BottomBarProps) {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className={`grid h-16 ${gridCols}`}>
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -199,7 +199,7 @@ export function BottomBar({ activeTab }: BottomBarProps) {
               type="button"
               onClick={() => handleNavigate(tab)}
               className={`relative flex flex-col items-center justify-center gap-1 transition-all ${
-                isActive ? "text-orange-500" : "text-gray-500"
+                isActive ? "text-orange-500" : "text-muted-foreground"
               }`}
               aria-label={tab.label}
               aria-current={isActive ? "page" : undefined}

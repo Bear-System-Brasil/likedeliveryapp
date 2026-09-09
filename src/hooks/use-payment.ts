@@ -7,6 +7,7 @@ import {
 } from "@/services/api";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/utils";
 
 interface PaymentsPageMeta {
   page: number;
@@ -62,8 +63,8 @@ export const usePayment = () => {
       } else {
         throw new Error(response.message || "Pagamento não encontrado");
       }
-    } catch (err: any) {
-      const errorMessage = err.message || "Erro ao buscar pagamento";
+    } catch (err) {
+      const errorMessage = getErrorMessage(err, "Erro ao buscar pagamento");
       setError(errorMessage);
       toast.error(errorMessage);
       return null;
@@ -92,8 +93,8 @@ export const usePayment = () => {
         } else {
           throw new Error(response.message || "Nenhum pagamento encontrado");
         }
-      } catch (err: any) {
-        const errorMessage = err.message || "Erro ao buscar pagamentos";
+      } catch (err) {
+        const errorMessage = getErrorMessage(err, "Erro ao buscar pagamentos");
         setError(errorMessage);
         setPayments([]);
         setPaymentsMeta(null);
@@ -145,9 +146,8 @@ export const usePayment = () => {
         } else {
           throw new Error(response.message || "Nenhum pagamento encontrado");
         }
-      } catch (err: any) {
-        const errorMessage =
-          err.message || "Erro ao buscar pagamentos por método";
+      } catch (err) {
+        const errorMessage = getErrorMessage(err, "Erro ao buscar pagamentos por método");
         setError(errorMessage);
         setPayments([]);
         setPaymentsMeta(null);
@@ -181,9 +181,8 @@ export const usePayment = () => {
         } else {
           throw new Error(response.message || "Nenhum pagamento encontrado");
         }
-      } catch (err: any) {
-        const errorMessage =
-          err.message || "Erro ao buscar pagamentos por período";
+      } catch (err) {
+        const errorMessage = getErrorMessage(err, "Erro ao buscar pagamentos por período");
         setError(errorMessage);
         setPayments([]);
         setPaymentsMeta(null);
@@ -218,8 +217,8 @@ export const usePayment = () => {
         } else {
           throw new Error(response.message || "Erro ao aprovar pagamento");
         }
-      } catch (err: any) {
-        const errorMessage = err.message || "Erro ao aprovar pagamento";
+      } catch (err) {
+        const errorMessage = getErrorMessage(err, "Erro ao aprovar pagamento");
         setError(errorMessage);
         toast.error(errorMessage);
         return null;
@@ -252,8 +251,8 @@ export const usePayment = () => {
       } else {
         throw new Error(response.message || "Erro ao rejeitar pagamento");
       }
-    } catch (err: any) {
-      const errorMessage = err.message || "Erro ao rejeitar pagamento";
+    } catch (err) {
+      const errorMessage = getErrorMessage(err, "Erro ao rejeitar pagamento");
       setError(errorMessage);
       toast.error(errorMessage);
       return null;
@@ -281,8 +280,8 @@ export const usePayment = () => {
       } else {
         throw new Error(response.message || "Erro ao reembolsar pagamento");
       }
-    } catch (err: any) {
-      const errorMessage = err.message || "Erro ao reembolsar pagamento";
+    } catch (err) {
+      const errorMessage = getErrorMessage(err, "Erro ao reembolsar pagamento");
       setError(errorMessage);
       toast.error(errorMessage);
       return null;
@@ -322,8 +321,8 @@ export const usePayment = () => {
         } else {
           throw new Error(response.message || "Erro ao atualizar pagamento");
         }
-      } catch (err: any) {
-        const errorMessage = err.message || "Erro ao atualizar pagamento";
+      } catch (err) {
+        const errorMessage = getErrorMessage(err, "Erro ao atualizar pagamento");
         setError(errorMessage);
         toast.error(errorMessage);
         return null;
@@ -356,8 +355,8 @@ export const usePayment = () => {
         } else {
           throw new Error(response.message || "Erro ao deletar pagamento");
         }
-      } catch (err: any) {
-        const errorMessage = err.message || "Erro ao deletar pagamento";
+      } catch (err) {
+        const errorMessage = getErrorMessage(err, "Erro ao deletar pagamento");
         setError(errorMessage);
         toast.error(errorMessage);
         return false;

@@ -16,7 +16,7 @@ const ORDER: DashboardPeriod[] = [
 ];
 
 const dateInputClass =
-  "h-8 rounded-[8px] border border-[#E9EAEE] bg-white px-2 text-[12px] font-semibold text-[#14161A] outline-none";
+  "h-8 rounded-[8px] border border-border bg-card px-2 text-[12px] font-semibold text-foreground outline-none";
 
 /** Alimenta todas as consultas do painel — trocar aqui refaz as quatro faixas. */
 export function PeriodSelector({
@@ -50,8 +50,8 @@ export function PeriodSelector({
             className={cn(
               "h-8 cursor-pointer rounded-[8px] px-3 text-[12px] font-bold transition-colors",
               period === option
-                ? "bg-[#14161A] text-white"
-                : "border border-[#E9EAEE] bg-white text-[#3D4149] hover:bg-[#F4F5F7]",
+                ? "bg-zinc-900 text-white"
+                : "border border-border bg-card text-foreground hover:bg-muted",
             )}
           >
             {PERIOD_LABELS[option]}
@@ -69,7 +69,7 @@ export function PeriodSelector({
               }
               className={dateInputClass}
             />
-            <span className="text-[12px] font-semibold text-[#A2A7B0]">até</span>
+            <span className="text-[12px] font-semibold text-muted-foreground">até</span>
             <input
               type="date"
               aria-label="Data final"
@@ -84,7 +84,7 @@ export function PeriodSelector({
       </div>
 
       {(incompleteCustom || invertedCustom) && (
-        <p className="mt-1.5 text-[11px] font-semibold text-[#B7791F]">
+        <p className="mt-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
           {invertedCustom
             ? "A data inicial é posterior à final — mostrando o mês atual."
             : "Escolha as duas datas — até lá, mostrando o mês atual."}

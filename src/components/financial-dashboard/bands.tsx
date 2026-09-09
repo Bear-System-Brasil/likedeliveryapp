@@ -220,13 +220,13 @@ export function LeaksBand({ dashboard }: { dashboard: Dashboard }) {
           />
 
           <div className={cn(cardClass, "lg:col-span-2")}>
-            <div className="text-[11.5px] font-semibold text-[#8A8F99]">
+            <div className="text-[11.5px] font-semibold text-muted-foreground">
               Composição das despesas
             </div>
 
             {leaks.expenses.length === 0 ||
             leaks.expenses.every((slice) => slice.value === 0) ? (
-              <p className="mt-2 text-[12px] font-semibold text-[#A2A7B0]">
+              <p className="mt-2 text-[12px] font-semibold text-muted-foreground">
                 Sem despesas registradas no período.
               </p>
             ) : (
@@ -234,17 +234,17 @@ export function LeaksBand({ dashboard }: { dashboard: Dashboard }) {
                 {leaks.expenses.map((slice) => (
                   <div key={slice.key}>
                     <div className="flex items-center gap-2">
-                      <span className="min-w-[90px] flex-1 truncate text-[12.5px] font-bold text-[#14161A]">
+                      <span className="min-w-[90px] flex-1 truncate text-[12.5px] font-bold text-foreground">
                         {slice.label}
                       </span>
-                      <span className="w-[92px] shrink-0 text-right text-[12.5px] font-extrabold text-[#14161A]">
+                      <span className="w-[92px] shrink-0 text-right text-[12.5px] font-extrabold text-foreground">
                         {formatCurrency(slice.value)}
                       </span>
-                      <span className="w-[38px] shrink-0 text-right text-[11px] font-bold text-[#8A8F99]">
+                      <span className="w-[38px] shrink-0 text-right text-[11px] font-bold text-muted-foreground">
                         {Math.round(slice.share * 100)}%
                       </span>
                     </div>
-                    <div className="mt-[5px] h-[5px] overflow-hidden rounded-full bg-[#F0F1F4]">
+                    <div className="mt-[5px] h-[5px] overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-full rounded-full bg-[#FF6B00]"
                         style={{ width: `${Math.min(slice.share * 100, 100)}%` }}
@@ -282,12 +282,12 @@ export function TrendsBand({ dashboard }: { dashboard: Dashboard }) {
       ) : (
         <div className="grid grid-cols-1 gap-2.5 lg:[grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
           <div className={cardClass}>
-            <div className="text-[11.5px] font-semibold text-[#8A8F99]">
+            <div className="text-[11.5px] font-semibold text-muted-foreground">
               Receita por dia
             </div>
 
             {chartData.length === 0 ? (
-              <p className="mt-2 text-[12px] font-semibold text-[#A2A7B0]">
+              <p className="mt-2 text-[12px] font-semibold text-muted-foreground">
                 Sem receita registrada no período.
               </p>
             ) : (
@@ -338,12 +338,12 @@ export function TrendsBand({ dashboard }: { dashboard: Dashboard }) {
           </div>
 
           <div className={cardClass}>
-            <div className="text-[11.5px] font-semibold text-[#8A8F99]">
+            <div className="text-[11.5px] font-semibold text-muted-foreground">
               Top produtos
             </div>
 
             {trends.topProducts.length === 0 ? (
-              <p className="mt-2 text-[12px] font-semibold text-[#A2A7B0]">
+              <p className="mt-2 text-[12px] font-semibold text-muted-foreground">
                 Sem produtos vendidos no período.
               </p>
             ) : (
@@ -353,13 +353,13 @@ export function TrendsBand({ dashboard }: { dashboard: Dashboard }) {
                     key={product.productId || product.name}
                     className="flex items-center gap-2.5"
                   >
-                    <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] bg-[#F4F5F7] text-[11px] font-extrabold text-[#8A8F99]">
+                    <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[7px] bg-muted text-[11px] font-extrabold text-muted-foreground">
                       {index + 1}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-[#14161A]">
+                    <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-foreground">
                       {product.name}
                     </span>
-                    <span className="shrink-0 text-[12.5px] font-extrabold text-[#14161A]">
+                    <span className="shrink-0 text-[12.5px] font-extrabold text-foreground">
                       {product.totalQuantity}
                     </span>
                   </div>
@@ -373,16 +373,16 @@ export function TrendsBand({ dashboard }: { dashboard: Dashboard }) {
       {/* Capital em estoque fica fora do bloco acima de propósito: é foto do
           momento, não resultado do período, e o filtro de data não o altera. */}
       {!isLoading && trends.stockCost !== null && (
-        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-[13px] border border-dashed border-[#DDDFE4] bg-[#FAFAFB] px-4 py-[13px]">
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-[13px] border border-dashed border-border bg-muted px-4 py-[13px]">
           <div>
-            <div className="text-[11.5px] font-semibold text-[#8A8F99]">
+            <div className="text-[11.5px] font-semibold text-muted-foreground">
               Capital em estoque
             </div>
-            <div className="mt-0.5 text-[19px] font-extrabold tracking-tight text-[#14161A]">
+            <div className="mt-0.5 text-[19px] font-extrabold tracking-tight text-foreground">
               {formatCurrency(trends.stockCost)}
             </div>
           </div>
-          <p className="max-w-[320px] text-[11px] font-semibold text-[#A2A7B0]">
+          <p className="max-w-[320px] text-[11px] font-semibold text-muted-foreground">
             Foto do estoque agora. Não é despesa do período, não entra na
             margem e não muda com o filtro de data.
           </p>

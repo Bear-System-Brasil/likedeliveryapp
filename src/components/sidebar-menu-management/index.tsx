@@ -47,12 +47,6 @@ type NavLink = {
 
 const navGroups: { label: string; links: NavLink[] }[] = [
   {
-    label: "Principal",
-    links: [{ href: "/", label: "Início", icon: House },
-
-    ],
-  },
-  {
     label: "Gestão",
     links: [
       {
@@ -176,7 +170,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     .filter((group) => group.links.length > 0);
 
   return (
-    <div className="flex h-full flex-col bg-white text-[#14161A]">
+    <div className="flex h-full flex-col bg-card text-foreground">
       <div className="flex shrink-0 items-center justify-between px-[18px] py-4">
         <Link href="/" className="shrink-0">
           <LikeDeliveryLogo>LikeDelivery</LikeDeliveryLogo>
@@ -187,7 +181,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             type="button"
             onClick={onClose}
             aria-label="Fechar menu"
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-[#A0A6B0] transition-colors hover:bg-[#F7F8FA] hover:text-[#3D4149]"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -197,7 +191,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-1">
         {visibleGroups.map((group) => (
           <div key={group.label} className="mt-4 first:mt-3">
-            <p className="mb-2 px-3 text-[10.5px] font-extrabold uppercase tracking-normal text-[#A9AFB9]">
+            <p className="mb-2 px-3 text-[10.5px] font-extrabold uppercase tracking-normal text-muted-foreground">
               {group.label}
             </p>
             <div className="space-y-1.5">
@@ -213,13 +207,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
                       "flex h-[38px] items-center gap-[11px] rounded-[14px] px-3 text-[13px] font-semibold transition-colors",
                       active
                         ? "bg-[#FF6B00] text-white shadow-[0_6px_14px_rgba(255,107,0,0.35)]"
-                        : "text-[#3B4B66] hover:bg-[#F7F8FA] hover:text-[#14161A]",
+                        : "text-foreground/80 hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <Icon
                       className={cn(
                         "h-4 w-4 shrink-0",
-                        active ? "text-white" : "text-[#A0A6B0]",
+                        active ? "text-white" : "text-muted-foreground",
                       )}
                     />
                     <span className="truncate">{label}</span>
@@ -231,7 +225,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         ))}
       </nav>
 
-      <div className="shrink-0 border-t border-[#E9EAEE] px-3 pb-3 pt-3">
+      <div className="shrink-0 border-t border-border px-3 pb-3 pt-3">
         <button
           type="button"
           onClick={handleLogout}
@@ -242,7 +236,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         </button>
       </div>
 
-      <div className="shrink-0 border-t border-[#E9EAEE] px-[18px] py-3.5 text-center text-[10.5px] font-semibold text-[#A2A7B0]">
+      <div className="shrink-0 border-t border-border px-[18px] py-3.5 text-center text-[10.5px] font-semibold text-muted-foreground">
         v1.0.0
       </div>
     </div>
@@ -262,7 +256,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   if (isDesktop) {
     return (
-      <aside className="fixed left-0 top-0 z-40 h-full w-[220px] border-r border-[#E9EAEE] bg-white">
+      <aside className="fixed left-0 top-0 z-40 h-full w-[220px] border-r border-border bg-card">
         <SidebarContent />
       </aside>
     );
@@ -283,7 +277,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         />
         <SheetPrimitive.Content
           className={cn(
-            "fixed left-0 top-0 z-50 h-full w-[220px] border-r border-[#E9EAEE] bg-white shadow-lg",
+            "fixed left-0 top-0 z-50 h-full w-[220px] border-r border-border bg-card shadow-lg",
             "data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:slide-in-from-left-8 data-[state=open]:duration-200",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:slide-out-to-left-8 data-[state=closed]:duration-200",
           )}

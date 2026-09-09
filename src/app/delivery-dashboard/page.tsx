@@ -39,14 +39,14 @@ function formatAddress(address?: Address) {
 // documenta esse aninhamento) - lê defensivamente, com fallback, em vez de
 // assumir a forma exata.
 function getRestaurantName(delivery: Delivery) {
-  return (delivery.order as any)?.company?.tradeName || "Restaurante";
+  return delivery.order?.company?.tradeName || "Restaurante";
 }
 
 function getCustomerInfo(delivery: Delivery) {
-  const customer = (delivery.order as any)?.customer;
+  const customer = delivery.order?.customer;
   return {
     name: customer?.name || "Cliente",
-    phone: customer?.phone as string | undefined,
+    phone: customer?.phone,
   };
 }
 
@@ -95,17 +95,17 @@ function DeliveryDashboardContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] pb-10">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e9eaee] bg-white px-4 py-3">
+    <div className="min-h-screen bg-muted pb-10">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
             <Bike className="h-[18px] w-[18px]" />
           </span>
           <div>
-            <p className="text-[13.5px] font-extrabold text-[#14161a]">
+            <p className="text-[13.5px] font-extrabold text-foreground">
               Minhas entregas
             </p>
-            <p className="text-[11px] font-semibold text-[#8a8f99]">
+            <p className="text-[11px] font-semibold text-muted-foreground">
               {activeDelivery
                 ? "Corrida em andamento"
                 : `${pendingDeliveries.length} disponível${pendingDeliveries.length === 1 ? "" : "eis"}`}
@@ -116,7 +116,7 @@ function DeliveryDashboardContent() {
           <button
             type="button"
             onClick={() => refetch()}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e9eaee] text-[#3d4149] transition hover:bg-[#f4f5f7]"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-foreground transition hover:bg-muted"
             aria-label="Atualizar"
             title="Atualizar"
           >
@@ -125,7 +125,7 @@ function DeliveryDashboardContent() {
           <button
             type="button"
             onClick={toggleSound}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e9eaee] text-[#3d4149] transition hover:bg-[#f4f5f7]"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-foreground transition hover:bg-muted"
             aria-label={soundEnabled ? "Silenciar alertas" : "Ativar alertas"}
             title={soundEnabled ? "Silenciar alertas" : "Ativar alertas"}
           >
@@ -138,7 +138,7 @@ function DeliveryDashboardContent() {
           <button
             type="button"
             onClick={logout}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e9eaee] text-[#3d4149] transition hover:bg-red-50 hover:text-red-500"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-foreground transition hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-500 dark:hover:text-red-400"
             aria-label="Sair"
             title="Sair"
           >
@@ -149,10 +149,10 @@ function DeliveryDashboardContent() {
 
       <main className="mx-auto max-w-md px-4 pt-4">
         {isLoading ? (
-          <div className="h-64 animate-pulse rounded-2xl bg-white" />
+          <div className="h-64 animate-pulse rounded-2xl bg-card" />
         ) : isError ? (
-          <div className="rounded-2xl border border-dashed border-[#ddd] bg-white px-5 py-10 text-center">
-            <p className="text-[13px] font-bold text-[#14161a]">
+          <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-10 text-center">
+            <p className="text-[13px] font-bold text-foreground">
               Não foi possível carregar suas entregas
             </p>
             <Button
@@ -173,12 +173,12 @@ function DeliveryDashboardContent() {
             onRequestCancel={() => setCancelOpen(true)}
           />
         ) : pendingDeliveries.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#ddd] bg-white px-5 py-14 text-center">
-            <Package className="mx-auto h-10 w-10 text-[#c9cdd4]" />
-            <p className="mt-3 text-[13px] font-bold text-[#14161a]">
+          <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-14 text-center">
+            <Package className="mx-auto h-10 w-10 text-muted-foreground" />
+            <p className="mt-3 text-[13px] font-bold text-foreground">
               Nenhuma entrega disponível
             </p>
-            <p className="mt-1 text-[12px] font-medium text-[#8a8f99]">
+            <p className="mt-1 text-[12px] font-medium text-muted-foreground">
               Assim que surgir uma corrida por perto, avisamos por aqui.
             </p>
           </div>
@@ -202,7 +202,7 @@ function DeliveryDashboardContent() {
             <DialogTitle>Cancelar entrega</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[#3d4149]">
+            <label className="text-sm font-medium text-foreground">
               Motivo do cancelamento
             </label>
             <Textarea
@@ -240,8 +240,8 @@ function DeliveryDashboardContent() {
 function StatusBadge({ status }: { status: Delivery["status"] }) {
   const config =
     status === "PICKED_UP"
-      ? { label: "A caminho", className: "bg-blue-50 text-blue-600" }
-      : { label: "Aceita", className: "bg-orange-50 text-orange-600" };
+      ? { label: "A caminho", className: "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400" }
+      : { label: "Aceita", className: "bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400" };
 
   return (
     <span
@@ -271,9 +271,9 @@ function ActiveDeliveryCard({
   const isPickedUp = delivery.status === "PICKED_UP";
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#e9eaee] bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-[#f0f1f4] px-4 py-3">
-        <p className="truncate text-[13px] font-extrabold text-[#14161a]">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <p className="truncate text-[13px] font-extrabold text-foreground">
           {getRestaurantName(delivery)}
         </p>
         <StatusBadge status={delivery.status} />
@@ -283,10 +283,10 @@ function ActiveDeliveryCard({
         <div className="flex items-start gap-2.5">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[#8a8f99]">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
               {isPickedUp ? "Entregar em" : "Retirar em (restaurante)"}
             </p>
-            <p className="mt-0.5 text-[13px] font-semibold text-[#14161a]">
+            <p className="mt-0.5 text-[13px] font-semibold text-foreground">
               {isPickedUp
                 ? formatAddress(delivery.deliveryAddress)
                 : getRestaurantName(delivery)}
@@ -294,19 +294,19 @@ function ActiveDeliveryCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-xl bg-[#fafafb] px-3 py-2.5">
+        <div className="flex items-center justify-between rounded-xl bg-muted px-3 py-2.5">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[#8a8f99]">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
               Cliente
             </p>
-            <p className="mt-0.5 text-[13px] font-semibold text-[#14161a]">
+            <p className="mt-0.5 text-[13px] font-semibold text-foreground">
               {customer.name}
             </p>
           </div>
           {customer.phone && (
             <a
               href={`tel:${customer.phone}`}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-orange-500 shadow-sm"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-card text-orange-500 shadow-sm"
               aria-label="Ligar para o cliente"
             >
               <Phone className="h-4 w-4" />
@@ -314,21 +314,21 @@ function ActiveDeliveryCard({
           )}
         </div>
 
-        <div className="flex items-center justify-between text-[12px] font-semibold text-[#8a8f99]">
+        <div className="flex items-center justify-between text-[12px] font-semibold text-muted-foreground">
           <span>Pedido #{delivery.orderId.slice(0, 8)}</span>
-          <span className="text-[#14161a]">
-            {formatCurrency((delivery.order as any)?.totalValue || 0)}
+          <span className="text-foreground">
+            {formatCurrency(delivery.order?.totalValue || 0)}
           </span>
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-[#f0f1f4] px-4 py-3.5">
+      <div className="flex flex-col gap-2 border-t border-border px-4 py-3.5">
         {!isPickedUp ? (
           <Button
             type="button"
             onClick={onPickup}
             disabled={isPickingUp}
-            className="h-11 w-full rounded-xl bg-[#14161a] text-[13.5px] font-extrabold text-white hover:bg-[#2a2d33]"
+            className="h-11 w-full rounded-xl bg-zinc-900 text-[13.5px] font-extrabold text-white hover:bg-zinc-800"
           >
             {isPickingUp ? "Confirmando..." : "Marquei que coletei o pedido"}
           </Button>
@@ -348,7 +348,7 @@ function ActiveDeliveryCard({
           <button
             type="button"
             onClick={onRequestCancel}
-            className="text-center text-[11.5px] font-bold text-red-500 hover:text-red-600"
+            className="text-center text-[11.5px] font-bold text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400"
           >
             Não consigo fazer essa entrega
           </button>
@@ -368,15 +368,15 @@ function PendingDeliveryCard({
   isAccepting: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-[#e9eaee] bg-white p-3.5 shadow-sm">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 shadow-sm">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-500">
         <Package className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-extrabold text-[#14161a]">
+        <p className="truncate text-[13px] font-extrabold text-foreground">
           {getRestaurantName(delivery)}
         </p>
-        <p className="truncate text-[11.5px] font-medium text-[#8a8f99]">
+        <p className="truncate text-[11.5px] font-medium text-muted-foreground">
           {formatAddress(delivery.deliveryAddress)}
         </p>
       </div>

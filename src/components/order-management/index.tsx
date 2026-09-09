@@ -167,7 +167,7 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
   const customerName = order.customer?.name || "Cliente";
 
   return (
-    <div className="print-area hidden print:block print:w-[80mm] print:mx-auto print:text-xs print:font-mono print:bg-white print:text-black">
+    <div className="print-area hidden print:block print:w-[80mm] print:mx-auto print:text-xs print:font-mono print:bg-card print:text-black">
       <div className="text-center mb-2">
         <h2 className="text-base font-bold">LIKE DELIVERY</h2>
         <p>───────────────────────</p>
@@ -347,35 +347,35 @@ export default function OrderManagement() {
   return (
     <>
       {/* ─── Header: Status Cards ─────────────────────────────────── */}
-      <div className="flex overflow-x-auto p-2 gap-2 bg-white print:hidden">
+      <div className="flex overflow-x-auto p-2 gap-2 bg-card print:hidden">
         <StatusCard
           title="Novos"
           count={statusCounts.new}
           icon={Package}
-          color="bg-amber-50 text-amber-700 border-amber-200"
+          color="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
         />
         <StatusCard
           title="Em Preparo"
           count={statusCounts.preparing}
           icon={ChefHat}
-          color="bg-blue-50 text-blue-700 border-blue-200"
+          color="bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800"
         />
         <StatusCard
           title="Prontos"
           count={statusCounts.ready}
           icon={Truck}
-          color="bg-emerald-50 text-emerald-700 border-emerald-200"
+          color="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
         />
         <StatusCard
           title="Concluídos"
           count={statusCounts.completed}
           icon={CheckCircle}
-          color="bg-gray-50 text-gray-700 border-gray-200"
+          color="bg-muted text-foreground border-border"
         />
       </div>
 
       {/* ─── Toolbar ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-3 py-2 border-b bg-white print:hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-card print:hidden">
         <Button
           variant="ghost"
           size="sm"
@@ -443,7 +443,7 @@ export default function OrderManagement() {
             <TabsTrigger value="completed" className="relative text-xs">
               Feitos
               {statusCounts.completed > 0 && (
-                <Badge className="absolute -top-2 -right-1 h-4 min-w-4 px-1 text-[10px] bg-gray-500">
+                <Badge className="absolute -top-2 -right-1 h-4 min-w-4 px-1 text-[10px] bg-muted-foreground">
                   {statusCounts.completed}
                 </Badge>
               )}

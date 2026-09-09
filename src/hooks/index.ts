@@ -16,7 +16,6 @@ export * from './use-cash-register'
 export * from './use-cart-actions'
 export * from './use-reports'
 export * from './use-category-management'
-export * from './use-checkout-form'
 export * from './use-checkout-process'
 export * from './use-company-profile-management'
 export * from './use-delivery-driver'
@@ -35,7 +34,6 @@ export * from './use-team-management'
 export * from './use-unauthorized-page'
 
 // Legacy hooks
-// export * from './use-address' // Commented to avoid conflict with use-addresses (useViaCep)
 export * from './use-api'
 export * from './use-company-profile'
 export * from './use-debounce'

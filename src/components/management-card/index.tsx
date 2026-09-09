@@ -36,9 +36,9 @@ export function ManagementCard({
   const getTrendIcon = () => {
     switch (cardState) {
       case "increasing":
-        return <TrendingUp className="w-4 h-4 text-green-600" />;
+        return <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />;
       case "decreasing":
-        return <TrendingDown className="w-4 h-4 text-red-600" />;
+        return <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />;
       default:
         return null;
     }

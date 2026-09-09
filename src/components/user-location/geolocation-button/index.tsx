@@ -87,7 +87,7 @@ export function GeolocationButton() {
         description: fullAddress || data.city,
         duration: 4000,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
 
       let title = "Erro de localização";

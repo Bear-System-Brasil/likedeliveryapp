@@ -124,8 +124,8 @@ export const AddressCard = React.memo<AddressCardProps>(
           "transition-all",
           selectable && "cursor-pointer",
           selectable && isSelected
-            ? "border-2 border-orange-500 bg-linear-to-br from-orange-50 to-orange-50"
-            : selectable && "border-2 border-gray-200 hover:border-orange-300",
+            ? "border-2 border-orange-500 bg-linear-to-br from-orange-50 to-orange-50 dark:from-orange-950 dark:to-orange-950"
+            : selectable && "border-2 border-border hover:border-orange-300",
           className,
         )}
         onClick={handleClick}
@@ -156,7 +156,7 @@ export const AddressCard = React.memo<AddressCardProps>(
               <div className="flex items-center gap-2 mb-1">
                 <p
                   className={cn(
-                    "font-semibold text-gray-900 truncate",
+                    "font-semibold text-foreground truncate",
                     compact ? "text-sm" : "text-base",
                   )}
                 >
@@ -172,7 +172,7 @@ export const AddressCard = React.memo<AddressCardProps>(
 
               <p
                 className={cn(
-                  "text-gray-600 mt-1",
+                  "text-muted-foreground mt-1",
                   compact ? "text-xs" : "text-sm",
                 )}
               >
@@ -181,7 +181,7 @@ export const AddressCard = React.memo<AddressCardProps>(
 
               <p
                 className={cn(
-                  "text-gray-500 mt-0.5",
+                  "text-muted-foreground mt-0.5",
                   compact ? "text-xs" : "text-sm",
                 )}
               >
@@ -191,7 +191,7 @@ export const AddressCard = React.memo<AddressCardProps>(
               {address.complement && (
                 <p
                   className={cn(
-                    "text-gray-500 mt-0.5",
+                    "text-muted-foreground mt-0.5",
                     compact ? "text-xs" : "text-sm",
                   )}
                 >
@@ -202,7 +202,7 @@ export const AddressCard = React.memo<AddressCardProps>(
               {address.reference && (
                 <p
                   className={cn(
-                    "text-gray-400 italic mt-1",
+                    "text-muted-foreground italic mt-1",
                     compact ? "text-xs" : "text-sm",
                   )}
                 >
@@ -217,7 +217,7 @@ export const AddressCard = React.memo<AddressCardProps>(
                 type="button"
                 variant="ghost"
                 size={compact ? "sm" : "icon"}
-                className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                 onClick={handleDelete}
                 aria-label="Delete address"
               >
@@ -262,7 +262,7 @@ export const AddressList = React.memo<AddressListProps>(
   }) => {
     if (addresses.length === 0) {
       return (
-        <div className={cn("text-center py-8 text-gray-500", className)}>
+        <div className={cn("text-center py-8 text-muted-foreground", className)}>
           <MapPin className="h-12 w-12 mx-auto mb-3 opacity-30" />
           <p>{emptyMessage}</p>
         </div>

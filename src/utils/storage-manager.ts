@@ -105,7 +105,7 @@ class StorageAdapter {
     }
   }
 
-  setItem<T = any>(key: string, value: T): boolean {
+  setItem<T = unknown>(key: string, value: T): boolean {
     if (!this.isAvailable()) return false
 
     try {
@@ -191,16 +191,16 @@ export const sessionStorageAdapter = new StorageAdapter(
 export const storageManager = {
   // localStorage methods
   local: {
-    get: <T = any>(key: StorageKey): T | null => localStorageAdapter.getItem<T>(key),
-    set: <T = any>(key: StorageKey, value: T): boolean => localStorageAdapter.setItem(key, value),
+    get: <T = unknown>(key: StorageKey): T | null => localStorageAdapter.getItem<T>(key),
+    set: <T = unknown>(key: StorageKey, value: T): boolean => localStorageAdapter.setItem(key, value),
     remove: (key: StorageKey): void => localStorageAdapter.removeItem(key),
     clear: (): void => localStorageAdapter.clear(),
   },
 
   // sessionStorage methods
   session: {
-    get: <T = any>(key: StorageKey): T | null => sessionStorageAdapter.getItem<T>(key),
-    set: <T = any>(key: StorageKey, value: T): boolean => sessionStorageAdapter.setItem(key, value),
+    get: <T = unknown>(key: StorageKey): T | null => sessionStorageAdapter.getItem<T>(key),
+    set: <T = unknown>(key: StorageKey, value: T): boolean => sessionStorageAdapter.setItem(key, value),
     remove: (key: StorageKey): void => sessionStorageAdapter.removeItem(key),
     clear: (): void => sessionStorageAdapter.clear(),
   },
@@ -272,7 +272,7 @@ export const storageManager = {
  */
 export function useStorageEvent(
   key: StorageKey,
-  callback: (newValue: any) => void
+  callback: (newValue: unknown) => void
 ): () => void {
   if (typeof window === 'undefined') return () => { }
 

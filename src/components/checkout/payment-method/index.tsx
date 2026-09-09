@@ -173,12 +173,12 @@ export function PaymentMethod({
       : "Pagamento processado com criptografia. Nao armazenamos dados do cartao.";
 
   return (
-    <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">
           <CreditCard className="h-4 w-4" />
         </div>
-        <h2 className="text-sm font-extrabold text-gray-950">
+        <h2 className="text-sm font-extrabold text-foreground">
           Forma de pagamento
         </h2>
       </div>
@@ -195,8 +195,8 @@ export function PaymentMethod({
               className={cn(
                 "flex min-h-[52px] flex-col justify-center rounded-lg border px-3 text-left transition-colors",
                 isActive
-                  ? "border-orange-500 bg-orange-50 text-orange-700"
-                  : "border-[#E9EAEE] bg-white text-gray-900 hover:border-orange-300",
+                  ? "border-orange-500 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400"
+                  : "border-border bg-card text-foreground hover:border-orange-300 dark:hover:border-orange-700",
               )}
             >
               <span className="text-sm font-extrabold">{moment.label}</span>
@@ -221,8 +221,8 @@ export function PaymentMethod({
               className={cn(
                 "inline-flex h-9 items-center gap-2 rounded-full border px-3 text-sm font-bold transition-colors",
                 isActive
-                  ? "border-orange-500 bg-orange-50 text-orange-700"
-                  : "border-[#E9EAEE] bg-white text-gray-700 hover:border-orange-300 hover:text-orange-700",
+                  ? "border-orange-500 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400"
+                  : "border-border bg-card text-foreground hover:border-orange-300 dark:hover:border-orange-700 hover:text-orange-700 dark:hover:text-orange-400",
               )}
               title={option.description}
             >
@@ -234,18 +234,18 @@ export function PaymentMethod({
         })}
       </div>
 
-      <div className="mt-3 flex items-start gap-2 rounded-lg border border-[#E9EAEE] bg-[#FAFAFB] p-3 text-xs font-semibold text-gray-600">
-        <Shield className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+      <div className="mt-3 flex items-start gap-2 rounded-lg border border-border bg-muted p-3 text-xs font-semibold text-muted-foreground">
+        <Shield className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
         <p>{paymentNote}</p>
       </div>
 
       {(paymentMethod === "credit" || paymentMethod === "debit") &&
         paymentMoment === "now" && (
-          <div className="mt-3 grid grid-cols-1 gap-2.5 rounded-lg border border-[#E9EAEE] bg-[#FAFAFB] p-3 sm:grid-cols-2">
+          <div className="mt-3 grid grid-cols-1 gap-2.5 rounded-lg border border-border bg-muted p-3 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
               <Label
                 htmlFor="cardNumber"
-                className="text-[11px] font-bold text-gray-700"
+                className="text-[11px] font-bold text-foreground"
               >
                 Numero do cartao
               </Label>
@@ -257,14 +257,14 @@ export function PaymentMethod({
                 onChange={(e) =>
                   handleCardInputChange("number", e.target.value)
                 }
-                className="h-9 rounded-lg border-[#E4E6EA] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+                className="h-9 rounded-lg border-border bg-card text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
               />
             </div>
 
             <div className="space-y-1.5">
               <Label
                 htmlFor="cardExpiry"
-                className="text-[11px] font-bold text-gray-700"
+                className="text-[11px] font-bold text-foreground"
               >
                 Validade
               </Label>
@@ -275,14 +275,14 @@ export function PaymentMethod({
                 onChange={(e) =>
                   handleCardInputChange("expiry", e.target.value)
                 }
-                className="h-9 rounded-lg border-[#E4E6EA] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+                className="h-9 rounded-lg border-border bg-card text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
               />
             </div>
 
             <div className="space-y-1.5">
               <Label
                 htmlFor="cardCvv"
-                className="text-[11px] font-bold text-gray-700"
+                className="text-[11px] font-bold text-foreground"
               >
                 CVV
               </Label>
@@ -292,14 +292,14 @@ export function PaymentMethod({
                 placeholder="123"
                 value={cardInfo.cvv}
                 onChange={(e) => handleCardInputChange("cvv", e.target.value)}
-                className="h-9 rounded-lg border-[#E4E6EA] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+                className="h-9 rounded-lg border-border bg-card text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
               />
             </div>
 
             <div className="space-y-1.5 sm:col-span-2">
               <Label
                 htmlFor="cardName"
-                className="text-[11px] font-bold text-gray-700"
+                className="text-[11px] font-bold text-foreground"
               >
                 Nome impresso no cartao
               </Label>
@@ -310,21 +310,21 @@ export function PaymentMethod({
                 onChange={(e) =>
                   handleCardInputChange("name", e.target.value)
                 }
-                className="h-9 rounded-lg border-[#E4E6EA] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+                className="h-9 rounded-lg border-border bg-card text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
               />
             </div>
           </div>
         )}
 
       {paymentMethod === "pix" && paymentMoment === "now" && (
-        <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+        <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 dark:bg-emerald-950/40 p-3">
           <div className="flex items-start gap-2">
-            <Smartphone className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+            <Smartphone className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
             <div>
-              <p className="text-sm font-bold text-emerald-900">
+              <p className="text-sm font-bold text-emerald-900 dark:text-emerald-300">
                 Pagamento via Pix
               </p>
-              <p className="mt-1 text-xs font-semibold text-emerald-700">
+              <p className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                 O codigo Pix fica disponivel apos a confirmacao do pedido.
               </p>
             </div>
@@ -333,14 +333,14 @@ export function PaymentMethod({
       )}
 
       {paymentMethod === "bank_transfer" && (
-        <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+        <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 dark:bg-indigo-950/40 p-3">
           <div className="flex items-start gap-2">
-            <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
+            <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
             <div>
-              <p className="text-sm font-bold text-indigo-900">
+              <p className="text-sm font-bold text-indigo-900 dark:text-indigo-300">
                 Transferencia bancaria
               </p>
-              <p className="mt-1 text-xs font-semibold text-indigo-700">
+              <p className="mt-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400">
                 Envie o comprovante para confirmacao do pagamento.
               </p>
             </div>
@@ -349,14 +349,14 @@ export function PaymentMethod({
       )}
 
       {paymentMoment === "delivery" && paymentMethod !== "cash" && (
-        <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-3">
+        <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 dark:bg-amber-950/40 p-3">
           <div className="flex items-start gap-2">
-            <Banknote className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+            <Banknote className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
             <div>
-              <p className="text-sm font-bold text-amber-900">
+              <p className="text-sm font-bold text-amber-900 dark:text-amber-300">
                 Pagamento no recebimento
               </p>
-              <p className="mt-1 text-xs font-semibold text-amber-700">
+              <p className="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
                 Combine o pagamento com o entregador no momento da entrega.
               </p>
             </div>
@@ -365,9 +365,9 @@ export function PaymentMethod({
       )}
 
       {paymentMethod === "cash" && (
-        <div className="mt-3 rounded-lg border border-[#E9EAEE] bg-[#FAFAFB] p-3">
+        <div className="mt-3 rounded-lg border border-border bg-muted p-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm font-bold text-gray-950">
+            <span className="text-sm font-bold text-foreground">
               Precisa de troco?
             </span>
             <div className="flex gap-2">
@@ -379,8 +379,8 @@ export function PaymentMethod({
                 className={cn(
                   "h-8 rounded-full px-4 text-xs font-bold",
                   needsChange
-                    ? "bg-gray-950 text-white hover:bg-gray-800"
-                    : "border-[#E9EAEE] bg-white text-gray-700",
+                    ? "bg-zinc-900 text-white hover:bg-zinc-800"
+                    : "border-border bg-card text-foreground",
                 )}
               >
                 Sim
@@ -396,8 +396,8 @@ export function PaymentMethod({
                 className={cn(
                   "h-8 rounded-full px-4 text-xs font-bold",
                   !needsChange
-                    ? "bg-gray-950 text-white hover:bg-gray-800"
-                    : "border-[#E9EAEE] bg-white text-gray-700",
+                    ? "bg-zinc-900 text-white hover:bg-zinc-800"
+                    : "border-border bg-card text-foreground",
                 )}
               >
                 Nao
@@ -409,12 +409,12 @@ export function PaymentMethod({
             <div className="mt-3 max-w-[220px] space-y-1.5">
               <Label
                 htmlFor="changeAmount"
-                className="text-[11px] font-bold text-gray-700"
+                className="text-[11px] font-bold text-foreground"
               >
                 Troco para quanto?
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                   R$
                 </span>
                 <Input
@@ -423,19 +423,19 @@ export function PaymentMethod({
                   placeholder="100,00"
                   value={changeAmount}
                   onChange={(e) => setChangeAmount(e.target.value)}
-                  className="h-9 rounded-lg border-[#E9EAEE] bg-white pl-9 text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+                  className="h-9 rounded-lg border-border bg-card pl-9 text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
                 />
               </div>
 
               {isChangeInvalid && (
-                <p className="flex items-center gap-1 text-xs font-semibold text-red-600">
+                <p className="flex items-center gap-1 text-xs font-semibold text-red-600 dark:text-red-400">
                   <AlertCircle className="h-3 w-3" />
                   Valor menor que o total ({formatCurrency(total)}).
                 </p>
               )}
 
               {hasChangeAmount && !isChangeInvalid && (
-                <p className="text-xs font-semibold text-emerald-700">
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                   Troco:{" "}
                   {formatCurrency(Number(normalizedChangeAmount) - total)}
                 </p>

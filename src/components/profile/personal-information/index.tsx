@@ -26,6 +26,7 @@ import { UseMutationResult } from "@tanstack/react-query";
 import { ApiResponse } from "@/services";
 
 import { User as UserType } from "@/services";
+import type { UpdateUserRequest } from "@/services/api";
 import { UseFormReturn } from "react-hook-form";
 import { User as PqTemDoisUserType } from "@/stores/auth-store";
 
@@ -67,7 +68,12 @@ type Props = {
   handleCancelEdit: () => void;
   handleSaveProfile: SaveProfile;
   user: PqTemDoisUserType;
-  updateProfile: UseMutationResult<ApiResponse<UserType>, Error, any, unknown>;
+  updateProfile: UseMutationResult<
+    ApiResponse<UserType>,
+    Error,
+    Partial<UpdateUserRequest> & { id: string },
+    unknown
+  >;
   profileForm: ProfileForm;
   editingState: EditingState;
 };
@@ -90,7 +96,7 @@ export function PersonalInformation({
             variant="outline"
             size="sm"
             onClick={editingState.open}
-            className="rounded-xl border-gray-200"
+            className="rounded-xl border-border"
           >
             <Edit3 className="h-4 w-4 mr-2" />
             Editar
@@ -101,7 +107,7 @@ export function PersonalInformation({
               variant="outline"
               size="sm"
               onClick={handleCancelEdit}
-              className="rounded-xl border-gray-200"
+              className="rounded-xl border-border"
               disabled={updateProfile.isPending}
             >
               <X className="h-4 w-4 mr-2" />
@@ -146,7 +152,7 @@ export function PersonalInformation({
           inputProps={{
             ...profileForm.register("email"),
             disabled: true,
-            className: "pl-10 bg-gray-50 text-gray-500",
+            className: "pl-10 bg-muted text-muted-foreground",
           }}
         />
 
@@ -183,7 +189,7 @@ export function PersonalInformation({
             <Input
               type="date"
               {...profileForm.register("birthDate")}
-              className="pl-10 rounded-xl border-2 border-gray-200 focus:border-orange-400"
+              className="pl-10 rounded-xl border-2 border-border focus:border-orange-400"
             />
           ) : (
             <Input
@@ -193,7 +199,7 @@ export function PersonalInformation({
                   : ""
               }
               disabled
-              className="pl-10 rounded-xl border-2 border-gray-200 bg-gray-50"
+              className="pl-10 rounded-xl border-2 border-border bg-muted"
             />
           )}
         </FormField>

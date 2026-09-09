@@ -1,6 +1,7 @@
 import type { Product } from "@/services/api";
 import { apiService } from "@/services/api";
 import { useAuthStore } from "@/stores";
+import { getErrorMessage } from "@/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -285,7 +286,10 @@ export const useMenuManagement = () => {
     });
   };
 
-  const updateFormField = (field: keyof ProductFormData, value: any) => {
+  const updateFormField = <K extends keyof ProductFormData>(
+    field: K,
+    value: ProductFormData[K],
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -508,10 +512,18 @@ export const useMenuManagement = () => {
             if (uploadedProduct) {
               latestWithImages = uploadedProduct;
             } else {
-              const payload = uploadResponse.data as any;
-              const image = payload?.data ?? payload;
-              const url = typeof image === "string" ? image : image?.url;
-              const imageId = typeof image === "object" ? image?.id : undefined;
+              const payload = uploadResponse.data as
+                | { data?: unknown }
+                | undefined;
+              const image: unknown = payload?.data ?? payload;
+              const url =
+                typeof image === "string"
+                  ? image
+                  : (image as { url?: string } | undefined)?.url;
+              const imageId =
+                typeof image === "object"
+                  ? (image as { id?: string } | null)?.id
+                  : undefined;
 
               if (url && productId) {
                 upsertProductInCache({
@@ -551,11 +563,9 @@ export const useMenuManagement = () => {
       }
 
       handleCloseModal();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro detalhado ao salvar produto:", error);
-      toast.error(
-        error?.errorMessage || error?.message || "Erro ao salvar produto",
-      );
+      toast.error(getErrorMessage(error, "Erro ao salvar produto"));
     } finally {
       setIsSaving(false);
     }
@@ -607,12 +617,10 @@ export const useMenuManagement = () => {
 
       await queryClient.cancelQueries({ queryKey: productsQueryKey });
       await deleteProduct.mutateAsync(targetId);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao deletar produto:", error);
       toast.error(
-        error?.errorMessage ||
-          error?.message ||
-          "Não foi possível deletar este prato.",
+        getErrorMessage(error, "Não foi possível deletar este prato."),
       );
       setRemovedProductIds((prev) => prev.filter((id) => id !== targetId));
     } finally {
@@ -678,7 +686,6 @@ export const useMenuManagement = () => {
           costPrice: product.costPrice,
           salePrice: product.salePrice,
           isAvailable: !product.isAvailable,
-          companyId: companyId || "",
           stockQuantity: product.stockQuantity || 0,
         },
       });

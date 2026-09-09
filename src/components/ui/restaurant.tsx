@@ -96,14 +96,14 @@ export function Restaurant({ restaurant, index }: Props) {
         }
       }}
       className={cn(
-        "flex cursor-pointer overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow duration-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 sm:block",
+        "flex cursor-pointer overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 sm:block",
         "animate-in fade-in slide-in-from-bottom-4 duration-300",
       )}
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      <div className="relative h-[106px] w-[112px] shrink-0 overflow-hidden bg-gray-100 sm:h-[104px] sm:w-full">
+      <div className="relative h-[106px] w-[112px] shrink-0 overflow-hidden bg-muted sm:h-[104px] sm:w-full">
         {!imageLoaded && (
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-100 animate-pulse" />
+          <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/50 animate-pulse" />
         )}
         <Image
           fill
@@ -131,14 +131,14 @@ export function Restaurant({ restaurant, index }: Props) {
             event.stopPropagation();
             toggleFavorite(restaurant.id);
           }}
-          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border border-gray-100 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 sm:right-3 sm:top-3 sm:h-7 sm:w-7"
+          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-accent sm:right-3 sm:top-3 sm:h-7 sm:w-7"
         >
           <Heart
             className={cn(
               "h-3 w-3 sm:h-3.5 sm:w-3.5",
               favorites.includes(restaurant.id)
-                ? "fill-red-500 text-red-500"
-                : "text-gray-500",
+                ? "fill-red-500 text-red-500 dark:text-red-400"
+                : "text-muted-foreground",
             )}
           />
         </button>
@@ -147,37 +147,37 @@ export function Restaurant({ restaurant, index }: Props) {
       <div className="flex min-w-0 flex-1 flex-col justify-center p-2.5 sm:block sm:p-3">
         <div className="mb-1 flex items-start justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-orange-50 text-xs">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-orange-50 dark:bg-orange-950/40 text-xs">
               {categoryIcon}
             </span>
-            <h3 className="truncate text-sm font-bold text-gray-950">
+            <h3 className="truncate text-sm font-bold text-foreground">
               {restaurant.tradeName}
             </h3>
           </div>
 
-          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1 text-xs sm:text-sm font-bold text-gray-950">
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1 text-xs sm:text-sm font-bold text-foreground">
             <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-orange-400 text-orange-400" />
             <span>{rating}</span>
           </div>
         </div>
 
-        <p className="mb-2 sm:mb-3 truncate text-[11px] sm:text-xs text-gray-500">
+        <p className="mb-2 sm:mb-3 truncate text-[11px] sm:text-xs text-muted-foreground">
           {description}
         </p>
 
         <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
           {restaurant.time && (
-            <span className="rounded-md bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium text-gray-800">
+            <span className="rounded-md bg-muted px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium text-foreground">
               {restaurant.time}
             </span>
           )}
           {deliveryFeeLabel && (
             <span
-              className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 sm:px-2 sm:py-1 sm:text-xs"
+              className="inline-flex items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 sm:px-2 sm:py-1 sm:text-xs"
               aria-label={`Frete ${deliveryFeeLabel}`}
               title={`Frete ${deliveryFeeLabel}`}
             >
-              <span className="relative inline-flex h-3.5 w-4 shrink-0 items-center text-emerald-600 sm:h-4 sm:w-4">
+              <span className="relative inline-flex h-3.5 w-4 shrink-0 items-center text-emerald-600 dark:text-emerald-400 sm:h-4 sm:w-4">
                 <Bike className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <Zap className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 fill-current text-orange-500" />
               </span>
@@ -185,7 +185,7 @@ export function Restaurant({ restaurant, index }: Props) {
             </span>
           )}
           {distance && (
-            <span className="rounded-md bg-orange-50 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium text-orange-600">
+            <span className="rounded-md bg-orange-50 dark:bg-orange-950/40 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[11px] sm:text-xs font-medium text-orange-600 dark:text-orange-400">
               {distance}
             </span>
           )}

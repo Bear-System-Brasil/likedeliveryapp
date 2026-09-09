@@ -42,7 +42,7 @@ export interface CartItem {
   imageUrl?: string;
   restaurantId: string;
   restaurantName: string;
-  customizations?: Record<string, any>;
+  customizations?: Record<string, unknown>;
   variationLabel?: string;
   addOnLabels?: string[];
   variations?: { productVariationId: string }[];
@@ -58,6 +58,33 @@ export interface Restaurant {
   deliveryFee?: number;
 }
 
+/**
+ * Cupons de demonstração (sem validação de backend) - existem só pra dar
+ * feedback de UI. `appliedPromo` fica no store (não em estado local da
+ * página /cart) pra sobreviver à navegação até o checkout, que precisa
+ * cobrar o mesmo total mostrado no carrinho.
+ */
+export const VALID_PROMO_CODES = ["PRIMEIRA20", "FRETE10"] as const;
+export type PromoCode = (typeof VALID_PROMO_CODES)[number];
+
+export function isValidPromoCode(code: string): code is PromoCode {
+  return (VALID_PROMO_CODES as readonly string[]).includes(code);
+}
+
+export function getPromoDiscount(
+  promo: string | null,
+  subtotal: number,
+): number {
+  return promo === "PRIMEIRA20" ? subtotal * 0.2 : 0;
+}
+
+export function getDeliveryDiscount(
+  promo: string | null,
+  deliveryFee: number,
+): number {
+  return promo === "FRETE10" ? Math.min(deliveryFee, 10) : 0;
+}
+
 interface CartState {
   items: CartItem[];
   restaurant: Restaurant | null;
@@ -65,9 +92,11 @@ interface CartState {
   orderId: string | null; // ID do pedido no backend (carrinho Redis)
   isLoading: boolean;
   lastSynced: number | null;
+  appliedPromo: string | null;
 
   // Computed - agora como funções
   getTotalItems: () => number;
+  /** @deprecated use `getSubtotal` - mantido só pra não quebrar callers existentes. */
   getTotalPrice: () => number;
 
   // Actions - APENAS para atualizar estado local
@@ -75,6 +104,7 @@ interface CartState {
   setRestaurant: (restaurant: Restaurant | null) => void;
   setOrderId: (orderId: string | null) => void;
   setLoading: (loading: boolean) => void;
+  setAppliedPromo: (promo: string | null) => void;
   clearCart: () => void;
   toggleCart: () => void;
   openCart: () => void;
@@ -94,17 +124,13 @@ export const useCartStore = create<CartState>()(
         orderId: null,
         isLoading: false,
         lastSynced: null,
+        appliedPromo: null,
 
         getTotalItems: () => {
           return get().items.reduce((total, item) => total + item.quantity, 0);
         },
 
-        getTotalPrice: () => {
-          return get().items.reduce(
-            (total, item) => total + item.price * item.quantity,
-            0,
-          );
-        },
+        getTotalPrice: () => get().getSubtotal(),
 
         getSubtotal: () => {
           return get().items.reduce(
@@ -127,12 +153,21 @@ export const useCartStore = create<CartState>()(
 
         setLoading: (isLoading) => set({ isLoading }, false, "cart/setLoading"),
 
+        setAppliedPromo: (appliedPromo) =>
+          set({ appliedPromo }, false, "cart/setAppliedPromo"),
+
         markSynced: () =>
           set({ lastSynced: Date.now() }, false, "cart/markSynced"),
 
         clearCart: () =>
           set(
-            { items: [], orderId: null, restaurant: null, lastSynced: null },
+            {
+              items: [],
+              orderId: null,
+              restaurant: null,
+              lastSynced: null,
+              appliedPromo: null,
+            },
             false,
             "cart/clearCart",
           ),

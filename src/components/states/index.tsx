@@ -29,9 +29,9 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      {icon && <div className="text-gray-400 mb-4">{icon}</div>}
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-600 mb-6 max-w-md">{description}</p>
+      {icon && <div className="text-muted-foreground mb-4">{icon}</div>}
+      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+      <p className="text-muted-foreground mb-6 max-w-md">{description}</p>
       {action}
     </div>
   );
@@ -46,16 +46,16 @@ export function ErrorState({
   retry,
 }: ErrorStateProps) {
   return (
-    <div className="my-4 p-4 border border-red-200 bg-red-50 rounded-lg">
+    <div className="my-4 p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 rounded-lg">
       <div className="flex items-start">
-        <XCircle className="h-5 w-5 text-red-500 mt-0.5" />
+        <XCircle className="h-5 w-5 text-red-500 dark:text-red-400 mt-0.5" />
         <div className="ml-3">
-          <h4 className="font-medium text-red-800">{title}</h4>
-          <p className="mt-1 text-red-700">{message}</p>
+          <h4 className="font-medium text-red-800 dark:text-red-300">{title}</h4>
+          <p className="mt-1 text-red-700 dark:text-red-400">{message}</p>
           {retry && (
             <button
               onClick={retry}
-              className="mt-2 text-sm text-red-600 underline hover:no-underline cursor-pointer"
+              className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:no-underline cursor-pointer"
             >
               Tentar novamente
             </button>
@@ -71,10 +71,10 @@ export function ErrorState({
  */
 export function SuccessState({ message }: { message: string }) {
   return (
-    <div className="my-4 p-4 border border-green-200 bg-green-50 rounded-lg">
+    <div className="my-4 p-4 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 rounded-lg">
       <div className="flex items-center">
-        <CheckCircle2 className="h-5 w-5 text-green-600" />
-        <p className="ml-3 text-green-800">{message}</p>
+        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+        <p className="ml-3 text-green-800 dark:text-green-300">{message}</p>
       </div>
     </div>
   );
@@ -85,10 +85,10 @@ export function SuccessState({ message }: { message: string }) {
  */
 export function InfoState({ message }: { message: string }) {
   return (
-    <div className="my-4 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+    <div className="my-4 p-4 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 rounded-lg">
       <div className="flex items-center">
-        <Info className="h-5 w-5 text-blue-600" />
-        <p className="ml-3 text-blue-800">{message}</p>
+        <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <p className="ml-3 text-blue-800 dark:text-blue-300">{message}</p>
       </div>
     </div>
   );
@@ -110,13 +110,13 @@ export function LoadingState({ text = "Carregando..." }: LoadingStateProps) {
         <div className="relative flex flex-col items-center space-y-4">
           {/* Spinner with gradient border effect */}
           <div className="relative">
-            <div className="w-16 h-16 rounded-full border-4 border-gray-200"></div>
+            <div className="w-16 h-16 rounded-full border-4 border-border"></div>
             <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-orange-500 border-r-orange-500 animate-spin"></div>
           </div>
 
           {/* Loading text */}
           <div className="flex flex-col items-center space-y-1">
-            <span className="text-gray-900 font-medium text-base sm:text-lg">
+            <span className="text-foreground font-medium text-base sm:text-lg">
               {text}
             </span>
             <div className="flex space-x-1">

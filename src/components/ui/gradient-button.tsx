@@ -43,10 +43,10 @@ const variantClasses = {
     "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl",
 
   secondary:
-    "bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 hover:border-orange-300",
+    "bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800 hover:border-orange-300 dark:hover:border-orange-700",
 
   outline:
-    "border border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400",
+    "border border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/40 hover:border-orange-400",
 };
 /**
  * GradientButton - A themed button with gradient background

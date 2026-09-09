@@ -50,26 +50,26 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="text-red-500 mb-4">
+        <div className="min-h-screen bg-muted flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-card rounded-xl shadow-lg p-6 text-center">
+            <div className="text-red-500 dark:text-red-400 mb-4">
               <AlertCircle className="h-16 w-16 mx-auto" />
             </div>
 
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-xl font-semibold text-foreground mb-2">
               Oops! Algo deu errado
             </h2>
 
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               Ocorreu um erro inesperado. Por favor, tente novamente ou recarregue a página.
             </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mb-4 text-left">
-                <summary className="cursor-pointer text-sm text-gray-500 mb-2">
+                <summary className="cursor-pointer text-sm text-muted-foreground mb-2">
                   Detalhes do erro (apenas em desenvolvimento)
                 </summary>
-                <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">
+                <pre className="text-xs bg-muted p-2 rounded overflow-auto">
                   {this.state.error.message}
                   {this.state.error.stack}
                 </pre>

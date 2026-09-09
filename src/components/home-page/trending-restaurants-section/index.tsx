@@ -77,9 +77,9 @@ function CompactEmptyState({
   title: string;
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white px-4 py-5 text-center shadow-sm">
-      <p className="text-sm font-semibold text-gray-900">{title}</p>
-      <p className="mt-1 text-xs text-gray-500 sm:text-sm">{message}</p>
+    <div className="rounded-lg border border-border bg-card px-4 py-5 text-center shadow-sm">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{message}</p>
     </div>
   );
 }
@@ -100,10 +100,10 @@ function RestaurantListBlock({
     <section id={id} className="scroll-mt-28">
       <div className="flex items-start justify-between gap-3 mb-2 sm:mb-3">
         <div>
-          <h2 className="text-sm sm:text-base font-bold text-gray-950">
+          <h2 className="text-sm sm:text-base font-bold text-foreground">
             {title}
           </h2>
-          <p className="mt-0.5 text-[11px] sm:text-sm text-gray-500">
+          <p className="mt-0.5 text-[11px] sm:text-sm text-muted-foreground">
             {subtitle}
           </p>
         </div>
@@ -153,7 +153,7 @@ function StoreCategoriesFilter({
   return (
     <div className="mb-3 sm:mb-4">
       <div className="mb-1.5 sm:mb-2 flex items-center justify-between gap-3 sm:gap-4">
-        <h3 className="text-sm sm:text-base font-bold text-gray-700">
+        <h3 className="text-sm sm:text-base font-bold text-foreground">
           Categorias
         </h3>
       </div>
@@ -163,7 +163,7 @@ function StoreCategoriesFilter({
           type="button"
           aria-label="Rolar categorias para a esquerda"
           onClick={() => scrollCategories("left")}
-          className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/80 shadow-md border border-gray-200 items-center justify-center hover:bg-white transition-colors"
+          className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-card/80 shadow-md border border-border items-center justify-center hover:bg-card transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -183,7 +183,7 @@ function StoreCategoriesFilter({
                 "shrink-0 flex h-8 sm:h-9 items-center gap-1.5 sm:gap-2 rounded-full border px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap shadow-sm transition-all",
                 selectedValue === category.id
                   ? "bg-orange-500 text-white border-orange-500"
-                  : "bg-white border-gray-200 text-gray-800 hover:border-orange-200 hover:bg-orange-50",
+                  : "bg-card border-border text-foreground hover:border-orange-200 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-950/40",
               )}
             >
               {category.icon && (
@@ -199,7 +199,7 @@ function StoreCategoriesFilter({
         <button
           type="button"
           onClick={() => scrollCategories("right")}
-          className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/80 shadow-md border border-gray-200 items-center justify-center hover:bg-white transition-colors"
+          className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-card/80 shadow-md border border-border items-center justify-center hover:bg-card transition-colors"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -325,10 +325,10 @@ export function TrendingRestaurantsSection({
         {/* 3. Título Lojas (agora no lugar certo, acima da lista) */}
         <div id="lojas" className="scroll-mt-28">
           <div className="mb-2 sm:mb-3">
-            <h2 className="text-sm sm:text-base font-bold text-gray-950">
+            <h2 className="text-sm sm:text-base font-bold text-foreground">
               Lojas
             </h2>
-            <p className="mt-0.5 text-[11px] sm:text-sm text-gray-500">
+            <p className="mt-0.5 text-[11px] sm:text-sm text-muted-foreground">
               Tudo perto de você
             </p>
           </div>

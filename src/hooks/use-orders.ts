@@ -1,4 +1,5 @@
-import { apiService, type Order } from '@/services/api'
+import { apiService, type CreateOrderRequest } from '@/services/api'
+import type { CustomerOrder } from '@/constants/order-management'
 import { isActiveOrder } from '@/lib/order-status'
 import { useAuthStore } from '@/stores'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -9,18 +10,18 @@ import { toast } from 'sonner'
  * envelope (`{ data: [] }` / `{ orders: [] }`) ou corpo vazio quando o cliente
  * ainda não tem pedidos. Nenhum desses casos é erro.
  */
-function toOrderList(payload: unknown): Order[] {
-  if (Array.isArray(payload)) return payload as Order[]
+function toOrderList(payload: unknown): CustomerOrder[] {
+  if (Array.isArray(payload)) return payload as CustomerOrder[]
 
   if (payload && typeof payload === 'object') {
     const record = payload as Record<string, unknown>
     const wrapped = record.data ?? record.orders
 
-    if (Array.isArray(wrapped)) return wrapped as Order[]
+    if (Array.isArray(wrapped)) return wrapped as CustomerOrder[]
 
     // Um único pedido devolvido fora de array.
     if (typeof record.id === 'string' && typeof record.status === 'string') {
-      return [payload as Order]
+      return [payload as CustomerOrder]
     }
   }
 
@@ -129,7 +130,7 @@ export const useCreateOrder = () => {
   const { user } = useAuthStore()
 
   return useMutation({
-    mutationFn: async (orderData: any) => {
+    mutationFn: async (orderData: CreateOrderRequest) => {
       if (!user?.id) throw new Error('User not authenticated')
 
       // Usando openCart do apiService

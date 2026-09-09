@@ -1,10 +1,10 @@
 'use client'
 
 import { ConfirmProvider } from '@/contexts/confirm-provider'
+import { Toaster } from '@/components/ui/sonner'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useState } from 'react'
-import { Toaster } from 'sonner'
 
 interface ProvidersProps {
   children: React.ReactNode
@@ -22,9 +22,13 @@ export function Providers({ children }: ProvidersProps) {
             refetchOnWindowFocus: false, // Evita refetch desnecessário ao focar janela
             refetchOnMount: false, // Usa cache se disponível ao montar
             refetchOnReconnect: 'always', // Refetch ao reconectar internet
-            retry: (failureCount, error: any) => {
+            retry: (failureCount, error) => {
               // Don't retry on 4xx errors (client errors)
-              if (error?.status >= 400 && error?.status < 500) {
+              const status =
+                error && typeof error === 'object' && 'status' in error
+                  ? (error as { status?: number }).status
+                  : undefined
+              if (status !== undefined && status >= 400 && status < 500) {
                 return false
               }
               // Maximum 3 attempts

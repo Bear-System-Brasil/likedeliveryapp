@@ -32,6 +32,8 @@ import {
 import { useCartActions, useOrderHistory, useRestaurants } from "@/hooks";
 import { useAuthStore } from "@/stores/auth-store";
 import { apiService } from "@/services/api";
+import type { CustomerOrder } from "@/constants/order-management";
+import { getErrorMessage } from "@/utils";
 import {
   ORDER_STEPS,
   getOrderStatusBadgeClass,
@@ -47,7 +49,7 @@ import { ptBR } from "date-fns/locale";
 
 type RestaurantBrand = { name: string; logo?: string };
 
-function getCompanyId(order: any) {
+function getCompanyId(order: CustomerOrder) {
   return order.companyId || order.company?.id || null;
 }
 
@@ -56,18 +58,14 @@ function getCompanyId(order: any) {
  * cache e completa nome e logo pelo companyId.
  */
 function getRestaurantBrand(
-  order: any,
+  order: CustomerOrder,
   brandsByCompanyId: Map<string, RestaurantBrand>,
 ): RestaurantBrand {
   const companyId = getCompanyId(order);
   const fromCatalog = companyId ? brandsByCompanyId.get(companyId) : undefined;
 
   return {
-    name:
-      order.company?.tradeName ||
-      order.company?.name ||
-      fromCatalog?.name ||
-      "Restaurante",
+    name: order.company?.tradeName || fromCatalog?.name || "Restaurante",
     logo: order.company?.logo_url || fromCatalog?.logo,
   };
 }
@@ -76,7 +74,13 @@ function getRestaurantBrand(
  * Tag de status. Fica sempre na mesma linha do nome da loja, encostada a
  * direita - `shrink-0` impede que ela estique quando o card empilha.
  */
-function OrderStatusBadge({ order, pulse }: { order: any; pulse?: boolean }) {
+function OrderStatusBadge({
+  order,
+  pulse,
+}: {
+  order: CustomerOrder;
+  pulse?: boolean;
+}) {
   return (
     <span
       className={`ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold sm:text-xs ${getOrderStatusBadgeClass(order)}`}
@@ -92,7 +96,7 @@ function OrderStatusBadge({ order, pulse }: { order: any; pulse?: boolean }) {
 /** Logo da loja com fallback para o icone generico. */
 function RestaurantLogo({
   brand,
-  fallbackTone = "bg-orange-50 text-orange-500",
+  fallbackTone = "bg-orange-50 dark:bg-orange-950/40 text-orange-500",
 }: {
   brand: RestaurantBrand;
   fallbackTone?: string;
@@ -113,30 +117,30 @@ function RestaurantLogo({
       alt={brand.name}
       width={40}
       height={40}
-      className="h-10 w-10 shrink-0 rounded-[10px] border border-[#e9eaee] bg-white object-cover"
+      className="h-10 w-10 shrink-0 rounded-[10px] border border-border bg-card object-cover"
     />
   );
 }
 
-function getOrderId(order: any) {
+function getOrderId(order: CustomerOrder) {
   return order.id;
 }
 
-function getOrderTotal(order: any) {
+function getOrderTotal(order: CustomerOrder) {
   return Number(order.totalValue ?? 0);
 }
 
-function getItemCount(order: any) {
+function getItemCount(order: CustomerOrder) {
   const items = order.orderedItems || [];
   const quantity = items.reduce(
-    (total: number, item: any) => total + Number(item.quantity || 0),
+    (total, item) => total + Number(item.quantity || 0),
     0,
   );
 
   return quantity > 0 ? quantity : null;
 }
 
-function getOrderDate(order: any) {
+function getOrderDate(order: CustomerOrder) {
   const value = order.created_at;
   if (!value) return "Data não disponível";
 
@@ -177,7 +181,7 @@ function OrderHistoryContent() {
     [restaurants],
   );
 
-  const handleRepeatOrder = async (order: any) => {
+  const handleRepeatOrder = async (order: CustomerOrder) => {
     const orderId = getOrderId(order);
     if (!orderId || !user?.id) {
       toast.error("Não foi possível carregar esse pedido");
@@ -191,7 +195,7 @@ function OrderHistoryContent() {
         orderId,
         user.id,
       );
-      const orderItems = (itemsResponse.data as any[]) || [];
+      const orderItems = itemsResponse.data || [];
       const companyId = getCompanyId(order);
       const restaurantName = getRestaurantBrand(
         order,
@@ -232,8 +236,8 @@ function OrderHistoryContent() {
 
       toast.success("Itens adicionados ao carrinho");
       router.push("/cart");
-    } catch (repeatError: any) {
-      toast.error(repeatError.message || "Não foi possível repetir o pedido");
+    } catch (repeatError) {
+      toast.error(getErrorMessage(repeatError, "Não foi possível repetir o pedido"));
     } finally {
       setRepeatingOrderId(null);
     }
@@ -245,14 +249,14 @@ function OrderHistoryContent() {
     return (
       <OrdersShell cartItems={totalItems}>
         <div className="mx-auto flex min-h-[65vh] max-w-md items-center justify-center px-4">
-          <Card className="w-full border-[#e9eaee] bg-white p-6 text-center shadow-sm">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-red-50 text-red-500">
+          <Card className="w-full border-border bg-card p-6 text-center shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400">
               <Package className="h-7 w-7" />
             </div>
-            <h1 className="mt-4 text-lg font-extrabold text-[#14161a]">
+            <h1 className="mt-4 text-lg font-extrabold text-foreground">
               Não foi possível carregar seus pedidos
             </h1>
-            <p className="mt-2 text-sm text-[#8a8f99]">{error}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
             <Button
               type="button"
               onClick={refreshHistory}
@@ -275,17 +279,17 @@ function OrderHistoryContent() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#e9eaee] bg-white text-[#3d4149] transition hover:border-gray-300"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground transition hover:border-border"
                 aria-label="Voltar"
                 title="Voltar"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
               <div className="min-w-0">
-                <h1 className="truncate text-[20px] font-extrabold tracking-[-0.02em] text-[#14161a] sm:text-[22px]">
+                <h1 className="truncate text-[20px] font-extrabold tracking-[-0.02em] text-foreground sm:text-[22px]">
                   Meus pedidos
                 </h1>
-                <p className="mt-0.5 text-xs font-medium text-[#8a8f99] sm:text-sm">
+                <p className="mt-0.5 text-xs font-medium text-muted-foreground sm:text-sm">
                   Acompanhe suas compras e repita seus favoritos.
                 </p>
               </div>
@@ -295,7 +299,7 @@ function OrderHistoryContent() {
               variant="outline"
               size="icon"
               onClick={refreshHistory}
-              className="h-8 w-8 shrink-0 rounded-lg border-[#e9eaee] bg-white"
+              className="h-8 w-8 shrink-0 rounded-lg border-border bg-card"
               aria-label="Atualizar pedidos"
               title="Atualizar pedidos"
             >
@@ -350,7 +354,7 @@ function OrdersShell({
   return (
     <AnimatedBackground
       showBlobs={false}
-      className="min-h-screen bg-[#f4f5f7] py-0"
+      className="min-h-screen bg-muted py-0"
     >
       <MainHeader
         cartItems={cartItems}
@@ -368,7 +372,7 @@ function ActiveOrderCard({
   brand,
   onTrack,
 }: {
-  order: any;
+  order: CustomerOrder;
   brand: RestaurantBrand;
   onTrack: () => void;
 }) {
@@ -377,17 +381,17 @@ function ActiveOrderCard({
   const eta = order.delivery?.estimatedTime;
 
   return (
-    <Card className="border-[#e9eaee] bg-white p-4 shadow-sm sm:p-5">
+    <Card className="border-border bg-card p-4 shadow-sm sm:p-5">
       <div className="flex items-start gap-3">
         <RestaurantLogo brand={brand} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="truncate text-sm font-extrabold text-[#14161a] sm:text-[15px]">
+            <h2 className="truncate text-sm font-extrabold text-foreground sm:text-[15px]">
               {brand.name}
             </h2>
             <OrderStatusBadge order={order} pulse />
           </div>
-          <p className="mt-1 text-xs font-medium text-[#8a8f99]">
+          <p className="mt-1 text-xs font-medium text-muted-foreground">
             Pedido #{String(getOrderId(order)).slice(0, 8)}
             {itemCount
               ? ` · ${itemCount} ${itemCount === 1 ? "item" : "itens"}`
@@ -412,13 +416,13 @@ function ActiveOrderCard({
               className="relative flex-1 flex-col items-center"
             >
               {index < ORDER_STEPS.length - 1 && (
-                <StepperSeparator className="absolute left-1/2 top-2.5 z-0 m-0 h-px w-full bg-[#e9eaee] data-[state=completed]:bg-success" />
+                <StepperSeparator className="absolute left-1/2 top-2.5 z-0 m-0 h-px w-full bg-muted data-[state=completed]:bg-success" />
               )}
 
               <StepperTrigger className="flex flex-col items-center gap-2">
-                <StepperIndicator className="relative z-10 size-5 border-2 border-[#d6d8dd] bg-white text-transparent data-[state=active]:border-success data-[state=active]:bg-success data-[state=active]:text-white data-[state=active]:ring-4 data-[state=active]:ring-success/10 data-[state=completed]:border-success data-[state=completed]:bg-success data-[state=completed]:text-white" />
+                <StepperIndicator className="relative z-10 size-5 border-2 border-border bg-card text-transparent data-[state=active]:border-success data-[state=active]:bg-success data-[state=active]:text-white data-[state=active]:ring-4 data-[state=active]:ring-success/10 data-[state=completed]:border-success data-[state=completed]:bg-success data-[state=completed]:text-white" />
 
-                <StepperTitle className="whitespace-nowrap text-[9px] font-semibold text-[#a2a6ae] sm:text-[10px] data-[state=active]:text-[#3d4149] data-[state=completed]:text-[#3d4149]">
+                <StepperTitle className="whitespace-nowrap text-[9px] font-semibold text-muted-foreground sm:text-[10px] data-[state=active]:text-foreground data-[state=completed]:text-foreground">
                   {label}
                 </StepperTitle>
               </StepperTrigger>
@@ -427,11 +431,11 @@ function ActiveOrderCard({
         </StepperNav>
       </Stepper>
 
-      <div className="mt-4 flex flex-col gap-3 border-t border-[#e9eaee] pt-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-3 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
         {/* So mostra o prazo quando existe de verdade - o texto generico
             repetia o botao ao lado. */}
         {eta ? (
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#8a8f99]">
+          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
             <Clock3 className="h-3.5 w-3.5" />
             {eta}
           </div>
@@ -439,7 +443,7 @@ function ActiveOrderCard({
           <span />
         )}
         <div className="flex items-center justify-between gap-3 sm:justify-end">
-          <span className="text-sm font-extrabold text-[#14161a]">
+          <span className="text-sm font-extrabold text-foreground">
             {formatCurrency(getOrderTotal(order))}
           </span>
           <Button
@@ -463,7 +467,7 @@ function CompletedOrderCard({
   onView,
   onRepeat,
 }: {
-  order: any;
+  order: CustomerOrder;
   brand: RestaurantBrand;
   isRepeating: boolean;
   onView: () => void;
@@ -475,10 +479,10 @@ function CompletedOrderCard({
   const isInert = isInertOrder(order);
   const itemCount = getItemCount(order);
   const fallbackTone = isCancelled
-    ? "bg-red-50 text-red-500"
+    ? "bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400"
     : isInert
-      ? "bg-gray-100 text-gray-500"
-      : "bg-green-50 text-green-600";
+      ? "bg-muted text-muted-foreground"
+      : "bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400";
 
   return (
     // O card inteiro abre o pedido - o botao "Ver pedido" saiu para compactar.
@@ -492,18 +496,18 @@ function CompletedOrderCard({
           onView();
         }
       }}
-      className="cursor-pointer border-[#e9eaee] bg-white p-3 shadow-sm transition-colors hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 sm:p-4"
+      className="cursor-pointer border-border bg-card p-3 shadow-sm transition-colors hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 sm:p-4"
     >
       <div className="flex items-start gap-3">
         <RestaurantLogo brand={brand} fallbackTone={fallbackTone} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="truncate text-sm font-extrabold text-[#14161a] sm:text-[15px]">
+            <h2 className="truncate text-sm font-extrabold text-foreground sm:text-[15px]">
               {brand.name}
             </h2>
             <OrderStatusBadge order={order} />
           </div>
-          <p className="mt-0.5 text-xs font-medium text-[#8a8f99]">
+          <p className="mt-0.5 text-xs font-medium text-muted-foreground">
             Pedido #{String(getOrderId(order)).slice(0, 8)} ·{" "}
             {getOrderDate(order)}
             {itemCount
@@ -511,7 +515,7 @@ function CompletedOrderCard({
               : ""}
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <span className="text-base font-extrabold text-[#14161a]">
+            <span className="text-base font-extrabold text-foreground">
               {formatCurrency(getOrderTotal(order))}
             </span>
             {!isCancelled && (
@@ -543,14 +547,14 @@ function CompletedOrderCard({
 function EmptyOrdersState({ onExplore }: { onExplore: () => void }) {
   return (
     <div className="flex min-h-[55vh] items-center justify-center">
-      <Card className="w-full max-w-md border-[#e9eaee] bg-white p-8 text-center shadow-sm">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
+      <Card className="w-full max-w-md border-border bg-card p-8 text-center shadow-sm">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-orange-500">
           <Package className="h-8 w-8" />
         </div>
-        <h2 className="mt-5 text-xl font-extrabold text-[#14161a]">
+        <h2 className="mt-5 text-xl font-extrabold text-foreground">
           Você ainda não fez pedidos
         </h2>
-        <p className="mt-2 text-sm text-[#8a8f99]">
+        <p className="mt-2 text-sm text-muted-foreground">
           Explore os restaurantes e encontre algo gostoso para pedir.
         </p>
         <Button
@@ -567,12 +571,12 @@ function EmptyOrdersState({ onExplore }: { onExplore: () => void }) {
 
 function OrdersPageSkeleton() {
   return (
-    <div className="min-h-screen bg-[#f4f5f7] pt-24">
+    <div className="min-h-screen bg-muted pt-24">
       <div className="mx-auto max-w-[1160px] space-y-4 px-3 sm:px-5">
-        <div className="h-8 w-64 animate-pulse rounded bg-gray-200" />
-        <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
+        <div className="h-8 w-64 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-full animate-pulse rounded bg-muted" />
         {["a", "b"].map((item) => (
-          <div key={item} className="h-52 animate-pulse rounded-lg bg-white" />
+          <div key={item} className="h-52 animate-pulse rounded-lg bg-card" />
         ))}
       </div>
     </div>

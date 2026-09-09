@@ -105,9 +105,9 @@ export function UserPhotoUpload({
     return (
       <div className="space-y-4">
         <div className="relative w-40 h-40 mx-auto">
-          <div className="w-full h-full bg-linear-to-br from-orange-50 to-orange-100 rounded-full flex flex-col items-center justify-center border-2 border-dashed border-orange-300">
+          <div className="w-full h-full bg-linear-to-br from-orange-50 to-orange-100 rounded-full flex flex-col items-center justify-center border-2 border-dashed border-orange-300 dark:border-orange-700">
             <Upload className="w-10 h-10 text-orange-400 mb-2" />
-            <span className="text-sm text-orange-600 font-medium">
+            <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">
               Carregando...
             </span>
           </div>
@@ -143,11 +143,11 @@ export function UserPhotoUpload({
         ) : preview ? (
           <div
             onClick={() => !uploading && fileInputRef.current?.click()}
-            className="relative w-full h-full rounded-full bg-white border-4 border-orange-200 hover:border-orange-400 transition-all overflow-hidden cursor-pointer group"
+            className="relative w-full h-full rounded-full bg-card border-4 border-orange-200 dark:border-orange-800 hover:border-orange-400 transition-all overflow-hidden cursor-pointer group"
           >
             {/* Image Container */}
             <div
-              className="w-full h-full flex items-center justify-center bg-white"
+              className="w-full h-full flex items-center justify-center bg-card"
               style={{ position: "relative", zIndex: 1 }}
             >
               <img
@@ -173,7 +173,7 @@ export function UserPhotoUpload({
                     const errorDiv = document.createElement("div");
                     errorDiv.className = "error-message text-center p-4";
                     errorDiv.innerHTML = `
-                      <div class="text-red-500 mb-2">
+                      <div class="text-red-500 dark:text-red-400 mb-2">
                         <p class="text-sm font-medium">Erro ao carregar imagem</p>
                       </div>
                     `;
@@ -208,17 +208,17 @@ export function UserPhotoUpload({
         ) : (
           <div
             onClick={() => !uploading && fileInputRef.current?.click()}
-            className="w-full h-full bg-linear-to-br from-orange-50 to-orange-100 rounded-full flex flex-col items-center justify-center border-2 border-dashed border-orange-300 hover:border-orange-500 hover:from-orange-100 hover:to-orange-200 transition-all cursor-pointer"
+            className="w-full h-full bg-linear-to-br from-orange-50 to-orange-100 rounded-full flex flex-col items-center justify-center border-2 border-dashed border-orange-300 dark:border-orange-700 hover:border-orange-500 hover:from-orange-100 hover:to-orange-200 transition-all cursor-pointer"
           >
             <Upload className="w-10 h-10 text-orange-400 transition-colors mb-2" />
-            <span className="text-sm text-orange-600 font-medium">
+            <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">
               {uploading ? "Enviando..." : "Adicionar Foto"}
             </span>
           </div>
         )}
       </div>
 
-      <p className="text-xs text-center text-gray-500">
+      <p className="text-xs text-center text-muted-foreground">
         Clique para fazer upload • Até {maxSizeMB}MB (JPG, PNG, GIF)
       </p>
     </div>

@@ -59,7 +59,7 @@ export function CancelKitchenOrderDialog({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl text-red-600">
+          <DialogTitle className="flex items-center gap-2 text-xl text-red-600 dark:text-red-400">
             <AlertTriangle className="h-5 w-5" />
             Cancelar pedido #{order ? getOrderLabel(order) : "---"}
           </DialogTitle>

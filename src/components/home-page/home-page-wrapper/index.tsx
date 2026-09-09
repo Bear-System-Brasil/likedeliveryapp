@@ -40,8 +40,8 @@ export function LikeDeliveryAppPage({
     if (!searchQuery) return restaurants;
 
     const lowerQuery = searchQuery.toLowerCase();
-    return restaurants.filter((restaurant: any) => {
-      const name = restaurant.tradeName || restaurant.name || "";
+    return restaurants.filter((restaurant) => {
+      const name = restaurant.tradeName || "";
       return name.toLowerCase().includes(lowerQuery);
     });
   }, [restaurants, searchQuery]);
@@ -83,33 +83,32 @@ export function LikeDeliveryAppPage({
   const trendingRestaurants = filteredRestaurants.slice(0, 4);
 
   return (
-    <AnimatedBackground
-      blobCount={4}
-      showBlobs={true}
-      className="min-h-screen flex flex-col py-0"
-    >
-      <MainHeader
-        cartItems={getTotalItems()}
-        onCartClick={handleCartClick}
-        showSearch={true}
-        showNav={false}
-      />
-
-      <main className="flex-1 flex flex-col pt-24">
-        {/* Oculta o banner se o usuário estiver buscando algo para dar foco aos resultados */}
-        {!searchQuery && <BannerCarousel />}
-
-        <TrendingRestaurantsSection
-          trendingRestaurants={trendingRestaurants}
-          visibleCount={visibleCount}
-          restaurants={filteredRestaurants}
-          loading={loading}
-          hasUserLocation={Boolean(location)}
+    <AnimatedBackground blobCount={4} showBlobs={true} className="py-0">
+      <div className="flex min-h-screen flex-col">
+        <MainHeader
+          cartItems={getTotalItems()}
+          onCartClick={handleCartClick}
+          showSearch={true}
+          showNav={false}
         />
 
+        <main className="flex-1 flex flex-col pt-24">
+          {/* Oculta o banner se o usuário estiver buscando algo para dar foco aos resultados */}
+          {!searchQuery && <BannerCarousel />}
+
+          <TrendingRestaurantsSection
+            trendingRestaurants={trendingRestaurants}
+            visibleCount={visibleCount}
+            restaurants={filteredRestaurants}
+            loading={loading}
+            hasUserLocation={Boolean(location)}
+          />
+
+          <CouponBanner />
+        </main>
+
         <Footer />
-        <CouponBanner />
-      </main>
+      </div>
     </AnimatedBackground>
   );
 }

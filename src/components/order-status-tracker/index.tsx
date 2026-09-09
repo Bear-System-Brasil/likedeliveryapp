@@ -117,13 +117,13 @@ export function OrderStatusTracker({ data }: Props) {
               className="relative flex-1 flex-col items-center"
             >
               {index < ORDER_STEPS.length - 1 && (
-                <StepperSeparator className="absolute left-1/2 top-2.5 z-0 m-0 h-px w-full bg-[#e9eaee] data-[state=completed]:bg-success" />
+                <StepperSeparator className="absolute left-1/2 top-2.5 z-0 m-0 h-px w-full bg-muted data-[state=completed]:bg-success" />
               )}
 
               <StepperTrigger className="flex flex-col items-center gap-2">
-                <StepperIndicator className="relative z-10 size-5 border-2 border-[#d6d8dd] bg-white text-transparent data-[state=active]:border-success data-[state=active]:bg-success data-[state=active]:text-white data-[state=active]:ring-4 data-[state=active]:ring-success/10 data-[state=completed]:border-success data-[state=completed]:bg-success data-[state=completed]:text-white" />
+                <StepperIndicator className="relative z-10 size-5 border-2 border-border bg-card text-transparent data-[state=active]:border-success data-[state=active]:bg-success data-[state=active]:text-white data-[state=active]:ring-4 data-[state=active]:ring-success/10 data-[state=completed]:border-success data-[state=completed]:bg-success data-[state=completed]:text-white" />
 
-                <StepperTitle className="whitespace-nowrap text-[9px] font-semibold text-[#a2a6ae] data-[state=active]:text-[#3d4149] data-[state=completed]:text-[#3d4149] sm:text-[10px]">
+                <StepperTitle className="whitespace-nowrap text-[9px] font-semibold text-muted-foreground data-[state=active]:text-foreground data-[state=completed]:text-foreground sm:text-[10px]">
                   {label}
                 </StepperTitle>
               </StepperTrigger>
@@ -132,13 +132,13 @@ export function OrderStatusTracker({ data }: Props) {
         </StepperNav>
       </Stepper>
 
-      <div className="mt-4 rounded-[10px] bg-[#fff7ed] px-[13px] py-[11px]">
-        <p className="text-[12.5px] font-bold text-[#7a4a16]">
+      <div className="mt-4 rounded-[10px] bg-orange-50 dark:bg-orange-950/40 px-[13px] py-[11px]">
+        <p className="text-[12.5px] font-bold text-amber-700 dark:text-amber-400">
           {data.getStatusMessage(order.status)}
         </p>
 
         {order.status !== "delivered" && (
-          <p className="mt-[5px] flex items-center gap-1.5 text-[11.5px] font-semibold text-[#b45309]">
+          <p className="mt-[5px] flex items-center gap-1.5 text-[11.5px] font-semibold text-amber-700 dark:text-amber-400">
             <span aria-hidden>⏱</span>
             Tempo estimado: {order.estimatedTime}
           </p>

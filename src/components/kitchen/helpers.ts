@@ -25,8 +25,8 @@ export interface ElapsedInfo {
 
 const TIER_CLASSES: Record<ElapsedTier, string> = {
   fresh: "bg-slate-100 text-slate-600",
-  warm: "bg-amber-100 text-amber-800",
-  late: "bg-orange-200 text-orange-900",
+  warm: "bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300",
+  late: "bg-orange-200 dark:bg-orange-800 text-orange-900 dark:text-orange-300",
   critical: "bg-red-600 text-white",
   old: "bg-slate-200 text-slate-500",
 };
@@ -97,13 +97,13 @@ export function getFulfillmentLabel(order: KitchenOrder): string {
 
 /** Tom informativo, sem semântica de erro — nem para retirada, nem para entrega. */
 export function getFulfillmentToneClass(order: KitchenOrder): string {
-  if (order.fulfillmentType === "PICKUP") return "bg-violet-100 text-violet-800";
+  if (order.fulfillmentType === "PICKUP") return "bg-violet-100 dark:bg-violet-900 text-violet-800 dark:text-violet-300";
 
   switch (order.delivery?.status) {
     case "PICKED_UP":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300";
     case "ACCEPTED":
-      return "bg-blue-100 text-blue-800";
+      return "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300";
     default:
       return "bg-slate-100 text-slate-600";
   }

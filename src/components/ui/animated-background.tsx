@@ -4,7 +4,7 @@ import * as React from "react";
 export interface AnimatedBackgroundProps {
   /**
    * Background color/gradient for the container
-   * @default "bg-gray-50"
+   * @default "bg-background"
    */
   background?: string;
 
@@ -77,7 +77,7 @@ const blobConfigs = [
  * </AnimatedBackground>
  *
  * // Custom background
- * <AnimatedBackground background="bg-white">
+ * <AnimatedBackground background="bg-card">
  *   <YourContent />
  * </AnimatedBackground>
  *
@@ -94,7 +94,7 @@ const blobConfigs = [
  */
 export const AnimatedBackground = React.memo<AnimatedBackgroundProps>(
   ({
-    background = "bg-gray-50",
+    background = "bg-background",
     showBlobs = true,
     blobCount = 4,
     className,
