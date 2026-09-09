@@ -40,6 +40,7 @@ export type ExtraGroup = {
   id: "variation" | "addon";
   title: string;
   multiple: boolean;
+  required?: boolean;
   options: ExtraOption[];
 };
 
@@ -129,6 +130,12 @@ export function CustomizeOrder({
         id: "variation",
         title: "Tamanho",
         multiple: false,
+        // O card do cardápio anuncia "a partir de" com o menor
+        // priceModifier - se o tamanho fosse opcional, dava pra pular a
+        // escolha e pagar só o salePrice, que é sempre menor que esse
+        // "a partir de" (priceModifier nunca é negativo). Obrigatório
+        // garante que o preço anunciado seja o que o cliente paga de fato.
+        required: true,
         options: availableVariations.map((v) => ({
           id: v.id,
           label: v.name,
@@ -194,6 +201,7 @@ export function CustomizeOrder({
 
   const handleConfirmAddToCart = async () => {
     if (!productData || !restaurant || isCustomizationLoading) return;
+    if (pendingRequiredGroup) return;
 
     setIsAddingToCart(true);
 
@@ -256,6 +264,10 @@ export function CustomizeOrder({
   const unitPrice = productData.salePrice + extrasTotal;
 
   const totalPrice = unitPrice * quantity;
+
+  const pendingRequiredGroup = extraGroups.find(
+    (group) => group.required && (selections[group.id]?.length ?? 0) === 0,
+  );
 
   return (
     <Dialog
@@ -427,7 +439,9 @@ export function CustomizeOrder({
 
           <Button
             onClick={handleConfirmAddToCart}
-            disabled={isAddingToCart || isCustomizationLoading}
+            disabled={
+              isAddingToCart || isCustomizationLoading || !!pendingRequiredGroup
+            }
             className="h-10 flex-1 rounded-[10px] bg-orange-500 text-[13.5px] font-extrabold text-white shadow-[0_4px_12px_rgba(255,107,0,.3)] hover:bg-orange-600 disabled:opacity-60"
           >
             {isCustomizationLoading ? (
@@ -440,6 +454,8 @@ export function CustomizeOrder({
                 <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
                 Adicionando...
               </span>
+            ) : pendingRequiredGroup ? (
+              <span>Selecione {pendingRequiredGroup.title.toLowerCase()}</span>
             ) : (
               <span className="flex items-center justify-center gap-2">
                 <span>Adicionar</span>

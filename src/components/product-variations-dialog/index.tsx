@@ -197,7 +197,7 @@ export function ProductVariationsDialog({
               </div>
               <div className="grid gap-1">
                 <Label className="text-[11px] font-bold text-foreground">
-                  Preço extra *
+                  Preço *
                 </Label>
                 <CurrencyCentsInput
                   value={form.totalPrice}
@@ -330,9 +330,7 @@ export function ProductVariationsDialog({
                     </p>
                   </div>
                   <span className="shrink-0 text-[12.5px] font-extrabold text-foreground">
-                    {variation.priceModifier > 0
-                      ? `+ ${formatCurrency(variation.priceModifier)}`
-                      : "Incluso"}
+                    {formatCurrency(roundToCents(salePrice + variation.priceModifier))}
                   </span>
                   <div className="flex shrink-0 gap-1">
                     <button

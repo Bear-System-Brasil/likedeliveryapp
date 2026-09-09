@@ -446,8 +446,13 @@ export default function RestaurantPage() {
                                 )}
                                 
                                 <div className="mt-auto flex items-center gap-2 pt-3">
+                                  {hasSellableVariation && (
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      A partir de
+                                    </span>
+                                  )}
                                   <span className="text-[15px] font-extrabold tracking-[-0.02em] text-foreground">
-                                    {formatCurrency(Number(item.salePrice || 0))}
+                                    {formatCurrency(displayPrice)}
                                   </span>
                                 </div>
                               </div>
