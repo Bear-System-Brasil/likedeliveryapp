@@ -25,6 +25,7 @@ import {
   useAllCategories,
   useCartActions,
   useCompanyProducts,
+  usePublicCompanyProductVariations,
   useRestaurant,
 } from "@/hooks";
 import { useAuth } from "@/contexts/auth-provider";
@@ -84,6 +85,8 @@ export default function RestaurantPage() {
     error: productsError,
   } = useCompanyProducts(companyId);
   const { data: allCategories } = useAllCategories();
+  const { data: companyVariations = [] } =
+    usePublicCompanyProductVariations(companyId);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isFavorite, setIsFavorite] = useState(false);
@@ -101,6 +104,28 @@ export default function RestaurantPage() {
       allCategories.map((category: Category) => [category.id, category.name]),
     );
   }, [allCategories]);
+
+  // Menor acréscimo entre os tamanhos que o cliente realmente consegue
+  // pedir - é o que vira o "A partir de" no card. A lista vem com as
+  // variações da empresa inteira (o backend ignora o filtro productId),
+  // então o agrupamento por prato é feito aqui.
+  const minVariationModifierByProduct = useMemo(() => {
+    const byProduct = new Map<string, number>();
+
+    companyVariations.forEach((variation) => {
+      // Sem estoque o tamanho não é vendável, então não pode ancorar o
+      // "a partir de" - `stockQuantity` ausente conta como zero.
+      if (!variation.isAvailable) return;
+      if ((variation.stockQuantity ?? 0) <= 0) return;
+
+      const current = byProduct.get(variation.productId);
+      if (current === undefined || variation.priceModifier < current) {
+        byProduct.set(variation.productId, variation.priceModifier);
+      }
+    });
+
+    return byProduct;
+  }, [companyVariations]);
 
   // 1. Em vez de filtrar, agrupamos os itens por categoria
   const groupedItems = useMemo(() => {
@@ -389,6 +414,17 @@ export default function RestaurantPage() {
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {items.map((item) => {
                           const isAvailable = item.isAvailable !== false;
+
+                          // priceModifier é delta sobre o salePrice, então
+                          // o menor total do prato é base + menor delta.
+                          const basePrice = Number(item.salePrice || 0);
+                          const minVariationModifier =
+                            minVariationModifierByProduct.get(item.id);
+                          const hasSellableVariation =
+                            minVariationModifier !== undefined;
+                          const displayPrice = hasSellableVariation
+                            ? basePrice + minVariationModifier
+                            : basePrice;
 
                           return (
                             <Card

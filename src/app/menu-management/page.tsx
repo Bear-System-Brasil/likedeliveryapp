@@ -951,6 +951,7 @@ function MenuManagementContent() {
       <ProductVariationsDialog
         productId={variationsTarget?.id ?? null}
         productName={variationsTarget?.name}
+        salePrice={variationsTarget?.price ?? 0}
         open={!!variationsTarget}
         onOpenChange={(open) => !open && setVariationsTarget(null)}
       />
