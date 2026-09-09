@@ -10,10 +10,18 @@ type Props = {
   onChange: (groupId: string, selectedIds: string[]) => void;
 };
 
-// Badge único de "OPCIONAL" - antes o grupo de tamanho (single-select)
-// usava um estilo (pílula maiúscula) e o de complementos (multi-select)
-// usava outro (texto simples minúsculo). Padronizado nos dois.
-function OptionalBadge() {
+// Badge único de "OPCIONAL"/"OBRIGATÓRIO" - antes o grupo de tamanho
+// (single-select) usava um estilo (pílula maiúscula) e o de complementos
+// (multi-select) usava outro (texto simples minúsculo). Padronizado nos dois.
+function RequirementBadge({ required }: { required?: boolean }) {
+  if (required) {
+    return (
+      <span className="rounded-md bg-orange-50 dark:bg-orange-950/40 px-[7px] py-[1px] text-[9.5px] font-extrabold tracking-wide text-orange-600 dark:text-orange-400">
+        OBRIGATÓRIO
+      </span>
+    );
+  }
+
   return (
     <span className="rounded-md bg-muted px-[7px] py-[1px] text-[9.5px] font-extrabold tracking-wide text-muted-foreground">
       OPCIONAL
@@ -23,8 +31,14 @@ function OptionalBadge() {
 
 export function SelectOptions({ group, selectedIds, onChange }: Props) {
   const handleSelectSingle = (id: string) => {
-    // Clicar na opção já selecionada desmarca - o grupo é opcional.
-    onChange(group.id, selectedIds[0] === id ? [] : [id]);
+    if (selectedIds[0] === id) {
+      // Em grupo obrigatório (ex: Tamanho) não pode ficar sem seleção -
+      // clicar de novo na opção já escolhida não faz nada.
+      if (group.required) return;
+      onChange(group.id, []);
+      return;
+    }
+    onChange(group.id, [id]);
   };
 
   const handleToggleMultiple = (id: string) => {
@@ -44,7 +58,7 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
           <span className="text-xs font-extrabold tracking-tight text-foreground">
             {group.title}
           </span>
-          <OptionalBadge />
+          <RequirementBadge required={group.required} />
         </div>
 
         <div className="mt-[7px] grid grid-cols-3 gap-1.5">
@@ -95,7 +109,7 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
         <span className="text-xs font-extrabold tracking-tight text-foreground">
           {group.title}
         </span>
-        <OptionalBadge />
+        <RequirementBadge required={group.required} />
       </div>
 
       <div className="mt-[7px] grid grid-cols-2 gap-1.5">
