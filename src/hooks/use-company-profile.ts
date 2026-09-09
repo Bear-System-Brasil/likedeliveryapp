@@ -1,6 +1,6 @@
 import { apiService } from "@/services/api";
 import { useAuthStore } from "@/stores";
-import { onlyNumbers } from "@/utils";
+import { getErrorMessage, onlyNumbers } from "@/utils";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -213,13 +213,13 @@ export const useCompanyProfile = () => {
         toast.error(response.message || "Erro ao atualizar perfil");
         return false;
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao atualizar perfil:", error);
 
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Erro ao atualizar perfil. Tente novamente.";
+      const errorMessage = getErrorMessage(
+        error,
+        "Erro ao atualizar perfil. Tente novamente.",
+      );
 
       toast.error(errorMessage);
       return false;

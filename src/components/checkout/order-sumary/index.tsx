@@ -13,6 +13,7 @@ type Props = {
   cartItems: CartItem[];
   subtotal: number;
   deliveryFee: number;
+  discount?: number;
   total: number;
   isProcessing: boolean;
   step: 1 | 2;
@@ -26,6 +27,7 @@ export function OrderSummary({
   cartItems,
   subtotal,
   deliveryFee,
+  discount = 0,
   total,
   isProcessing,
   step,
@@ -36,10 +38,10 @@ export function OrderSummary({
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E9EAEE] bg-white shadow-[0_-4px_18px_rgba(16,18,22,.07)]">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card shadow-[0_-4px_18px_rgba(16,18,22,.07)]">
       {detailsOpen && (
         <div className="mx-auto max-h-[44vh] max-w-[640px] overflow-y-auto px-4 pt-3 sm:px-5">
-          <div className="space-y-2 border-b border-[#F0F1F4] pb-3">
+          <div className="space-y-2 border-b border-border pb-3">
             {cartItems.map((item) => {
               const extrasParts = [
                 item.variationLabel,
@@ -48,18 +50,18 @@ export function OrderSummary({
 
               return (
                 <div key={item.id} className="flex items-center gap-2">
-                  <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-[#F4F5F7] px-1.5 text-xs font-extrabold text-gray-700">
+                  <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-muted px-1.5 text-xs font-extrabold text-foreground">
                     {item.quantity}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-800">
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
                     {item.name}
                     {extrasParts.length > 0 && (
-                      <span className="ml-1 truncate text-xs font-bold text-orange-600">
+                      <span className="ml-1 truncate text-xs font-bold text-orange-600 dark:text-orange-400">
                         {extrasParts.join(" · ")}
                       </span>
                     )}
                   </span>
-                  <span className="shrink-0 text-sm font-bold text-gray-950">
+                  <span className="shrink-0 text-sm font-bold text-foreground">
                     {formatCurrency(item.price * item.quantity)}
                   </span>
                 </div>
@@ -69,23 +71,32 @@ export function OrderSummary({
 
           <div className="space-y-1.5 py-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-semibold text-gray-500">
+              <span className="font-semibold text-muted-foreground">
                 Subtotal ({totalItems} {totalItems === 1 ? "item" : "itens"})
               </span>
-              <span className="font-bold text-gray-950">
+              <span className="font-bold text-foreground">
                 {formatCurrency(subtotal)}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-sm">
-              <span className="inline-flex items-center gap-1 font-semibold text-gray-500">
+              <span className="inline-flex items-center gap-1 font-semibold text-muted-foreground">
                 <Bike className="h-4 w-4 text-orange-500" />
                 Taxa de entrega
               </span>
-              <span className="font-extrabold text-emerald-700">
+              <span className="font-extrabold text-emerald-700 dark:text-emerald-400">
                 {deliveryFee === 0 ? "Gratis" : formatCurrency(deliveryFee)}
               </span>
             </div>
+
+            {discount > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-semibold text-muted-foreground">Desconto</span>
+                <span className="font-extrabold text-emerald-700 dark:text-emerald-400">
+                  -{formatCurrency(discount)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -93,17 +104,17 @@ export function OrderSummary({
       <div className="mx-auto flex max-w-[640px] flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
         <div className="min-w-0">
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-extrabold tracking-tight text-gray-950">
+            <span className="text-lg font-extrabold tracking-tight text-foreground">
               {formatCurrency(total)}
             </span>
-            <span className="text-xs font-semibold text-gray-400">
+            <span className="text-xs font-semibold text-muted-foreground">
               {totalItems} {totalItems === 1 ? "item" : "itens"}
             </span>
           </div>
           <button
             type="button"
             onClick={onToggleDetails}
-            className="inline-flex items-center gap-0.5 text-xs font-bold text-orange-600 hover:text-orange-700"
+            className="inline-flex items-center gap-0.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-400"
           >
             {detailsOpen ? "Ocultar detalhes" : "Ver detalhes"}
             {detailsOpen ? (

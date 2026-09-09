@@ -22,7 +22,7 @@ export function CouponBanner() {
                 </p>
                 <Button
                   size="lg"
-                  className="bg-white text-gray-900 hover:bg-gray-100 rounded-lg sm:rounded-xl font-semibold shadow-lg 
+                  className="bg-card text-foreground hover:bg-muted rounded-lg sm:rounded-xl font-semibold shadow-lg 
                               hover:cursor-pointer hover:shadow-xl transition-all transform hover:scale-105 text-sm sm:text-base px-4 sm:px-6 h-10 sm:h-12 cursor-pointer"
                 >
                   Cadastrar Agora

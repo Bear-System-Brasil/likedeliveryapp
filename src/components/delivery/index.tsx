@@ -20,7 +20,7 @@ export function Delivery({ restaurantId }: Props) {
   // Prevent rendering during SSR/SSG
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
           <Skeleton className="h-24 w-full rounded-xl" />
           <Skeleton className="h-64 w-full rounded-xl" />

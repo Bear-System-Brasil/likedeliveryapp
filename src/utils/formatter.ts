@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { formatCurrency as formatCurrencySafe } from "./format-currency";
 
 dayjs.extend(utc);
 
@@ -84,13 +85,13 @@ export const onlyNumbers = (value: string): string => {
  * Formata um valor monetário para exibição
  * @param value - Valor numérico
  * @returns String formatada como moeda brasileira (R$ 0,00)
+ *
+ * Reexporta `format-currency.ts` - havia duas implementações com o mesmo
+ * nome e comportamento diferente pra `undefined`/`NaN` (essa aqui produzia
+ * "R$ NaN"), e qual delas um componente pegava dependia só do caminho de
+ * import (`@/utils` vs `@/utils/format-currency`), não do dado em si.
  */
-export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-};
+export const formatCurrency = (value: number): string => formatCurrencySafe(value);
 
 /**
  * Formata uma data para exibição em português

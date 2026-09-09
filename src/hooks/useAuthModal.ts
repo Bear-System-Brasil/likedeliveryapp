@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { apiService } from "@/services/api";
 import { useAuthStore } from "@/stores";
+import { normalizeAuthUser } from "@/stores/auth-store";
+import type { RawAuthUser } from "@/services/api";
 
 interface UseAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAuthSuccess?: (userData?: any) => void;
+  onAuthSuccess?: (userData?: RawAuthUser) => void;
   defaultTab?: "login" | "register";
 }
 
@@ -16,9 +18,9 @@ export function useAuthModal({
   defaultTab = "login",
 }: UseAuthModalProps) {
   const { login: zustandLogin } = useAuthStore();
-  
-  const [activeTab, setActiveTab] = useState<"login" | "register">(defaultTab);
-  const [step, setStep] = useState<"form" | "otp" | "forgot-password" | "reset-password">("form");
+
+  const [activeTab, setActiveTabInternal] = useState<"login" | "register">(defaultTab);
+  const [step, setStepInternal] = useState<"form" | "otp" | "forgot-password" | "reset-password">("form");
   const [isLoading, setIsLoading] = useState(false);
 
   // Formulários
@@ -34,6 +36,21 @@ export function useAuthModal({
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [passwordMatch, setPasswordMatch] = useState(true);
   const [submitMessage, setSubmitMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Troca de aba/etapa nunca deve deixar o feedback (erro/sucesso) de uma
+  // tela vazar pra outra - ex: errar a senha no login e ver essa mensagem
+  // ainda visível ao abrir "Criar conta" ou "Esqueci minha senha".
+  const setActiveTab = (tab: "login" | "register") => {
+    setSubmitMessage(null);
+    setActiveTabInternal(tab);
+  };
+
+  const setStep = (
+    newStep: "form" | "otp" | "forgot-password" | "reset-password",
+  ) => {
+    setSubmitMessage(null);
+    setStepInternal(newStep);
+  };
 
   useEffect(() => {
     if (isOpen) setActiveTab(defaultTab);
@@ -131,35 +148,9 @@ export function useAuthModal({
 
         if (loginResponse.success && loginResponse.data?.data?.user) {
           const user = loginResponse.data.data.user;
-          const companyId: string | null = (user as any).companyId ?? null;
-          const userRole = (user as any).role || "client";
-          const isCompanyUser = ["owner", "admin", "manager", "cook", "delivery"].includes(userRole);
-
-          const userForStore = isCompanyUser
-            ? {
-                id: user.id,
-                name: (user as any).tradeName || (user as any).legalName || (user as any).name || "Empresa",
-                email: user.email,
-                cpf: (user as any).cnpj || (user as any).cpf || "",
-                phone: user.phone || "",
-                birthDate: (user as any).birthDate || "",
-                role: userRole as string,
-                companyId: companyId || undefined,
-                photoUrl: (user as any).photoUrl || (user as any).logo_url,
-                tradeName: (user as any).tradeName,
-                legalName: (user as any).legalName,
-              }
-            : {
-                id: user.id,
-                name: (user as any).name || "",
-                email: user.email,
-                cpf: (user as any).cpf || "",
-                phone: user.phone || "",
-                birthDate: (user as any).birthDate || "",
-                role: userRole,
-                companyId: companyId || undefined,
-                photoUrl: (user as any).photoUrl,
-              };
+          const companyId = user.companyId ?? null;
+          const userRole = user.role || "client";
+          const userForStore = normalizeAuthUser(user);
 
           const userWithRole = { ...user, role: userRole, companyId };
           zustandLogin(userForStore);

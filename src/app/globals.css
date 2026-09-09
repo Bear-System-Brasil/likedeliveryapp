@@ -63,9 +63,11 @@
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
+  /* Levemente mais claro que --background pra card/popover terem elevação
+     visível - antes eram idênticos e todo Card "sumia" contra a página. */
+  --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
+  --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
 
   --primary: oklch(0.985 0 0);

@@ -63,7 +63,7 @@ export function KitchenOrderCard({
         "rounded-2xl border bg-card shadow-sm transition-shadow",
         isNew
           ? "border-orange-400 ring-2 ring-orange-300 animate-pulse"
-          : "border-slate-200",
+          : "border-border",
         !hasActions && "opacity-80",
       )}
     >
@@ -85,13 +85,13 @@ export function KitchenOrderCard({
       </header>
 
       <div className="space-y-3 px-4 py-3">
-        <p className="truncate text-lg font-semibold text-slate-800">
+        <p className="truncate text-lg font-semibold text-foreground">
           {getCustomerName(order)}
         </p>
 
         <ul className="space-y-1.5">
           {items.map((item) => (
-            <li key={item.id} className="text-lg leading-snug text-slate-900">
+            <li key={item.id} className="text-lg leading-snug text-foreground">
               <span className="font-black">{item.quantity}×</span>{" "}
               <span className="font-semibold">{getItemName(item)}</span>
             </li>
@@ -110,7 +110,7 @@ export function KitchenOrderCard({
             "flex w-full cursor-pointer items-center justify-between rounded-xl border px-3 py-2 text-left text-base font-medium",
             hasExtras
               ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
-              : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100",
+              : "border-border bg-muted text-muted-foreground hover:bg-muted",
           )}
         >
           <span className="flex items-center gap-1.5">
@@ -142,7 +142,7 @@ export function KitchenOrderCard({
 
         <div className="flex flex-wrap items-center gap-2">
           {payment && (
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-600">
+            <span className="rounded-full bg-muted px-2.5 py-1 text-sm font-medium text-muted-foreground">
               {payment}
             </span>
           )}

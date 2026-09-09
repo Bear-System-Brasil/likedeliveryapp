@@ -1,4 +1,5 @@
 import { ErrorBoundary } from "@/components/error-boundary";
+import { ThemeProvider } from "@/components/theme-provider";
 import { BottomBar } from "@/components/ui/bottom-bar";
 import { AuthProvider } from "@/contexts/auth-provider";
 import { Providers } from "@/providers";
@@ -27,22 +28,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body
         className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
-        <ErrorBoundary>
-          <Providers>
-            <AuthProvider>
-              <NotificationsProvider>
-                <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
-                  <Suspense fallback={null}>{children}</Suspense>
-                </div>
-                <BottomBar />
-              </NotificationsProvider>
-            </AuthProvider>
-          </Providers>
-        </ErrorBoundary>
+        <ThemeProvider>
+          <ErrorBoundary>
+            <Providers>
+              <AuthProvider>
+                <NotificationsProvider>
+                  <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+                    <Suspense fallback={null}>{children}</Suspense>
+                  </div>
+                  <BottomBar />
+                </NotificationsProvider>
+              </AuthProvider>
+            </Providers>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  */
 export function RestaurantCardSkeleton() {
   return (
-    <Card className="flex overflow-hidden rounded-lg border border-gray-200 shadow-sm sm:block">
+    <Card className="flex overflow-hidden rounded-lg border border-border shadow-sm sm:block">
       <div className="relative h-[106px] w-[112px] shrink-0 sm:h-auto sm:w-full">
         {/* Image skeleton */}
         <Skeleton className="h-full w-full rounded-none sm:h-[104px]" />

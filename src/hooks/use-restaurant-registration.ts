@@ -84,7 +84,7 @@ export const useRestaurantRegistration = () => {
   /**
    * Processa mensagem de erro do backend
    */
-  const parseErrorMessage = (message: any): string => {
+  const parseErrorMessage = (message: unknown): string => {
     // Trata a mensagem de erro de forma robusta
     let errorMessage: string
 
@@ -96,7 +96,7 @@ export const useRestaurantRegistration = () => {
       errorMessage = typeof firstMsg === 'string' ? firstMsg : JSON.stringify(firstMsg)
     } else if (message && typeof message === 'object') {
       // Se for objeto, tenta converter para string legível
-      const msgObj = message as any
+      const msgObj = message as Record<string, unknown>
       if (typeof msgObj.message === 'string') {
         errorMessage = msgObj.message
       } else {

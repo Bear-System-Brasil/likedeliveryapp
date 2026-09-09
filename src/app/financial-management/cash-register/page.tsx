@@ -75,7 +75,7 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 };
 
 const fieldClass =
-  "h-9 w-full rounded-[9px] border border-[#E9EAEE] bg-[#FAFAFB] px-2.5 text-[12.5px] font-semibold text-[#14161A] outline-none";
+  "h-9 w-full rounded-[9px] border border-border bg-muted px-2.5 text-[12.5px] font-semibold text-foreground outline-none";
 
 const MOVEMENTS_PAGE_SIZE = 20;
 
@@ -87,10 +87,10 @@ const MOVEMENT_TYPE_LABELS: Record<CashMovementType, string> = {
 };
 
 const MOVEMENT_TYPE_BADGE: Record<CashMovementType, string> = {
-  [CashMovementType.SALE]: "bg-[#E9F7EF] text-[#1B7F4C]",
-  [CashMovementType.DEPOSIT]: "bg-[#EEF0FF] text-[#4A55D0]",
-  [CashMovementType.WITHDRAWAL]: "bg-[#FDEEEE] text-[#C0392B]",
-  [CashMovementType.REFUND]: "bg-[#FFF7ED] text-[#B45309]",
+  [CashMovementType.SALE]: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400",
+  [CashMovementType.DEPOSIT]: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400",
+  [CashMovementType.WITHDRAWAL]: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400",
+  [CashMovementType.REFUND]: "bg-orange-50 dark:bg-orange-950/40 text-amber-700 dark:text-amber-400",
 };
 
 /** Sangria e reembolso tiram dinheiro do caixa; venda e suprimento põem. */
@@ -127,7 +127,7 @@ const MOVEMENT_METHOD_FILTERS: { value: PaymentMethod | "ALL"; label: string }[]
 const MOVEMENTS_GRID = "76px 104px 1fr 116px 104px 116px";
 
 const movementHeaderClass =
-  "text-[10px] font-extrabold tracking-[0.05em] text-[#A2A7B0]";
+  "text-[10px] font-extrabold tracking-[0.05em] text-muted-foreground";
 
 function movementDate(movement: CashMovement) {
   return movement.createdAt ?? movement.created_at;
@@ -184,19 +184,19 @@ function StatCard({
   valueClassName?: string;
 }) {
   return (
-    <div className="rounded-[12px] border border-[#E9EAEE] bg-white px-[14px] py-[13px]">
-      <div className="whitespace-nowrap text-[11.5px] font-semibold text-[#8A8F99]">
+    <div className="rounded-[12px] border border-border bg-card px-[14px] py-[13px]">
+      <div className="whitespace-nowrap text-[11.5px] font-semibold text-muted-foreground">
         {label}
       </div>
       <div
         className={cn(
-          "mt-1.5 whitespace-nowrap text-[19px] font-extrabold text-[#14161A]",
+          "mt-1.5 whitespace-nowrap text-[19px] font-extrabold text-foreground",
           valueClassName,
         )}
       >
         {value}
       </div>
-      <div className="mt-0.5 whitespace-nowrap text-[11px] font-semibold text-[#A2A7B0]">
+      <div className="mt-0.5 whitespace-nowrap text-[11px] font-semibold text-muted-foreground">
         {sub}
       </div>
     </div>
@@ -211,7 +211,7 @@ function CompactButton({
     <Button
       {...props}
       className={cn(
-        "h-9 shrink-0 rounded-[9px] bg-[#F4F5F7] px-4 text-xs font-bold text-[#3D4149] transition-colors hover:bg-[#E9EAEE] disabled:cursor-not-allowed disabled:opacity-50",
+        "h-9 shrink-0 rounded-[9px] bg-muted px-4 text-xs font-bold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
     />
@@ -227,12 +227,12 @@ function ModalTitle({
 }) {
   return (
     <div className="mb-3.5 flex items-center justify-between">
-      <DialogTitle className="text-[16px] font-extrabold tracking-tight text-[#14161A]">
+      <DialogTitle className="text-[16px] font-extrabold tracking-tight text-foreground">
         {children}
       </DialogTitle>
       <Button
         onClick={onClose}
-        className="flex h-[26px] w-[26px] items-center justify-center rounded-lg bg-[#F4F5F7] text-xs text-[#3D4149]"
+        className="flex h-[26px] w-[26px] items-center justify-center rounded-lg bg-muted text-xs text-foreground"
       >
         ✕
       </Button>
@@ -242,7 +242,7 @@ function ModalTitle({
 
 function FieldLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="mb-[6px] text-[11.5px] font-bold text-[#3D4149]">
+    <div className="mb-[6px] text-[11.5px] font-bold text-foreground">
       {children}
     </div>
   );
@@ -488,7 +488,7 @@ export default function CashRegisterPage() {
       actions={
         <Button
           onClick={handleRefresh}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] border border-[#E9EAEE] bg-white px-3.5 text-xs font-bold text-[#FF6B00] transition-colors hover:bg-[#FFF7F0]"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] border border-border bg-card px-3.5 text-xs font-bold text-[#FF6B00] transition-colors hover:bg-orange-50 dark:hover:bg-orange-950/40"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Atualizar
@@ -496,7 +496,7 @@ export default function CashRegisterPage() {
       }
     >
       <div className="mx-auto max-w-7xl">
-        <p className="mb-3.5 text-[12.5px] font-medium text-[#8A8F99]">
+        <p className="mb-3.5 text-[12.5px] font-medium text-muted-foreground">
           Abertura, fechamento e movimentos financeiros
         </p>
 
@@ -505,9 +505,9 @@ export default function CashRegisterPage() {
         ) : isRegisterOpen && register ? (
           <>
             {/* Banner de caixa aberto */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[13px] bg-[#14161A] px-[18px] py-[14px]">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[13px] bg-zinc-900 px-[18px] py-[14px]">
               <div className="flex min-w-0 items-center gap-3.5">
-                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] bg-white/10 text-white">
+                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] bg-card/10 text-white">
                   <Banknote className="h-[19px] w-[19px]" />
                 </span>
                 <div className="min-w-0">
@@ -519,7 +519,7 @@ export default function CashRegisterPage() {
                       ABERTO
                     </span>
                   </div>
-                  <div className="mt-[3px] flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] font-semibold text-[#9BA1AC]">
+                  <div className="mt-[3px] flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] font-semibold text-muted-foreground">
                     <span className="whitespace-nowrap">
                       Operador: {user?.name || "—"}
                     </span>
@@ -535,13 +535,13 @@ export default function CashRegisterPage() {
               <div className="flex shrink-0 gap-[7px]">
                 <Button
                   onClick={() => openMovementDialog("deposit")}
-                  className="h-[34px] rounded-[9px] bg-white/[.12] px-3.5 text-xs font-bold text-white hover:bg-white/20"
+                  className="h-[34px] rounded-[9px] bg-card/[.12] px-3.5 text-xs font-bold text-white hover:bg-card/20"
                 >
                   + Entrada
                 </Button>
                 <Button
                   onClick={() => openMovementDialog("withdrawal")}
-                  className="h-[34px] rounded-[9px] bg-white/[.12] px-3.5 text-xs font-bold text-white hover:bg-white/20"
+                  className="h-[34px] rounded-[9px] bg-card/[.12] px-3.5 text-xs font-bold text-white hover:bg-card/20"
                 >
                   − Saída
                 </Button>
@@ -569,29 +569,29 @@ export default function CashRegisterPage() {
                         label="Entradas"
                         value={formatCurrency(summary?.totalDeposits ?? 0)}
                         sub="Suprimentos em dinheiro"
-                        valueClassName="text-[#1B7F4C]"
+                        valueClassName="text-emerald-700 dark:text-emerald-400"
                       />
                       <StatCard
                         label="Saídas"
                         value={formatCurrency(summary?.totalWithdrawals ?? 0)}
                         sub="Sangrias em dinheiro"
-                        valueClassName="text-[#C0392B]"
+                        valueClassName="text-red-600 dark:text-red-400"
                       />
                     </>
                   )}
                 </div>
 
                 {/* Formas de pagamento */}
-                <div className="rounded-[13px] border border-[#E9EAEE] bg-white px-4 py-3.5">
+                <div className="rounded-[13px] border border-border bg-card px-4 py-3.5">
                   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-3">
-                    <span className="text-[13px] font-extrabold text-[#14161A]">
+                    <span className="text-[13px] font-extrabold text-foreground">
                       Formas de pagamento
                     </span>
-                    <span className="whitespace-nowrap text-[11px] font-semibold text-[#A2A7B0]">
+                    <span className="whitespace-nowrap text-[11px] font-semibold text-muted-foreground">
                       Só dinheiro entra na gaveta
                     </span>
                   </div>
-                  <p className="mb-3 text-[11px] font-semibold text-[#A2A7B0]">
+                  <p className="mb-3 text-[11px] font-semibold text-muted-foreground">
                     Valores líquidos: vendas + suprimentos − sangrias −
                     reembolsos.
                   </p>
@@ -618,11 +618,11 @@ export default function CashRegisterPage() {
                         return (
                           <div key={m.label}>
                             <div className="flex items-center gap-2">
-                              <span className="min-w-[80px] flex-1 truncate text-[12.5px] font-bold text-[#14161A]">
+                              <span className="min-w-[80px] flex-1 truncate text-[12.5px] font-bold text-foreground">
                                 {m.label}
                               </span>
                               {m.gaveta && (
-                                <span className="shrink-0 rounded-[5px] bg-[#FFF1E7] px-[7px] py-px text-[9.5px] font-extrabold text-[#E05A00]">
+                                <span className="shrink-0 rounded-[5px] bg-orange-50 dark:bg-orange-950/40 px-[7px] py-px text-[9.5px] font-extrabold text-[#E05A00]">
                                   GAVETA
                                 </span>
                               )}
@@ -630,14 +630,14 @@ export default function CashRegisterPage() {
                                 className={cn(
                                   "w-[86px] shrink-0 text-right text-[12.5px] font-extrabold",
                                   isNegative
-                                    ? "text-[#C0392B]"
-                                    : "text-[#14161A]",
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-foreground",
                                 )}
                               >
                                 {formatSigned(m.value)}
                               </span>
                               <span
-                                className="w-[34px] shrink-0 text-right text-[11px] font-bold text-[#8A8F99]"
+                                className="w-[34px] shrink-0 text-right text-[11px] font-bold text-muted-foreground"
                                 title={
                                   isNegative
                                     ? "Método fechou negativo no turno - sem participação nas entradas"
@@ -647,7 +647,7 @@ export default function CashRegisterPage() {
                                 {isNegative ? "—" : `${Math.round(share)}%`}
                               </span>
                             </div>
-                            <div className="mt-[5px] h-[5px] overflow-hidden rounded-full bg-[#F0F1F4]">
+                            <div className="mt-[5px] h-[5px] overflow-hidden rounded-full bg-muted">
                               <div
                                 className="h-full rounded-full bg-[#FF6B00]"
                                 style={{ width: `${share}%` }}
@@ -661,8 +661,8 @@ export default function CashRegisterPage() {
                 </div>
 
                 {/* Ações rápidas */}
-                <div className="overflow-hidden rounded-[13px] border border-[#E9EAEE] bg-white">
-                  <div className="border-b border-[#E9EAEE] px-4 py-3 text-[13px] font-extrabold text-[#14161A]">
+                <div className="overflow-hidden rounded-[13px] border border-border bg-card">
+                  <div className="border-b border-border px-4 py-3 text-[13px] font-extrabold text-foreground">
                     Registrar movimento
                   </div>
                   <div className="grid grid-cols-2 gap-2 p-3.5 sm:grid-cols-4">
@@ -670,7 +670,7 @@ export default function CashRegisterPage() {
                       <Button
                         key={opt.value}
                         onClick={() => openMovementDialog(opt.value)}
-                        className="rounded-[10px] border border-[#E9EAEE] bg-white px-2 py-2.5 text-center text-[12px] font-bold text-[#3D4149] transition-colors hover:bg-[#F4F5F7]"
+                        className="rounded-[10px] border border-border bg-card px-2 py-2.5 text-center text-[12px] font-bold text-foreground transition-colors hover:bg-muted"
                       >
                         {opt.label}
                       </Button>
@@ -680,17 +680,17 @@ export default function CashRegisterPage() {
               </div>
 
               {/* Conferência de fechamento */}
-              <div className="min-w-0 rounded-[13px] border border-[#E9EAEE] bg-white p-[14px] lg:sticky lg:top-[26px]">
-                <div className="text-[13px] font-extrabold text-[#14161A]">
+              <div className="min-w-0 rounded-[13px] border border-border bg-card p-[14px] lg:sticky lg:top-[26px]">
+                <div className="text-[13px] font-extrabold text-foreground">
                   Conferência de fechamento
                 </div>
-                <p className="mt-[3px] text-[11px] font-semibold text-[#A2A7B0]">
+                <p className="mt-[3px] text-[11px] font-semibold text-muted-foreground">
                   Confira o dinheiro físico da gaveta
                 </p>
 
                 <div className="mt-3 flex flex-col gap-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#8A8F99]">
+                    <span className="font-semibold text-muted-foreground">
                       Fundo de troco
                     </span>
                     <span className="font-bold">
@@ -698,16 +698,16 @@ export default function CashRegisterPage() {
                     </span>
                   </div>
                   <div className="flex items-start justify-between gap-3 text-xs">
-                    <span className="font-semibold text-[#8A8F99]">
+                    <span className="font-semibold text-muted-foreground">
                       Movimento em dinheiro
-                      <span className="mt-px block text-[10.5px] font-semibold text-[#A2A7B0]">
+                      <span className="mt-px block text-[10.5px] font-semibold text-muted-foreground">
                         Líquido do turno
                       </span>
                     </span>
                     <span
                       className={cn(
                         "shrink-0 font-bold",
-                        netCash < 0 ? "text-[#C0392B]" : "text-[#1B7F4C]",
+                        netCash < 0 ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400",
                       )}
                     >
                       {formatSigned(netCash)}
@@ -715,7 +715,7 @@ export default function CashRegisterPage() {
                   </div>
                 </div>
 
-                <div className="my-3 h-px bg-[#E9EAEE]" />
+                <div className="my-3 h-px bg-muted" />
 
                 <div className="flex items-baseline justify-between">
                   <span className="text-xs font-extrabold">
@@ -730,82 +730,82 @@ export default function CashRegisterPage() {
                     operador enxergar o que compôs o turno. Não entram na
                     conta acima - somá-los de novo contaria a sangria duas
                     vezes, que era exatamente o bug da conferência. */}
-                <div className="mt-3 rounded-[9px] bg-[#F7F8FA] px-[11px] py-[9px]">
-                  <div className="text-[10.5px] font-extrabold uppercase tracking-[0.04em] text-[#A2A7B0]">
+                <div className="mt-3 rounded-[9px] bg-muted px-[11px] py-[9px]">
+                  <div className="text-[10.5px] font-extrabold uppercase tracking-[0.04em] text-muted-foreground">
                     Detalhamento do turno
                   </div>
-                  <div className="mt-px text-[10.5px] font-semibold text-[#A2A7B0]">
+                  <div className="mt-px text-[10.5px] font-semibold text-muted-foreground">
                     Brutos por tipo, já refletidos nos totais acima — não somar
                     de novo.
                   </div>
                   <div className="mt-1.5 flex flex-col gap-1">
                     <div className="flex items-center justify-between text-[11.5px]">
-                      <span className="font-semibold text-[#8A8F99]">
+                      <span className="font-semibold text-muted-foreground">
                         Vendas (todos os métodos)
                       </span>
-                      <span className="font-bold text-[#5B6472]">
+                      <span className="font-bold text-muted-foreground">
                         {formatCurrency(summary?.totalSales ?? 0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[11.5px]">
-                      <span className="font-semibold text-[#8A8F99]">
+                      <span className="font-semibold text-muted-foreground">
                         Suprimentos
                       </span>
-                      <span className="font-bold text-[#5B6472]">
+                      <span className="font-bold text-muted-foreground">
                         {formatCurrency(summary?.totalDeposits ?? 0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[11.5px]">
-                      <span className="font-semibold text-[#8A8F99]">
+                      <span className="font-semibold text-muted-foreground">
                         Sangrias
                       </span>
-                      <span className="font-bold text-[#5B6472]">
+                      <span className="font-bold text-muted-foreground">
                         {formatCurrency(summary?.totalWithdrawals ?? 0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[11.5px]">
-                      <span className="font-semibold text-[#8A8F99]">
+                      <span className="font-semibold text-muted-foreground">
                         Reembolsos
                       </span>
-                      <span className="font-bold text-[#5B6472]">
+                      <span className="font-bold text-muted-foreground">
                         {formatCurrency(summary?.totalRefunds ?? 0)}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mb-[6px] mt-3 text-[11px] font-bold text-[#3D4149]">
+                <div className="mb-[6px] mt-3 text-[11px] font-bold text-foreground">
                   Valor contado
                 </div>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-[11px] top-1/2 -translate-y-1/2 text-[11.5px] font-bold text-[#A0A6B0]">
+                  <span className="pointer-events-none absolute left-[11px] top-1/2 -translate-y-1/2 text-[11.5px] font-bold text-muted-foreground">
                     R$
                   </span>
                   <input
                     placeholder="0,00"
                     value={countedTotal}
                     onChange={(e) => setCountedTotal(e.target.value)}
-                    className="h-[38px] w-full rounded-[9px] border border-[#E9EAEE] bg-white pl-[34px] pr-3 text-[13px] font-bold text-[#14161A] outline-none"
+                    className="h-[38px] w-full rounded-[9px] border border-border bg-card pl-[34px] pr-3 text-[13px] font-bold text-foreground outline-none"
                   />
                 </div>
 
                 {!hasContado && (
-                  <div className="mt-[9px] rounded-[9px] bg-[#F7F8FA] px-[11px] py-[9px] text-[11.5px] font-semibold text-[#8A8F99]">
+                  <div className="mt-[9px] rounded-[9px] bg-muted px-[11px] py-[9px] text-[11.5px] font-semibold text-muted-foreground">
                     Informe o valor contado para calcular a diferença.
                   </div>
                 )}
                 {difOk && (
-                  <div className="mt-[9px] rounded-[9px] bg-[#E9F7EF] px-[11px] py-[9px] text-xs font-extrabold text-[#1B7F4C]">
+                  <div className="mt-[9px] rounded-[9px] bg-emerald-50 dark:bg-emerald-950/40 px-[11px] py-[9px] text-xs font-extrabold text-emerald-700 dark:text-emerald-400">
                     ✓ Caixa conferido, sem diferença
                   </div>
                 )}
                 {difSobra && (
-                  <div className="mt-[9px] rounded-[9px] bg-[#EEF0FF] px-[11px] py-[9px] text-xs font-extrabold text-[#4A55D0]">
+                  <div className="mt-[9px] rounded-[9px] bg-violet-50 dark:bg-violet-950/40 px-[11px] py-[9px] text-xs font-extrabold text-violet-700 dark:text-violet-400">
                     Sobra de {formatCurrency(Math.abs(difVal))}
                   </div>
                 )}
                 {difFalta && (
-                  <div className="mt-[9px] rounded-[9px] bg-[#FDEEEE] px-[11px] py-[9px] text-xs font-extrabold text-[#C0392B]">
+                  <div className="mt-[9px] rounded-[9px] bg-red-50 dark:bg-red-950/40 px-[11px] py-[9px] text-xs font-extrabold text-red-600 dark:text-red-400">
                     Falta de {formatCurrency(Math.abs(difVal))}
                   </div>
                 )}
@@ -814,7 +814,7 @@ export default function CashRegisterPage() {
                   placeholder="Observações (opcional)"
                   value={closeObs}
                   onChange={(e) => setCloseObs(e.target.value)}
-                  className={cn(fieldClass, "mt-2.5 bg-white")}
+                  className={cn(fieldClass, "mt-2.5 bg-card")}
                 />
 
                 {confirmBeforeCloseRegister && (
@@ -826,7 +826,7 @@ export default function CashRegisterPage() {
                       }
                       className="mt-0.5 h-4 w-4"
                     />
-                    <span className="text-[11.5px] font-semibold text-[#3D4149]">
+                    <span className="text-[11.5px] font-semibold text-foreground">
                       Confirmo que conferi o dinheiro físico da gaveta
                     </span>
                   </label>
@@ -838,7 +838,7 @@ export default function CashRegisterPage() {
                     closeMutation.isPending ||
                     (confirmBeforeCloseRegister && !closeConfirmed)
                   }
-                  className="mt-3 h-10 w-full rounded-[10px] bg-[#14161A] text-[13px] font-extrabold text-white transition-colors hover:bg-[#2A2D33] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-3 h-10 w-full rounded-[10px] bg-zinc-900 text-[13px] font-extrabold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {closeMutation.isPending ? "Fechando..." : "Fechar caixa"}
                 </Button>
@@ -848,26 +848,26 @@ export default function CashRegisterPage() {
             {/* Extrato de movimentos: os totais do resumo são líquidos e não
                 dizem QUAL lançamento gerou a diferença - aqui o operador
                 confere linha a linha. */}
-            <div className="mt-3 overflow-hidden rounded-[13px] border border-[#E9EAEE] bg-white">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E9EAEE] px-4 py-3">
+            <div className="mt-3 overflow-hidden rounded-[13px] border border-border bg-card">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="text-[13px] font-extrabold text-[#14161A]">
+                  <div className="text-[13px] font-extrabold text-foreground">
                     Extrato de movimentos
                   </div>
-                  <div className="mt-px text-[11px] font-semibold text-[#A2A7B0]">
+                  <div className="mt-px text-[11px] font-semibold text-muted-foreground">
                     Lançamentos deste caixa, para conferir uma diferença linha
                     a linha
                   </div>
                 </div>
-                <span className="shrink-0 rounded-[8px] border border-[#E9EAEE] bg-[#FAFAFB] px-2.5 py-1 text-[11px] font-bold text-[#3D4149]">
+                <span className="shrink-0 rounded-[8px] border border-border bg-muted px-2.5 py-1 text-[11px] font-bold text-foreground">
                   {movementsMeta?.total ?? 0} movimento
                   {(movementsMeta?.total ?? 0) !== 1 ? "s" : ""}
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-end gap-2 border-b border-[#E9EAEE] bg-[#FAFAFB] px-4 py-3">
+              <div className="flex flex-wrap items-end gap-2 border-b border-border bg-muted px-4 py-3">
                 <label className="min-w-[150px] flex-1 sm:max-w-[210px]">
-                  <span className="mb-[6px] block text-[11px] font-bold text-[#3D4149]">
+                  <span className="mb-[6px] block text-[11px] font-bold text-foreground">
                     Tipo
                   </span>
                   <select
@@ -877,7 +877,7 @@ export default function CashRegisterPage() {
                         e.target.value as CashMovementType | "ALL",
                       )
                     }
-                    className={cn(fieldClass, "bg-white")}
+                    className={cn(fieldClass, "bg-card")}
                   >
                     {MOVEMENT_TYPE_FILTERS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -888,7 +888,7 @@ export default function CashRegisterPage() {
                 </label>
 
                 <label className="min-w-[150px] flex-1 sm:max-w-[210px]">
-                  <span className="mb-[6px] block text-[11px] font-bold text-[#3D4149]">
+                  <span className="mb-[6px] block text-[11px] font-bold text-foreground">
                     Método
                   </span>
                   <select
@@ -898,7 +898,7 @@ export default function CashRegisterPage() {
                         e.target.value as PaymentMethod | "ALL",
                       )
                     }
-                    className={cn(fieldClass, "bg-white")}
+                    className={cn(fieldClass, "bg-card")}
                   >
                     {MOVEMENT_METHOD_FILTERS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -911,7 +911,7 @@ export default function CashRegisterPage() {
                 {hasMovementFilters && (
                   <CompactButton
                     onClick={clearMovementFilters}
-                    className="bg-white"
+                    className="bg-card"
                   >
                     Limpar filtros
                   </CompactButton>
@@ -926,20 +926,20 @@ export default function CashRegisterPage() {
                 </div>
               ) : movementsError ? (
                 <div className="py-9 text-center">
-                  <div className="text-[13px] font-bold text-[#14161A]">
+                  <div className="text-[13px] font-bold text-foreground">
                     Não foi possível carregar os movimentos
                   </div>
-                  <div className="mt-0.5 text-[11.5px] text-[#8A8F99]">
+                  <div className="mt-0.5 text-[11.5px] text-muted-foreground">
                     Use Atualizar para tentar de novo
                   </div>
                 </div>
               ) : movements.length === 0 ? (
                 <div className="py-9 text-center">
                   <div className="text-2xl">🧾</div>
-                  <div className="mt-1.5 text-[13px] font-bold text-[#14161A]">
+                  <div className="mt-1.5 text-[13px] font-bold text-foreground">
                     Nenhum movimento encontrado
                   </div>
-                  <div className="mt-0.5 text-[11.5px] text-[#8A8F99]">
+                  <div className="mt-0.5 text-[11.5px] text-muted-foreground">
                     {hasMovementFilters
                       ? "Tente ajustar os filtros"
                       : "Os lançamentos do turno aparecem aqui"}
@@ -950,7 +950,7 @@ export default function CashRegisterPage() {
                   {/* Mobile: lista em cards */}
                   <div
                     className={cn(
-                      "divide-y divide-[#F4F5F7] md:hidden",
+                      "divide-y divide-border md:hidden",
                       movementsFetching && "opacity-60",
                     )}
                   >
@@ -963,7 +963,7 @@ export default function CashRegisterPage() {
                               className={cn(
                                 "shrink-0 rounded-md px-2 py-0.5 text-[10.5px] font-extrabold",
                                 MOVEMENT_TYPE_BADGE[movement.type] ??
-                                  "bg-[#F4F5F7] text-[#5B6472]",
+                                  "bg-muted text-muted-foreground",
                               )}
                             >
                               {MOVEMENT_TYPE_LABELS[movement.type] ??
@@ -973,17 +973,17 @@ export default function CashRegisterPage() {
                               className={cn(
                                 "shrink-0 text-[13px] font-extrabold",
                                 signed < 0
-                                  ? "text-[#C0392B]"
-                                  : "text-[#1B7F4C]",
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-emerald-700 dark:text-emerald-400",
                               )}
                             >
                               {formatSigned(signed)}
                             </span>
                           </div>
-                          <div className="mt-2 text-[12px] font-semibold text-[#3D4149]">
+                          <div className="mt-2 text-[12px] font-semibold text-foreground">
                             {movement.description || "—"}
                           </div>
-                          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-[#A2A7B0]">
+                          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-muted-foreground">
                             <span>
                               {movement.paymentMethod
                                 ? PAYMENT_METHOD_LABELS[movement.paymentMethod]
@@ -1005,7 +1005,7 @@ export default function CashRegisterPage() {
                   <div className="hidden overflow-x-auto md:block">
                     <div className="min-w-[760px]">
                       <div
-                        className="grid items-center gap-2.5 border-b border-[#E9EAEE] bg-[#FAFAFB] px-4 py-2.5"
+                        className="grid items-center gap-2.5 border-b border-border bg-muted px-4 py-2.5"
                         style={{ gridTemplateColumns: MOVEMENTS_GRID }}
                       >
                         <span className={movementHeaderClass}>HORA</span>
@@ -1026,36 +1026,36 @@ export default function CashRegisterPage() {
                           return (
                             <div
                               key={movement.id}
-                              className="grid items-center gap-2.5 border-b border-[#F4F5F7] px-4 py-2.5 last:border-b-0 hover:bg-[#FAFAFB]"
+                              className="grid items-center gap-2.5 border-b border-border px-4 py-2.5 last:border-b-0 hover:bg-muted"
                               style={{ gridTemplateColumns: MOVEMENTS_GRID }}
                             >
-                              <span className="text-[11.5px] font-semibold text-[#5B6472]">
+                              <span className="text-[11.5px] font-semibold text-muted-foreground">
                                 {formatDateTimeShort(movementDate(movement))}
                               </span>
                               <span
                                 className={cn(
                                   "w-fit rounded-md px-2 py-0.5 text-[10.5px] font-extrabold",
                                   MOVEMENT_TYPE_BADGE[movement.type] ??
-                                    "bg-[#F4F5F7] text-[#5B6472]",
+                                    "bg-muted text-muted-foreground",
                                 )}
                               >
                                 {MOVEMENT_TYPE_LABELS[movement.type] ??
                                   movement.type}
                               </span>
                               <span
-                                className="truncate text-[12px] font-semibold text-[#3D4149]"
+                                className="truncate text-[12px] font-semibold text-foreground"
                                 title={movement.description || undefined}
                               >
                                 {movement.description || "—"}
                               </span>
-                              <span className="truncate text-[11.5px] font-semibold text-[#5B6472]">
+                              <span className="truncate text-[11.5px] font-semibold text-muted-foreground">
                                 {movement.paymentMethod
                                   ? PAYMENT_METHOD_LABELS[
                                       movement.paymentMethod
                                     ]
                                   : "—"}
                               </span>
-                              <span className="text-[11.5px] font-semibold text-[#A2A7B0]">
+                              <span className="text-[11.5px] font-semibold text-muted-foreground">
                                 {movement.source
                                   ? MOVEMENT_SOURCE_LABELS[movement.source]
                                   : "—"}
@@ -1064,8 +1064,8 @@ export default function CashRegisterPage() {
                                 className={cn(
                                   "text-right text-[12.5px] font-extrabold",
                                   signed < 0
-                                    ? "text-[#C0392B]"
-                                    : "text-[#1B7F4C]",
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-emerald-700 dark:text-emerald-400",
                                 )}
                               >
                                 {formatSigned(signed)}
@@ -1080,8 +1080,8 @@ export default function CashRegisterPage() {
               )}
 
               {movementsTotalPages > 1 && (
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E9EAEE] px-4 py-3">
-                  <span className="text-[11.5px] font-semibold text-[#8A8F99]">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3">
+                  <span className="text-[11.5px] font-semibold text-muted-foreground">
                     Página {movementsMeta?.page ?? movementsPage} de{" "}
                     {movementsTotalPages} ({movementsMeta?.total ?? 0}{" "}
                     movimentos)
@@ -1116,10 +1116,10 @@ export default function CashRegisterPage() {
         ) : (
           <>
             {/* Banner de caixa fechado */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[12px] bg-[#F4F5F7] px-4 py-3">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[12px] bg-muted px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="text-[15px]">🔒</span>
-                <span className="text-[13.5px] font-extrabold text-[#3D4149]">
+                <span className="text-[13.5px] font-extrabold text-foreground">
                   Caixa Fechado
                 </span>
               </div>
@@ -1130,12 +1130,12 @@ export default function CashRegisterPage() {
                 🔓 Abrir Caixa
               </Button>
             </div>
-            <div className="rounded-[13px] border border-dashed border-[#DDDFE4] bg-white px-5 py-10 text-center">
+            <div className="rounded-[13px] border border-dashed border-border bg-card px-5 py-10 text-center">
               <div className="text-[26px]">💵</div>
-              <div className="mt-2 text-[13.5px] font-bold text-[#14161A]">
+              <div className="mt-2 text-[13.5px] font-bold text-foreground">
                 Nenhum caixa aberto
               </div>
-              <div className="mt-0.5 text-[11.5px] text-[#8A8F99]">
+              <div className="mt-0.5 text-[11.5px] text-muted-foreground">
                 Abra o caixa para registrar movimentos
               </div>
             </div>
@@ -1156,14 +1156,14 @@ export default function CashRegisterPage() {
 
           <FieldLabel>Fundo de troco inicial</FieldLabel>
           <div className="relative mb-3">
-            <span className="pointer-events-none absolute left-[11px] top-1/2 -translate-y-1/2 text-[11.5px] font-bold text-[#A0A6B0]">
+            <span className="pointer-events-none absolute left-[11px] top-1/2 -translate-y-1/2 text-[11.5px] font-bold text-muted-foreground">
               R$
             </span>
             <input
               placeholder="0,00"
               value={openingBalance}
               onChange={(e) => setOpeningBalance(e.target.value)}
-              className="h-[38px] w-full rounded-[9px] border border-[#E9EAEE] bg-[#FAFAFB] pl-[34px] pr-3 text-[13px] text-[#14161A] outline-none"
+              className="h-[38px] w-full rounded-[9px] border border-border bg-muted pl-[34px] pr-3 text-[13px] text-foreground outline-none"
             />
           </div>
 
@@ -1210,8 +1210,8 @@ export default function CashRegisterPage() {
                 className={cn(
                   "h-[30px] rounded-[8px] text-[11px] font-bold transition-colors",
                   movementType === opt.value
-                    ? "bg-[#14161A] text-white"
-                    : "bg-[#F4F5F7] text-[#3D4149] hover:bg-[#E9EAEE]",
+                    ? "bg-zinc-900 text-white"
+                    : "bg-muted text-foreground hover:bg-muted",
                 )}
               >
                 {opt.label}
@@ -1226,7 +1226,7 @@ export default function CashRegisterPage() {
             onChange={(e) => setPaymentMethod(toPaymentMethod(e.target.value))}
             className={cn(
               fieldClass,
-              "h-[38px] bg-[#FAFAFB]",
+              "h-[38px] bg-muted",
               movementType === "withdrawal" ? "mb-1.5" : "mb-3",
             )}
           >
@@ -1240,7 +1240,7 @@ export default function CashRegisterPage() {
             ))}
           </select>
           {movementType === "withdrawal" && (
-            <p className="mb-3 text-[10.5px] leading-snug text-[#8A9099]">
+            <p className="mb-3 text-[10.5px] leading-snug text-muted-foreground">
               A sangria não usa o método padrão: escolha de onde o dinheiro
               sai.
             </p>
@@ -1251,19 +1251,19 @@ export default function CashRegisterPage() {
             placeholder="Ex: Sangria, reforço…"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="mb-3 h-[38px] w-full rounded-[9px] border border-[#E9EAEE] bg-[#FAFAFB] px-3 text-[13px] text-[#14161A] outline-none"
+            className="mb-3 h-[38px] w-full rounded-[9px] border border-border bg-muted px-3 text-[13px] text-foreground outline-none"
           />
 
           <FieldLabel>Valor</FieldLabel>
           <div className="relative mb-4">
-            <span className="pointer-events-none absolute left-[11px] top-1/2 -translate-y-1/2 text-[11.5px] font-bold text-[#A0A6B0]">
+            <span className="pointer-events-none absolute left-[11px] top-1/2 -translate-y-1/2 text-[11.5px] font-bold text-muted-foreground">
               R$
             </span>
             <input
               placeholder="0,00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="h-[38px] w-full rounded-[9px] border border-[#E9EAEE] bg-[#FAFAFB] pl-[34px] pr-3 text-[13px] text-[#14161A] outline-none"
+              className="h-[38px] w-full rounded-[9px] border border-border bg-muted pl-[34px] pr-3 text-[13px] text-foreground outline-none"
             />
           </div>
 

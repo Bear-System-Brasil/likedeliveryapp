@@ -60,9 +60,9 @@ type FieldProps = {
   children: ReactNode;
 };
 
-const fieldLabelClass = "text-[11px] font-bold text-gray-700";
+const fieldLabelClass = "text-[11px] font-bold text-foreground";
 const inputClass =
-  "h-9 rounded-lg border-[#E9EAEE] bg-white text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200";
+  "h-9 rounded-lg border-border bg-card text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200";
 
 function Field({ htmlFor, label, optional, className, children }: FieldProps) {
   return (
@@ -70,7 +70,7 @@ function Field({ htmlFor, label, optional, className, children }: FieldProps) {
       <Label htmlFor={htmlFor} className={fieldLabelClass}>
         {label}{" "}
         {optional && (
-          <span className="font-semibold text-gray-400">(opcional)</span>
+          <span className="font-semibold text-muted-foreground">(opcional)</span>
         )}
       </Label>
       {children}
@@ -166,15 +166,15 @@ export function DeliveryForm({
 
   return (
     <form className="space-y-3">
-      <div className="grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1">
+      <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
         <button
           type="button"
           onClick={() => setOrderType("delivery")}
           className={cn(
             "flex h-9 items-center justify-center rounded-md text-sm font-bold transition-colors",
             orderType === "delivery"
-              ? "bg-white text-gray-950 shadow-sm"
-              : "text-gray-500 hover:text-gray-700",
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           Entrega
@@ -185,20 +185,20 @@ export function DeliveryForm({
           className={cn(
             "flex h-9 items-center justify-center rounded-md text-sm font-bold transition-colors",
             orderType === "pickup"
-              ? "bg-white text-gray-950 shadow-sm"
-              : "text-gray-500 hover:text-gray-700",
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           Retirar no local
         </button>
       </div>
 
-      <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
         <div className="mb-3 flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">
             <User className="h-4 w-4" />
           </div>
-          <h2 className="text-sm font-extrabold text-gray-950">
+          <h2 className="text-sm font-extrabold text-foreground">
             Dados de {orderType === "pickup" ? "contato" : "entrega"}
           </h2>
         </div>
@@ -206,7 +206,7 @@ export function DeliveryForm({
         <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
           <Field htmlFor="name" label="Nome completo">
             <div className="relative">
-              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="name"
                 placeholder="Seu nome completo"
@@ -219,7 +219,7 @@ export function DeliveryForm({
 
           <Field htmlFor="phone" label="Telefone">
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="phone"
                 placeholder="(11) 99999-9999"
@@ -233,13 +233,13 @@ export function DeliveryForm({
       </section>
 
       {orderType === "delivery" && (
-        <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+        <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">
                 <MapPin className="h-4 w-4" />
               </div>
-              <h2 className="text-sm font-extrabold text-gray-950">
+              <h2 className="text-sm font-extrabold text-foreground">
                 Endereço de entrega
               </h2>
             </div>
@@ -250,7 +250,7 @@ export function DeliveryForm({
                 variant="ghost"
                 size="sm"
                 onClick={handleUseLocation}
-                className="h-8 px-2 text-xs font-bold text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                className="h-8 px-2 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/40 hover:text-orange-700 dark:hover:text-orange-400"
               >
                 <LocateFixed className="h-4 w-4" />
                 Usar localização
@@ -262,7 +262,7 @@ export function DeliveryForm({
                   variant="outline"
                   size="sm"
                   onClick={handleNewAddress}
-                  className="h-8 rounded-lg border-[#E9EAEE] px-2 text-xs font-bold text-gray-800 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700"
+                  className="h-8 rounded-lg border-border px-2 text-xs font-bold text-foreground hover:border-orange-300 dark:hover:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/40 hover:text-orange-700 dark:hover:text-orange-400"
                 >
                   <Plus className="h-4 w-4" />
                   {addressMode === "select"
@@ -295,8 +295,8 @@ export function DeliveryForm({
                       className={cn(
                         "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors",
                         isSelected
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-[#E9EAEE] bg-[#FAFAFB] hover:border-orange-300 hover:bg-white",
+                          ? "border-orange-500 bg-orange-50 dark:bg-orange-950/40"
+                          : "border-border bg-muted hover:border-orange-300 dark:hover:border-orange-700 hover:bg-card",
                       )}
                     >
                       <span
@@ -304,28 +304,28 @@ export function DeliveryForm({
                           "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
                           isSelected
                             ? "border-orange-500 bg-orange-500 text-white"
-                            : "border-gray-300 bg-white text-transparent",
+                            : "border-border bg-card text-transparent",
                         )}
                       >
                         <Check className="h-3 w-3" />
                       </span>
 
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-gray-950">
+                        <span className="block truncate text-sm font-bold text-foreground">
                           {address.street}, {address.number}
                         </span>
-                        <span className="mt-0.5 block text-xs font-semibold text-gray-600">
+                        <span className="mt-0.5 block text-xs font-semibold text-muted-foreground">
                           {address.neighborhood} - {address.city}/
                           {address.state}
                         </span>
-                        <span className="mt-0.5 block text-xs font-medium text-gray-500">
+                        <span className="mt-0.5 block text-xs font-medium text-muted-foreground">
                           CEP {address.zipCode}
                           {address.complement ? ` · ${address.complement}` : ""}
                         </span>
                       </span>
 
                       {address.isDefault && (
-                        <span className="rounded-md bg-gray-950 px-2 py-1 text-[10px] font-bold text-white">
+                        <span className="rounded-md bg-zinc-900 px-2 py-1 text-[10px] font-bold text-white">
                           Padrao
                         </span>
                       )}
@@ -338,7 +338,7 @@ export function DeliveryForm({
           {shouldShowNewAddress && (
             <div className="space-y-3">
               {userAddresses.length === 0 && (
-                <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
+                <div className="rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-950/40 px-3 py-2 text-xs font-semibold text-blue-700 dark:text-blue-400">
                   Preencha os dados abaixo para entregar este pedido.
                 </div>
               )}
@@ -376,7 +376,7 @@ export function DeliveryForm({
                   />
                 </Field>
 
-                <p className="text-xs font-semibold text-gray-500 md:col-span-4">
+                <p className="text-xs font-semibold text-muted-foreground md:col-span-4">
                   {isLoadingCep
                     ? "Buscando CEP..."
                     : "Digite o CEP e os campos serao preenchidos."}
@@ -457,12 +457,12 @@ export function DeliveryForm({
                 </Field>
               </div>
 
-              <div className="rounded-lg border border-[#E9EAEE] bg-[#FAFAFB] p-2.5">
+              <div className="rounded-lg border border-border bg-muted p-2.5">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-gray-800">
+                  <span className="text-xs font-bold text-foreground">
                     Localização no mapa
                   </span>
-                  <span className="text-[11px] font-semibold text-gray-500">
+                  <span className="text-[11px] font-semibold text-muted-foreground">
                     Clique no mapa para ajustar
                   </span>
                 </div>
@@ -479,11 +479,11 @@ export function DeliveryForm({
                   onCheckedChange={(checked) =>
                     setSaveAddress(Boolean(checked))
                   }
-                  className="rounded-md border-gray-300 data-[state=checked]:bg-orange-500"
+                  className="rounded-md border-border data-[state=checked]:bg-orange-500"
                 />
                 <Label
                   htmlFor="saveAddress"
-                  className="cursor-pointer text-xs font-semibold text-gray-700"
+                  className="cursor-pointer text-xs font-semibold text-foreground"
                 >
                   Salvar este endereço para pedidos futuros
                 </Label>
@@ -494,26 +494,26 @@ export function DeliveryForm({
       )}
 
       {orderType === "pickup" && (
-        <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+        <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">
               <Store className="h-4 w-4" />
             </div>
-            <h2 className="text-sm font-extrabold text-gray-950">
+            <h2 className="text-sm font-extrabold text-foreground">
               Retirada no local
             </h2>
           </div>
 
-          <div className="flex items-start gap-3 rounded-lg bg-orange-50 p-3">
-            <Store className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
+          <div className="flex items-start gap-3 rounded-lg bg-orange-50 dark:bg-orange-950/40 p-3">
+            <Store className="mt-0.5 h-4 w-4 shrink-0 text-orange-600 dark:text-orange-400" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-orange-900">
+              <p className="truncate text-sm font-bold text-orange-900 dark:text-orange-300">
                 {restaurant?.name || "Restaurante"}
               </p>
-              <p className="mt-0.5 text-xs font-semibold text-orange-700">
+              <p className="mt-0.5 text-xs font-semibold text-orange-700 dark:text-orange-400">
                 {restaurant?.address || "Endereço disponivel apos confirmacao"}
               </p>
-              <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-orange-600">
+              <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400">
                 <Clock className="h-3.5 w-3.5" />
                 Pronto em cerca de 20-30 min
               </p>
@@ -522,14 +522,14 @@ export function DeliveryForm({
         </section>
       )}
 
-      <section className="rounded-lg border border-[#E9EAEE] bg-white p-4 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
         <Field htmlFor="observations" label="Observacoes do pedido" optional>
           <Textarea
             id="observations"
             placeholder="Ex: entregar na portaria"
             value={deliveryInfo.observations}
             onChange={(e) => handleInputChange("observations", e.target.value)}
-            className="min-h-[72px] resize-none rounded-lg border-[#E9EAEE] bg-[#FAFAFB] text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
+            className="min-h-[72px] resize-none rounded-lg border-border bg-muted text-sm shadow-none focus-visible:border-orange-400 focus-visible:ring-orange-200"
           />
         </Field>
       </section>

@@ -55,6 +55,7 @@ export function DeliveryWrapper() {
     setNeedsChange,
     subtotal,
     deliveryFee,
+    discount,
     total,
     cartItems,
     restaurant,
@@ -148,13 +149,13 @@ export function DeliveryWrapper() {
       <AnimatedBackground showBlobs={false}>
         <div className="flex min-h-screen items-center justify-center px-4">
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
-              <ThumbsUp className="h-8 w-8 text-orange-600" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900">
+              <ThumbsUp className="h-8 w-8 text-orange-600 dark:text-orange-400" />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-gray-950">
+            <h2 className="mb-2 text-2xl font-bold text-foreground">
               Login necessario
             </h2>
-            <p className="mb-6 text-gray-600">
+            <p className="mb-6 text-muted-foreground">
               Você precisa estar logado para finalizar seu pedido
             </p>
             <GradientButton onClick={() => showAuthModal()}>
@@ -171,13 +172,13 @@ export function DeliveryWrapper() {
       <AnimatedBackground showBlobs={false}>
         <div className="flex min-h-screen items-center justify-center px-4">
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
-              <Store className="h-8 w-8 animate-pulse text-orange-600" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900">
+              <Store className="h-8 w-8 animate-pulse text-orange-600 dark:text-orange-400" />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-gray-950">
+            <h2 className="mb-2 text-2xl font-bold text-foreground">
               Carregando carrinho...
             </h2>
-            <p className="text-gray-600">Sincronizando dados do restaurante</p>
+            <p className="text-muted-foreground">Sincronizando dados do restaurante</p>
           </div>
         </div>
       </AnimatedBackground>
@@ -193,28 +194,28 @@ export function DeliveryWrapper() {
         showNav={false}
       />
 
-      <main className="min-h-screen bg-[#F7F7F8] px-3 pb-40 pt-20 sm:px-5">
+      <main className="min-h-screen bg-muted px-3 pb-40 pt-20 sm:px-5">
         <div className="mx-auto max-w-[640px]">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
               aria-label="Voltar"
               onClick={handleBack}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E9EAEE] bg-white text-gray-700 shadow-sm transition-colors hover:border-orange-300 hover:text-orange-600"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground shadow-sm transition-colors hover:border-orange-300 dark:hover:border-orange-700 hover:text-orange-600 dark:hover:text-orange-400"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
 
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-extrabold text-gray-950">Checkout</h1>
+              <h1 className="text-xl font-extrabold text-foreground">Checkout</h1>
               {restaurant?.name && (
-                <p className="truncate text-xs font-semibold text-gray-500">
+                <p className="truncate text-xs font-semibold text-muted-foreground">
                   {restaurant.name}
                 </p>
               )}
             </div>
 
-            <span className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-emerald-50 px-2 text-[11px] font-bold text-emerald-700">
+            <span className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 px-2 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
               <ShieldCheck className="h-3.5 w-3.5" />
               Pagamento seguro
             </span>
@@ -227,19 +228,19 @@ export function DeliveryWrapper() {
               className={cn(
                 "flex h-7 items-center rounded-full px-3 text-[11px] font-extrabold transition-colors",
                 step === 1
-                  ? "bg-gray-950 text-white"
-                  : "bg-[#ECEDF0] text-gray-500 hover:bg-gray-200",
+                  ? "bg-zinc-900 text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted",
               )}
             >
               1 Entrega
             </button>
-            <span className="h-px w-3 shrink-0 bg-[#DDE0E5]" />
+            <span className="h-px w-3 shrink-0 bg-muted" />
             <div
               className={cn(
                 "flex h-7 items-center rounded-full px-3 text-[11px] font-extrabold",
                 step === 2
-                  ? "bg-gray-950 text-white"
-                  : "bg-[#ECEDF0] text-gray-500",
+                  ? "bg-zinc-900 text-white"
+                  : "bg-muted text-muted-foreground",
               )}
             >
               2 Pagamento
@@ -283,6 +284,7 @@ export function DeliveryWrapper() {
         handleSubmitOrder={handleSubmit}
         isProcessing={isProcessing}
         deliveryFee={deliveryFee}
+        discount={discount}
         cartItems={cartItems}
         subtotal={subtotal}
         total={total}

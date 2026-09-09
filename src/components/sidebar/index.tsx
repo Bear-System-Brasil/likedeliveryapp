@@ -103,7 +103,7 @@ export function Sidebar({ selectedLabel }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex h-screen w-64 flex-col bg-white border-r">
+      <div className="hidden lg:flex h-screen w-64 flex-col bg-card border-r">
         <SidebarContent />
       </div>
 
@@ -113,7 +113,7 @@ export function Sidebar({ selectedLabel }: SidebarProps) {
           <Button
             variant="outline"
             size="icon"
-            className="lg:hidden fixed top-20 left-4 z-40 h-10 w-10 rounded-xl bg-white shadow-lg cursor-pointer"
+            className="lg:hidden fixed top-20 left-4 z-40 h-10 w-10 rounded-xl bg-card shadow-lg cursor-pointer"
           >
             <Menu className="h-5 w-5" />
           </Button>

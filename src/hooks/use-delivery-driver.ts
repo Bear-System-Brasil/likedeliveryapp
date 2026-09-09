@@ -1,4 +1,5 @@
 import { useSound } from "@/hooks/use-sound";
+import { socketAuthProvider } from "@/lib/socket-auth";
 import { apiService, type Delivery } from "@/services/api";
 import { useAuthStore } from "@/stores";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -93,43 +94,38 @@ export const useDeliveryDriver = () => {
     const isTracking = activeDelivery?.status === "PICKED_UP";
     if (!deliveryId || !isTracking || !DELIVERY_TRACKING_URL) return;
 
-    let socket: Socket | null = null;
-    let cancelled = false;
+    // `auth` como função busca token fresco a cada (re)conexão - ver
+    // socket-auth.ts. Sem isso, o rastreamento ao vivo parava de atualizar
+    // pra sempre depois de uma reconexão com token expirado, sem nenhum
+    // aviso.
+    const socket = io(DELIVERY_TRACKING_URL, { auth: socketAuthProvider });
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      socket.emit("joinDelivery", { deliveryId });
+    });
+
     let watchId: number | null = null;
-
-    fetch("/api/auth/socket-token")
-      .then((res) => res.json())
-      .then(({ token }: { token: string | null }) => {
-        if (cancelled || !token) return;
-
-        socket = io(DELIVERY_TRACKING_URL, { auth: { token } });
-        socketRef.current = socket;
-
-        socket.on("connect", () => {
-          socket!.emit("joinDelivery", { deliveryId });
-        });
-
-        if (navigator.geolocation) {
-          watchId = navigator.geolocation.watchPosition(
-            (position) => {
-              socketRef.current?.emit("updateLocation", {
-                deliveryId,
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-              });
-            },
-            () => {
-              // Sem permissão de localização - não quebra o resto do fluxo,
-              // o cliente só fica sem ver a posição ao vivo.
-            },
-            { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
-          );
-        }
-      });
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          socketRef.current?.emit("updateLocation", {
+            deliveryId,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        () => {
+          // Sem permissão de localização - não quebra o resto do fluxo,
+          // o cliente só fica sem ver a posição ao vivo.
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+      );
+    }
 
     return () => {
-      cancelled = true;
-      socket?.disconnect();
+      socket.disconnect();
+      socketRef.current = null;
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
     };
   }, [activeDelivery?.id, activeDelivery?.status]);

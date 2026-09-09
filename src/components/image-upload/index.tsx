@@ -99,7 +99,7 @@ export function ImageUpload({
         {/* Preview */}
         {preview && (
           <div
-            className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 border-gray-200 
+            className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 border-border 
                           shadow-sm shrink-0 ${aspectRatioClass}`}
           >
             <Image
@@ -141,24 +141,24 @@ export function ImageUpload({
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="w-full h-20 sm:h-24 border-2 border-dashed border-gray-300 hover:border-orange-400 hover:bg-linear-to-br hover:from-orange-50 hover:to-orange-50 transition-all cursor-pointer flex-col gap-2"
+            className="w-full h-20 sm:h-24 border-2 border-dashed border-border hover:border-orange-400 hover:bg-linear-to-br hover:from-orange-50 hover:to-orange-50 transition-all cursor-pointer flex-col gap-2"
           >
             {uploading ? (
               <>
                 <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-gray-600">Enviando...</span>
+                <span className="text-xs text-muted-foreground">Enviando...</span>
               </>
             ) : (
               <>
-                <Upload className="w-6 h-6 text-gray-400" />
-                <span className="text-xs text-gray-600">
+                <Upload className="w-6 h-6 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
                   Clique para {preview ? "alterar" : "enviar"}
                 </span>
               </>
             )}
           </Button>
 
-          <p className="text-[10px] sm:text-xs text-gray-500 text-center">
+          <p className="text-[10px] sm:text-xs text-muted-foreground text-center">
             JPG, PNG ou WEBP • Máx. {maxSizeMB}MB
           </p>
         </div>

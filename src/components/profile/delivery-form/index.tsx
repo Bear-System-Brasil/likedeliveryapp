@@ -169,7 +169,7 @@ export function DeliveryForm({
                 type="checkbox"
                 id="isDefault"
                 {...addressForm.register("isDefault")}
-                className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                className="h-4 w-4 rounded border-border text-orange-500 focus:ring-orange-500"
               />
               <label
                 htmlFor="isDefault"

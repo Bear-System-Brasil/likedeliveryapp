@@ -1,3 +1,4 @@
+import type { RawAuthUser } from "@/services/api";
 import { STORAGE_KEYS } from "@/utils/storage-manager";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
@@ -14,6 +15,49 @@ export interface User {
   photoUrl?: string;
   tradeName?: string;
   legalName?: string;
+  cnpj?: string;
+  logo_url?: string;
+  cover_url?: string;
+}
+
+/**
+ * O backend de auth devolve um objeto cru ambíguo (campos de cliente ou de
+ * empresa, dependendo da conta) - esta função normaliza pro shape único que
+ * o store persiste, escolhendo os campos certos conforme a `role`.
+ */
+export function normalizeAuthUser(raw: RawAuthUser): User {
+  const role = raw.role || "client";
+  const isCompanyUser = ["owner", "admin", "manager", "cook", "delivery"].includes(role);
+
+  if (isCompanyUser) {
+    return {
+      id: raw.id,
+      name: raw.tradeName || raw.legalName || raw.name || "Empresa",
+      email: raw.email,
+      cpf: raw.cnpj || raw.cpf || "",
+      phone: raw.phone || "",
+      birthDate: raw.birthDate || "",
+      role,
+      companyId: raw.companyId || undefined,
+      photoUrl: raw.photoUrl || raw.logo_url,
+      tradeName: raw.tradeName,
+      legalName: raw.legalName,
+      cnpj: raw.cnpj,
+      logo_url: raw.logo_url,
+    };
+  }
+
+  return {
+    id: raw.id,
+    name: raw.name || "",
+    email: raw.email,
+    cpf: raw.cpf || "",
+    phone: raw.phone || "",
+    birthDate: raw.birthDate || "",
+    role,
+    companyId: raw.companyId || undefined,
+    photoUrl: raw.photoUrl,
+  };
 }
 
 interface AuthState {

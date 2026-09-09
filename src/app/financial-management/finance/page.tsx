@@ -28,20 +28,20 @@ const PAY_STATUS_OPTIONS: { value: PaymentStatus | "ALL"; label: string }[] = [
 ];
 
 const STATUS_BADGE: Record<PaymentStatus, string> = {
-  [PaymentStatus.COMPLETED]: "bg-[#E9F7EF] text-[#1B7F4C]",
-  [PaymentStatus.PENDING]: "bg-[#FFF7ED] text-[#B45309]",
-  [PaymentStatus.FAILED]: "bg-[#FDEEEE] text-[#C0392B]",
-  [PaymentStatus.CANCELLED]: "bg-[#F4F5F7] text-[#5B6472]",
-  [PaymentStatus.REFUNDED]: "bg-[#EEF0FF] text-[#4A55D0]",
+  [PaymentStatus.COMPLETED]: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400",
+  [PaymentStatus.PENDING]: "bg-orange-50 dark:bg-orange-950/40 text-amber-700 dark:text-amber-400",
+  [PaymentStatus.FAILED]: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400",
+  [PaymentStatus.CANCELLED]: "bg-muted text-muted-foreground",
+  [PaymentStatus.REFUNDED]: "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400",
 };
 
 const TABLE_GRID = "104px minmax(130px,1fr) 128px 100px 92px 100px 172px";
 
 const headerCellClass =
-  "text-[10px] font-extrabold tracking-[0.05em] text-[#A2A7B0]";
+  "text-[10px] font-extrabold tracking-[0.05em] text-muted-foreground";
 
 const fieldClass =
-  "h-9 w-full rounded-[9px] border border-[#E9EAEE] bg-white px-2.5 text-[12px] font-semibold text-[#14161A] outline-none";
+  "h-9 w-full rounded-[9px] border border-border bg-card px-2.5 text-[12px] font-semibold text-foreground outline-none";
 
 function formatDateShort(value?: string | Date) {
   if (!value) return "—";
@@ -70,19 +70,19 @@ function StatCard({
   valueClassName?: string;
 }) {
   return (
-    <div className="rounded-[12px] border border-[#E9EAEE] bg-white px-[14px] py-[13px]">
-      <div className="text-[11.5px] font-semibold text-[#8A8F99]">
+    <div className="rounded-[12px] border border-border bg-card px-[14px] py-[13px]">
+      <div className="text-[11.5px] font-semibold text-muted-foreground">
         {label}
       </div>
       <div
         className={cn(
-          "mt-1.5 text-[19px] font-extrabold text-[#14161A]",
+          "mt-1.5 text-[19px] font-extrabold text-foreground",
           valueClassName,
         )}
       >
         {value}
       </div>
-      <div className="mt-0.5 text-[11px] font-semibold text-[#A2A7B0]">
+      <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
         {sub}
       </div>
     </div>
@@ -98,7 +98,7 @@ function FilterField({
 }) {
   return (
     <div>
-      <div className="mb-[5px] text-[11px] font-bold text-[#3D4149]">
+      <div className="mb-[5px] text-[11px] font-bold text-foreground">
         {label}
       </div>
       {children}
@@ -115,7 +115,7 @@ function CompactButton({
       type="button"
       {...props}
       className={cn(
-        "h-9 shrink-0 rounded-[9px] bg-[#F4F5F7] px-4 text-xs font-bold text-[#3D4149] transition-colors hover:bg-[#E9EAEE] disabled:cursor-not-allowed disabled:opacity-50",
+        "h-9 shrink-0 rounded-[9px] bg-muted px-4 text-xs font-bold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
     />
@@ -273,25 +273,25 @@ export default function FinancePage() {
             label="Concluídos"
             value={stats.completed}
             sub={formatCurrency(stats.completedAmount)}
-            valueClassName="text-[#1B7F4C]"
+            valueClassName="text-emerald-700 dark:text-emerald-400"
           />
           <StatCard
             label="Pendentes"
             value={stats.pending}
             sub="Aguardando aprovação"
-            valueClassName="text-[#B45309]"
+            valueClassName="text-amber-700 dark:text-amber-400"
           />
           <StatCard
             label="Falhados"
             value={stats.failed}
             sub="Não processados"
-            valueClassName="text-[#C0392B]"
+            valueClassName="text-red-600 dark:text-red-400"
           />
         </div>
 
         {/* Filtros */}
-        <div className="mb-3.5 rounded-[13px] border border-[#E9EAEE] bg-white p-4">
-          <div className="mb-3 text-[13px] font-extrabold text-[#14161A]">
+        <div className="mb-3.5 rounded-[13px] border border-border bg-card p-4">
+          <div className="mb-3 text-[13px] font-extrabold text-foreground">
             Filtros
           </div>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -368,7 +368,7 @@ export default function FinancePage() {
             <button
               type="button"
               onClick={handleNewSearch}
-              className="flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] bg-[#14161A] px-4 text-xs font-bold text-white transition-colors hover:bg-[#2A2D33]"
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] bg-zinc-900 px-4 text-xs font-bold text-white transition-colors hover:bg-zinc-800"
             >
               <Search className="h-3.5 w-3.5" />
               Buscar
@@ -380,8 +380,8 @@ export default function FinancePage() {
         </div>
 
         {/* Lista de pagamentos */}
-        <div className="overflow-hidden rounded-[13px] border border-[#E9EAEE] bg-white">
-          <div className="border-b border-[#E9EAEE] p-4 text-[13px] font-extrabold text-[#14161A]">
+        <div className="overflow-hidden rounded-[13px] border border-border bg-card">
+          <div className="border-b border-border p-4 text-[13px] font-extrabold text-foreground">
             Pagamentos encontrados ({filteredPayments.length})
           </div>
 
@@ -394,25 +394,25 @@ export default function FinancePage() {
           ) : filteredPayments.length === 0 ? (
             <div className="py-9 text-center">
               <div className="text-2xl">💳</div>
-              <div className="mt-1.5 text-[13px] font-bold text-[#14161A]">
+              <div className="mt-1.5 text-[13px] font-bold text-foreground">
                 Nenhum pagamento encontrado
               </div>
-              <div className="mt-0.5 text-[11.5px] text-[#8A8F99]">
+              <div className="mt-0.5 text-[11.5px] text-muted-foreground">
                 Tente ajustar os filtros de busca
               </div>
             </div>
           ) : (
             <>
               {/* Mobile: lista em cards */}
-              <div className="divide-y divide-[#F4F5F7] md:hidden">
+              <div className="divide-y divide-border md:hidden">
                 {filteredPayments.map((payment) => (
                   <div key={payment.id} className="p-3.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="truncate text-[12.5px] font-extrabold text-[#14161A]">
+                        <div className="truncate text-[12.5px] font-extrabold text-foreground">
                           #{payment.orderId.slice(0, 8)}
                         </div>
-                        <div className="truncate text-[10.5px] font-semibold text-[#A2A7B0]">
+                        <div className="truncate text-[10.5px] font-semibold text-muted-foreground">
                           {payment.transaction || "—"}
                         </div>
                       </div>
@@ -426,23 +426,23 @@ export default function FinancePage() {
                       </span>
                     </div>
 
-                    <div className="mt-2 flex items-center justify-between gap-2 text-[11.5px] font-semibold text-[#5B6472]">
+                    <div className="mt-2 flex items-center justify-between gap-2 text-[11.5px] font-semibold text-muted-foreground">
                       <span className="truncate">
                         {getPaymentMethodLabel(payment.paymentMethod)}
                       </span>
-                      <span className="shrink-0 text-[#A2A7B0]">
+                      <span className="shrink-0 text-muted-foreground">
                         {formatDateShort(payment.date || payment.created_at)}
                       </span>
                     </div>
 
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <span
-                        className="truncate text-[11.5px] font-semibold text-[#5B6472]"
+                        className="truncate text-[11.5px] font-semibold text-muted-foreground"
                         title={payment.customerId}
                       >
                         {getCustomerDisplayName(payment.customer)}
                       </span>
-                      <span className="shrink-0 text-[13px] font-extrabold text-[#14161A]">
+                      <span className="shrink-0 text-[13px] font-extrabold text-foreground">
                         {formatCurrency(payment.amount)}
                       </span>
                     </div>
@@ -455,13 +455,13 @@ export default function FinancePage() {
                           <>
                             <RowActionButton
                               onClick={() => handleApprove(payment)}
-                              className="flex-1 bg-[#F4F5F7] text-[#3D4149] hover:bg-[#E9EAEE]"
+                              className="flex-1 bg-muted text-foreground hover:bg-muted"
                             >
                               Confirmar
                             </RowActionButton>
                             <RowActionButton
                               onClick={() => handleReject(payment)}
-                              className="flex-1 bg-[#FDEEEE] text-[#C0392B] hover:bg-[#FBDEDE]"
+                              className="flex-1 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
                             >
                               Rejeitar
                             </RowActionButton>
@@ -470,7 +470,7 @@ export default function FinancePage() {
                         {isFailed(payment) && (
                           <RowActionButton
                             onClick={() => handleApprove(payment)}
-                            className="flex-1 bg-[#14161A] text-white hover:bg-[#2A2D33]"
+                            className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800"
                           >
                             Reprocessar
                           </RowActionButton>
@@ -478,7 +478,7 @@ export default function FinancePage() {
                         {isCompleted(payment) && (
                           <RowActionButton
                             onClick={() => handleRefund(payment)}
-                            className="flex-1 border border-[#E9EAEE] bg-white text-[#3D4149] hover:bg-[#F4F5F7]"
+                            className="flex-1 border border-border bg-card text-foreground hover:bg-muted"
                           >
                             Reembolsar
                           </RowActionButton>
@@ -493,7 +493,7 @@ export default function FinancePage() {
               <div className="hidden overflow-x-auto md:block">
               <div className="min-w-[900px]">
                 <div
-                  className="grid items-center gap-2.5 border-b border-[#E9EAEE] bg-[#FAFAFB] px-4 py-2.5"
+                  className="grid items-center gap-2.5 border-b border-border bg-muted px-4 py-2.5"
                   style={{ gridTemplateColumns: TABLE_GRID }}
                 >
                   <span className={headerCellClass}>PEDIDO / TID</span>
@@ -512,30 +512,30 @@ export default function FinancePage() {
                 {filteredPayments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="grid items-center gap-2.5 border-b border-[#F4F5F7] px-4 py-2.5 last:border-b-0 hover:bg-[#FAFAFB]"
+                    className="grid items-center gap-2.5 border-b border-border px-4 py-2.5 last:border-b-0 hover:bg-muted"
                     style={{ gridTemplateColumns: TABLE_GRID }}
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-[12px] font-extrabold text-[#14161A]">
+                      <div className="truncate text-[12px] font-extrabold text-foreground">
                         #{payment.orderId.slice(0, 8)}
                       </div>
-                      <div className="truncate text-[10px] font-semibold text-[#A2A7B0]">
+                      <div className="truncate text-[10px] font-semibold text-muted-foreground">
                         {payment.transaction || "—"}
                       </div>
                     </div>
 
                     <span
-                      className="truncate text-[12.5px] font-semibold text-[#14161A]"
+                      className="truncate text-[12.5px] font-semibold text-foreground"
                       title={payment.customerId}
                     >
                       {getCustomerDisplayName(payment.customer)}
                     </span>
 
-                    <span className="truncate text-[11.5px] font-semibold text-[#3D4149]">
+                    <span className="truncate text-[11.5px] font-semibold text-foreground">
                       {getPaymentMethodLabel(payment.paymentMethod)}
                     </span>
 
-                    <span className="text-[11px] font-semibold text-[#A2A7B0]">
+                    <span className="text-[11px] font-semibold text-muted-foreground">
                       {formatDateShort(payment.date || payment.created_at)}
                     </span>
 
@@ -548,7 +548,7 @@ export default function FinancePage() {
                       {getPaymentStatusLabel(payment.status)}
                     </span>
 
-                    <span className="text-right text-[13px] font-extrabold text-[#14161A]">
+                    <span className="text-right text-[13px] font-extrabold text-foreground">
                       {formatCurrency(payment.amount)}
                     </span>
 
@@ -557,13 +557,13 @@ export default function FinancePage() {
                         <>
                           <RowActionButton
                             onClick={() => handleApprove(payment)}
-                            className="bg-[#F4F5F7] text-[#3D4149] hover:bg-[#E9EAEE]"
+                            className="bg-muted text-foreground hover:bg-muted"
                           >
                             Confirmar
                           </RowActionButton>
                           <RowActionButton
                             onClick={() => handleReject(payment)}
-                            className="bg-[#FDEEEE] text-[#C0392B] hover:bg-[#FBDEDE]"
+                            className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
                           >
                             Rejeitar
                           </RowActionButton>
@@ -572,7 +572,7 @@ export default function FinancePage() {
                       {isFailed(payment) && (
                         <RowActionButton
                           onClick={() => handleApprove(payment)}
-                          className="bg-[#14161A] text-white hover:bg-[#2A2D33]"
+                          className="bg-zinc-900 text-white hover:bg-zinc-800"
                         >
                           Reprocessar
                         </RowActionButton>
@@ -580,7 +580,7 @@ export default function FinancePage() {
                       {isCompleted(payment) && (
                         <RowActionButton
                           onClick={() => handleRefund(payment)}
-                          className="border border-[#E9EAEE] bg-white text-[#3D4149] hover:bg-[#F4F5F7]"
+                          className="border border-border bg-card text-foreground hover:bg-muted"
                         >
                           Reembolsar
                         </RowActionButton>
@@ -588,7 +588,7 @@ export default function FinancePage() {
                       {!isPending(payment) &&
                         !isFailed(payment) &&
                         !isCompleted(payment) && (
-                          <span className="text-[11px] text-[#A2A7B0]">
+                          <span className="text-[11px] text-muted-foreground">
                             —
                           </span>
                         )}
@@ -601,8 +601,8 @@ export default function FinancePage() {
           )}
 
           {paymentsMeta && paymentsMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between gap-2 border-t border-[#E9EAEE] px-4 py-3">
-              <span className="text-[11.5px] font-semibold text-[#8A8F99]">
+            <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3">
+              <span className="text-[11.5px] font-semibold text-muted-foreground">
                 Página {paymentsMeta.page} de {paymentsMeta.totalPages} (
                 {paymentsMeta.total} pagamentos)
               </span>

@@ -19,6 +19,8 @@ export const COMPANY_ROLES = [
   'owner',
   'manager',
   'financial',
+  'cook',
+  'delivery',
 ] as const
 
 /**

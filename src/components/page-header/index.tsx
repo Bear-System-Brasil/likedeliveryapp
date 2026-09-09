@@ -26,15 +26,15 @@ export function PageHeader({
   backUrl,
 }: PageHeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-card border-b border-border sticky top-0 z-50">
       <div className="max-w-4xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             {showBackButton && <BackButton href={backUrl} />}
 
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-              {description && <p className="text-gray-600">{description}</p>}
+              <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+              {description && <p className="text-muted-foreground">{description}</p>}
             </div>
           </div>
 
@@ -42,7 +42,7 @@ export function PageHeader({
             {badge && (
               <Badge
                 variant={badge.variant || "default"}
-                className="bg-linear-to-br from-orange-100 to-orange-100 text-orange-700 border-0"
+                className="bg-linear-to-br from-orange-100 to-orange-100 text-orange-700 dark:text-orange-400 border-0"
               >
                 {badge.text}
               </Badge>

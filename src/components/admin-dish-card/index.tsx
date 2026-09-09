@@ -39,12 +39,12 @@ export function AdminDishCard({
   return (
     <article
       className={cn(
-        "group flex h-full min-w-0 gap-3 rounded-[13px] border border-[#E9EAEE] bg-white p-2.5 text-[#14161A] transition-all",
-        "hover:-translate-y-0.5 hover:border-[#FFD3B0] hover:shadow-[0_8px_20px_rgba(20,22,26,0.06)]",
-        !isAvailable && "bg-white/80",
+        "group flex h-full min-w-0 gap-3 rounded-[13px] border border-border bg-card p-2.5 text-foreground transition-all",
+        "hover:-translate-y-0.5 hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-[0_8px_20px_rgba(20,22,26,0.06)]",
+        !isAvailable && "bg-card/80",
       )}
     >
-      <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[10px] bg-[#EDEEF1]">
+      <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[10px] bg-muted">
         <Image
           src={dish.image}
           alt={dish.name}
@@ -74,29 +74,29 @@ export function AdminDishCard({
           </h3>
           <div className="shrink-0 text-right">
             {dish.originalPrice && (
-              <p className="text-[11px] font-semibold text-[#8A8F99] line-through">
+              <p className="text-[11px] font-semibold text-muted-foreground line-through">
                 {formatCurrency(dish.originalPrice)}
               </p>
             )}
-            <p className="text-sm font-extrabold text-[#14161A]">
+            <p className="text-sm font-extrabold text-foreground">
               {formatCurrency(dish.price)}
             </p>
           </div>
         </div>
 
-        <p className="truncate text-[11.5px] font-medium text-[#8A8F99]">
+        <p className="truncate text-[11.5px] font-medium text-muted-foreground">
           {dish.description}
         </p>
 
         <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
-          <span className="max-w-full truncate rounded-md bg-[#F4F5F7] px-2 py-0.5 text-[10.5px] font-bold text-[#3D4149]">
+          <span className="max-w-full truncate rounded-md bg-muted px-2 py-0.5 text-[10.5px] font-bold text-foreground">
             {dish.category}
           </span>
 
           {dish.tags.slice(0, 2).map((tag, index) => (
             <span
               key={index}
-              className="rounded-md border border-[#E9EAEE] px-2 py-0.5 text-[10.5px] font-bold text-[#3D4149]"
+              className="rounded-md border border-border px-2 py-0.5 text-[10.5px] font-bold text-foreground"
             >
               {tag}
             </span>
@@ -114,8 +114,8 @@ export function AdminDishCard({
             className={cn(
               "rounded-md px-2 py-0.5 text-[10.5px] font-extrabold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
               isAvailable
-                ? "bg-[#E9F7EF] text-[#1B7F4C] hover:bg-[#DDF1E7]"
-                : "bg-[#F4F5F7] text-[#8A8F99] hover:bg-[#EBECF0]",
+                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                : "bg-muted text-muted-foreground hover:bg-muted",
             )}
           >
             {isAvailable ? "Disponível" : "Indisponível"}
@@ -130,7 +130,7 @@ export function AdminDishCard({
           disabled={!onEdit}
           aria-label={`Editar ${dish.name}`}
           title="Editar prato"
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F4F5F7] text-[#3D4149] transition-colors hover:bg-[#E9EAEE] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Edit className="h-3.5 w-3.5" />
         </button>
@@ -141,7 +141,7 @@ export function AdminDishCard({
           disabled={!onDelete}
           aria-label={`Remover ${dish.name}`}
           title="Remover prato"
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FDEEEE] text-[#D64545] transition-colors hover:bg-[#F9DCDC] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -152,7 +152,7 @@ export function AdminDishCard({
           disabled={!onManageAddOns}
           aria-label={`Complementos de ${dish.name}`}
           title="Gerenciar complementos"
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EAF2FF] text-[#2563EB] transition-colors hover:bg-[#DCEAFF] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Sandwich className="h-3.5 w-3.5" />
         </button>
@@ -163,7 +163,7 @@ export function AdminDishCard({
           disabled={!onManageVariations}
           aria-label={`Tamanhos de ${dish.name}`}
           title="Gerenciar tamanhos"
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F3EAFF] text-[#7C3AED] transition-colors hover:bg-[#EADCFF] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 transition-colors hover:bg-violet-100 dark:hover:bg-violet-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Ruler className="h-3.5 w-3.5" />
         </button>

@@ -27,8 +27,8 @@ export function AdminPageLayout({
     <>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex min-h-screen flex-col bg-[#F4F5F7] text-[#14161A]">
-        <header className="sticky top-0 z-10 border-b bg-white print:hidden lg:pl-64">
+      <div className="flex min-h-screen flex-col bg-muted text-foreground">
+        <header className="sticky top-0 z-10 border-b bg-card print:hidden lg:pl-64">
           <div
             className={cn(
               "flex min-h-[52px] items-center justify-between gap-3 p-3",
@@ -40,7 +40,7 @@ export function AdminPageLayout({
               <button
                 type="button"
                 onClick={() => setSidebarOpen((open) => !open)}
-                className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white shadow-sm transition-colors hover:bg-gray-100 lg:hidden"
+                className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border bg-card shadow-sm transition-colors hover:bg-muted lg:hidden"
                 aria-label="Abrir menu lateral"
               >
                 <Menu className="h-4 w-4" />

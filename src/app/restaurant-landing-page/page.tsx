@@ -87,7 +87,7 @@ export default function RestaurantLandingPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
+    <div className="min-h-screen bg-muted relative overflow-hidden">
       <div className="absolute inset-0">
         <div
           className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-orange-400/20 to-orange-400/20 
@@ -123,14 +123,14 @@ export default function RestaurantLandingPage() {
             <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-orange-500 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all">
               <ThumbsUp className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">LikeDelivery</h1>
+            <h1 className="text-xl font-bold text-foreground">LikeDelivery</h1>
           </Link>
         </div>
 
         <section className="pt-20 pb-16 px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
-              <span className="text-gray-900">
+              <span className="text-foreground">
                 Leve seu Restaurante para o{" "}
               </span>
               <span className="bg-gradient-to-r from-orange-500 to-orange-500 bg-clip-text text-transparent">
@@ -138,7 +138,7 @@ export default function RestaurantLandingPage() {
               </span>
             </h1>
 
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed mb-8">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-8">
               Alcance milhares de clientes e faça seu negócio crescer com a
               plataforma de delivery mais rápida e confiável.
             </p>
@@ -149,7 +149,7 @@ export default function RestaurantLandingPage() {
               className="relative w-full sm:w-auto h-14 px-8 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-500 text-lg 
                          font-semibold text-white shadow-xl hover:shadow-2xl overflow-hidden transition-all group hover:scale-105 mb-12 cursor-pointer"
             >
-              <span className="absolute inset-0 bg-white opacity-30 rotate-45 -translate-x-full group-hover:translate-x-full blur-sm transition-transform duration-500" />
+              <span className="absolute inset-0 bg-card opacity-30 rotate-45 -translate-x-full group-hover:translate-x-full blur-sm transition-transform duration-500" />
               Cadastrar Meu Restaurante Grátis
             </Button>
 
@@ -159,7 +159,7 @@ export default function RestaurantLandingPage() {
                   <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 to-orange-500 bg-clip-text text-transparent">
                     {value}
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">{label}</div>
+                  <div className="text-sm text-muted-foreground mt-1">{label}</div>
                 </div>
               ))}
             </div>
@@ -169,10 +169,10 @@ export default function RestaurantLandingPage() {
         <section id="beneficios" className="py-20 px-4 relative">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
                 Por que escolher o Like Delivery?
               </h2>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 Tudo que você precisa para crescer seu negócio
               </p>
             </div>
@@ -181,7 +181,7 @@ export default function RestaurantLandingPage() {
               {BENEFITS.map(({ icon: Icon, gradient, title, description }) => (
                 <Card
                   key={title}
-                  className="border-0 bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 rounded-2xl"
+                  className="border-0 bg-card/80 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 rounded-2xl"
                 >
                   <CardContent className="p-6">
                     <div
@@ -189,10 +189,10 @@ export default function RestaurantLandingPage() {
                     >
                       <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold mb-2 text-gray-900">
+                    <h3 className="text-xl font-bold mb-2 text-foreground">
                       {title}
                     </h3>
-                    <p className="text-gray-600">{description}</p>
+                    <p className="text-muted-foreground">{description}</p>
                   </CardContent>
                 </Card>
               ))}
@@ -202,14 +202,14 @@ export default function RestaurantLandingPage() {
 
         <section
           id="como-funciona"
-          className="py-20 px-4 bg-white/50 backdrop-blur-sm relative"
+          className="py-20 px-4 bg-card/50 backdrop-blur-sm relative"
         >
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
                 Como Funciona
               </h2>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 Comece a vender em 3 passos simples
               </p>
             </div>
@@ -222,10 +222,10 @@ export default function RestaurantLandingPage() {
                   >
                     {number}
                   </div>
-                  <h3 className="text-xl font-bold mb-2 text-gray-900">
+                  <h3 className="text-xl font-bold mb-2 text-foreground">
                     {title}
                   </h3>
-                  <p className="text-gray-600">{description}</p>
+                  <p className="text-muted-foreground">{description}</p>
                 </div>
               ))}
             </div>
@@ -259,7 +259,7 @@ export default function RestaurantLandingPage() {
           </div>
         </section>
 
-        <footer className="border-t bg-white/80 backdrop-blur-sm py-8 px-4 relative">
+        <footer className="border-t bg-card/80 backdrop-blur-sm py-8 px-4 relative">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <Link
@@ -269,12 +269,12 @@ export default function RestaurantLandingPage() {
                 <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-orange-500 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all">
                   <ThumbsUp className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-xl font-bold text-gray-900 hidden sm:inline">
+                <h1 className="text-xl font-bold text-foreground hidden sm:inline">
                   LikeDelivery
                 </h1>
               </Link>
 
-              <nav className="flex gap-6 text-sm text-gray-600">
+              <nav className="flex gap-6 text-sm text-muted-foreground">
                 <Link
                   href="/"
                   className="hover:text-orange-500 transition-colors cursor-pointer"
@@ -301,7 +301,7 @@ export default function RestaurantLandingPage() {
                 </a>
               </nav>
 
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 © 2025 Like Delivery. Todos os direitos reservados.
               </p>
             </div>

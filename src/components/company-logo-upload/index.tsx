@@ -91,14 +91,14 @@ export function CompanyLogoUpload({
 
   if (!isMounted) {
     return (
-      <div className="h-[76px] w-[76px] shrink-0 -mt-[30px] rounded-full border-[3px] border-white bg-[#F4F5F7]" />
+      <div className="h-[76px] w-[76px] shrink-0 -mt-[30px] rounded-full border-[3px] border-background bg-muted" />
     );
   }
 
   return (
     <div
       onClick={() => !uploading && fileInputRef.current?.click()}
-      className="group relative h-[76px] w-[76px] shrink-0 -mt-[30px] cursor-pointer overflow-hidden rounded-full border-[3px] border-white bg-white shadow-sm"
+      className="group relative h-[76px] w-[76px] shrink-0 -mt-[30px] cursor-pointer overflow-hidden rounded-full border-[3px] border-background bg-card shadow-sm"
     >
       <input
         ref={fileInputRef}
@@ -116,7 +116,7 @@ export function CompanyLogoUpload({
           className="h-full w-full object-cover"
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-[#F4F5F7] text-[10px] font-semibold text-[#A0A6B0]">
+        <div className="flex h-full w-full items-center justify-center bg-muted text-[10px] font-semibold text-muted-foreground">
           Logo
         </div>
       )}

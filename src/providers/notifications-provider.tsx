@@ -22,9 +22,11 @@ import { useAuth } from "@/contexts/auth-provider";
 import { useUserOrders } from "@/hooks/use-orders";
 import { notify } from "@/lib/notify";
 import { getOrderStatusLabel } from "@/lib/order-status";
+import { socketAuthProvider } from "@/lib/socket-auth";
 import type { Order } from "@/services/api";
 import { useEffect, useRef, type ReactNode } from "react";
 import { io, type Socket } from "socket.io-client";
+import { toast } from "sonner";
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL}${KITCHEN_SOCKET_NAMESPACE}`
@@ -74,44 +76,43 @@ function ManagementOrderWatcher() {
   useEffect(() => {
     if (!SOCKET_URL) return;
 
-    let socket: Socket | null = null;
-    let cancelled = false;
+    // `auth` como função busca token fresco a cada (re)conexão - ver
+    // socket-auth.ts. Sem isso, um token expirado numa reconexão automática
+    // (depois de uma queda de rede) deixava o sino mudo pra sempre.
+    const socket = io(SOCKET_URL, { auth: socketAuthProvider });
+    socketRef.current = socket;
 
-    fetch("/api/auth/socket-token")
-      .then((res) => res.json())
-      .then(({ token }: { token: string | null }) => {
-        if (cancelled || !token) return;
-
-        socket = io(SOCKET_URL, { auth: { token } });
-        socketRef.current = socket;
-
-        socket.on("connect", () => {
-          socket!.emit("joinCompanyOrders");
-        });
-
-        socket.on("orderCreated", (order: KitchenOrder) => {
-          notify({
-            audience: "management",
-            title: "Novo pedido recebido",
-            body: `Pedido #${orderLabel(order)} acabou de chegar.`,
-            href: "/order-management",
-          });
-        });
-
-        socket.on("orderStatusUpdated", (order: KitchenOrder) => {
-          if (order.status !== "CANCELED") return;
-          notify({
-            audience: "management",
-            title: "Pedido cancelado",
-            body: `O pedido #${orderLabel(order)} foi cancelado.`,
-            href: "/order-management",
-          });
-        });
+    socket.on("connect", () => {
+      socket.emit("joinCompanyOrders", undefined, (ack?: { ok?: boolean }) => {
+        if (!ack?.ok) {
+          toast.error(
+            "Não foi possível ativar as notificações de novos pedidos em tempo real.",
+          );
+        }
       });
+    });
+
+    socket.on("orderCreated", (order: KitchenOrder) => {
+      notify({
+        audience: "management",
+        title: "Novo pedido recebido",
+        body: `Pedido #${orderLabel(order)} acabou de chegar.`,
+        href: "/order-management",
+      });
+    });
+
+    socket.on("orderStatusUpdated", (order: KitchenOrder) => {
+      if (order.status !== "CANCELED") return;
+      notify({
+        audience: "management",
+        title: "Pedido cancelado",
+        body: `O pedido #${orderLabel(order)} foi cancelado.`,
+        href: "/order-management",
+      });
+    });
 
     return () => {
-      cancelled = true;
-      socket?.disconnect();
+      socket.disconnect();
       socketRef.current = null;
     };
   }, []);

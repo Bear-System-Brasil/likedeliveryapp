@@ -84,10 +84,36 @@ export const ROLE_DESCRIPTIONS: { [key: string]: string } = {
 };
 
 /**
+ * Resolve rotas com segmento dinâmico (ex: `/restaurant/[id]`) contra um
+ * pathname real (ex: `/restaurant/abc123`) - `ROUTE_PERMISSIONS` usa a
+ * mesma sintaxe de colchetes do App Router, então bater por string exata
+ * nunca encontrava essas chaves quando chamado com o pathname de verdade.
+ */
+function findRolesForDynamicRoute(pathname: string): string[] | undefined {
+  const pathSegments = pathname.split("/").filter(Boolean);
+
+  for (const [pattern, roles] of Object.entries(ROUTE_PERMISSIONS)) {
+    const patternSegments = pattern.split("/").filter(Boolean);
+    if (patternSegments.length !== pathSegments.length) continue;
+
+    const matches = patternSegments.every(
+      (segment, i) =>
+        (segment.startsWith("[") && segment.endsWith("]")) ||
+        segment === pathSegments[i],
+    );
+
+    if (matches) return roles;
+  }
+
+  return undefined;
+}
+
+/**
  * Check if a role has permission to access a route
  */
 export function hasRoutePermission(route: string, userRole: string): boolean {
-  const allowedRoles = ROUTE_PERMISSIONS[route];
+  const allowedRoles =
+    ROUTE_PERMISSIONS[route] ?? findRolesForDynamicRoute(route);
 
   if (!allowedRoles) {
     // If route is not mapped, block for security

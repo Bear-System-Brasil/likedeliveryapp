@@ -66,7 +66,7 @@ export function OrderCard({
       className={`
       overflow-hidden
       rounded-2xl
-      border-slate-200
+      border-border
       shadow-sm
       transition-all
       duration-300
@@ -123,7 +123,7 @@ export function OrderCard({
         >
           {items.map((item) => (
             <div key={item.id} className="rounded-lg">
-              <p className="font-medium text-slate-800">
+              <p className="font-medium text-foreground">
                 <span className="font-bold">{item.quantity}x</span>{" "}
                 {getOrderItemDisplayName(item)}
               </p>

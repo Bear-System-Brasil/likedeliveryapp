@@ -64,7 +64,7 @@ export default function ContextSelectorModal({
             >
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-100 flex items-center justify-center group-hover:from-orange-500 group-hover:to-orange-500 transition-all">
-                  <Building2 className="h-8 w-8 text-orange-600 group-hover:text-white transition-all" />
+                  <Building2 className="h-8 w-8 text-orange-600 dark:text-orange-400 group-hover:text-white transition-all" />
                 </div>
                 <CardTitle className="text-xl">Gestor de Restaurante</CardTitle>
                 <CardDescription className="text-sm">
@@ -81,7 +81,7 @@ export default function ContextSelectorModal({
                 >
                   Acessar Gestão
                 </Button>
-                <div className="mt-3 text-xs text-gray-500">
+                <div className="mt-3 text-xs text-muted-foreground">
                   • Cadastrar pratos
                   <br />
                   • Visualizar pedidos
@@ -96,8 +96,8 @@ export default function ContextSelectorModal({
               onClick={() => handleSelectContext("customer")}
             >
               <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-orange-100 flex items-center justify-center group-hover:bg-orange-500 transition-all">
-                  <ShoppingBag className="h-8 w-8 text-orange-600 group-hover:text-white transition-all" />
+                <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center group-hover:bg-orange-500 transition-all">
+                  <ShoppingBag className="h-8 w-8 text-orange-600 dark:text-orange-400 group-hover:text-white transition-all" />
                 </div>
                 <CardTitle className="text-xl">Cliente</CardTitle>
                 <CardDescription className="text-sm">
@@ -114,7 +114,7 @@ export default function ContextSelectorModal({
                 >
                   Acessar como Cliente
                 </Button>
-                <div className="mt-3 text-xs text-gray-500">
+                <div className="mt-3 text-xs text-muted-foreground">
                   • Explorar restaurantes
                   <br />
                   • Fazer pedidos
@@ -124,7 +124,7 @@ export default function ContextSelectorModal({
             </Card>
           </div>
 
-          <div className="mt-4 text-center text-sm text-gray-500">
+          <div className="mt-4 text-center text-sm text-muted-foreground">
             💡 Você pode alternar entre os modos a qualquer momento
           </div>
         </div>

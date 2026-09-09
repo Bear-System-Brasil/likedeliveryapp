@@ -32,7 +32,7 @@ export default function FinancialDashboardPage() {
         <Button
           onClick={dashboard.refetch}
           disabled={dashboard.isFetching}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] border border-[#E9EAEE] bg-white px-3.5 text-xs font-bold text-[#FF6B00] transition-colors hover:bg-[#FFF7F0] disabled:opacity-60"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] border border-border bg-card px-3.5 text-xs font-bold text-[#FF6B00] transition-colors hover:bg-orange-50 dark:hover:bg-orange-950/40 disabled:opacity-60"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           {dashboard.isFetching ? "Atualizando..." : "Atualizar"}
@@ -51,24 +51,24 @@ export default function FinancialDashboardPage() {
         <AttentionBand dashboard={dashboard} />
 
         {dashboard.isError ? (
-          <div className="rounded-[13px] border border-[#E9EAEE] bg-white px-5 py-10 text-center">
+          <div className="rounded-[13px] border border-border bg-card px-5 py-10 text-center">
             <div className="text-[26px]">📉</div>
-            <div className="mt-2 text-[13.5px] font-bold text-[#14161A]">
+            <div className="mt-2 text-[13.5px] font-bold text-foreground">
               Não foi possível carregar o período
             </div>
-            <div className="mt-0.5 text-[11.5px] text-[#8A8F99]">
+            <div className="mt-0.5 text-[11.5px] text-muted-foreground">
               {dashboard.error instanceof Error
                 ? dashboard.error.message
                 : "Tente atualizar em instantes."}
             </div>
           </div>
         ) : dashboard.isEmpty ? (
-          <div className="rounded-[13px] border border-dashed border-[#DDDFE4] bg-white px-5 py-10 text-center">
+          <div className="rounded-[13px] border border-dashed border-border bg-card px-5 py-10 text-center">
             <div className="text-[26px]">🗓️</div>
-            <div className="mt-2 text-[13.5px] font-bold text-[#14161A]">
+            <div className="mt-2 text-[13.5px] font-bold text-foreground">
               Nenhum movimento neste período
             </div>
-            <div className="mt-0.5 text-[11.5px] text-[#8A8F99]">
+            <div className="mt-0.5 text-[11.5px] text-muted-foreground">
               Escolha outro período no seletor acima.
             </div>
           </div>

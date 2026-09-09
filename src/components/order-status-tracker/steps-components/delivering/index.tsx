@@ -26,7 +26,7 @@ export function DeliveringMap({ order, lat, lng }: Props) {
 
   if (!googleMapsApiKey) {
     return (
-      <div className="rounded-[10px] border border-[#e9eaee] bg-white p-3 text-[11.5px] font-medium text-[#8a8f99]">
+      <div className="rounded-[10px] border border-border bg-card p-3 text-[11.5px] font-medium text-muted-foreground">
         Mapa indisponivel no momento. Configuracao do Google Maps ausente.
       </div>
     );
@@ -34,7 +34,7 @@ export function DeliveringMap({ order, lat, lng }: Props) {
 
   if (loadError) {
     return (
-      <div className="rounded-[10px] border border-[#e9eaee] bg-white p-3 text-[11.5px] font-medium text-[#8a8f99]">
+      <div className="rounded-[10px] border border-border bg-card p-3 text-[11.5px] font-medium text-muted-foreground">
         Erro ao carregar o mapa
       </div>
     );
@@ -42,12 +42,12 @@ export function DeliveringMap({ order, lat, lng }: Props) {
 
   if (!isLoaded) {
     return (
-      <div className="h-[220px] animate-pulse rounded-[10px] bg-[#f0f1f4]" />
+      <div className="h-[220px] animate-pulse rounded-[10px] bg-muted" />
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-[10px] border border-[#e9eaee]">
+    <div className="overflow-hidden rounded-[10px] border border-border">
       <GoogleMap
         mapContainerStyle={{ width: "100%", height: "220px" }}
         center={center}

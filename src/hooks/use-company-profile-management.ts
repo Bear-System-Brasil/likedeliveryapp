@@ -1,7 +1,7 @@
 import { apiService, type Address, type Speciality } from "@/services/api";
 import { geocodeAddress } from "@/lib/geocode";
 import { useAuthStore } from "@/stores";
-import { onlyNumbers } from "@/utils";
+import { getErrorMessage, onlyNumbers } from "@/utils";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -107,7 +107,7 @@ export const useCompanyProfileManagement = () => {
   });
 
   // Address management state
-  const [addresses, setAddresses] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
@@ -185,9 +185,9 @@ export const useCompanyProfileManagement = () => {
 
           setFormData(companyData);
           setOriginalFormData(companyData);
-          setIsOpen((company as any).isOpen ?? true);
+          setIsOpen(company.isOpen ?? true);
           // Populate speciality from real company data
-          const specs = (company as any).speciality || [];
+          const specs = company.speciality || [];
           setCompanySpecialities(specs);
           if (specs.length > 0) {
             setSelectedCategory(specs[0].id);
@@ -258,12 +258,16 @@ export const useCompanyProfileManagement = () => {
       setIsSavingSpeciality(true);
 
       // Remove old speciality if exists
+      let failedToRemoveOld = false;
       if (companySpecialities.length > 0) {
         for (const spec of companySpecialities) {
           try {
-            await apiService.removeSpecialityFromCompany(spec.id);
+            const removeResponse =
+              await apiService.removeSpecialityFromCompany(spec.id);
+            if (!removeResponse.success) failedToRemoveOld = true;
           } catch (e) {
             console.error("Erro ao remover especialidade antiga:", e);
+            failedToRemoveOld = true;
           }
         }
       }
@@ -278,10 +282,15 @@ export const useCompanyProfileManagement = () => {
           user.companyId || user.id,
         );
         if (companyResponse.success && companyResponse.data) {
-          const specs = (companyResponse.data as any).speciality || [];
+          const specs = companyResponse.data.speciality || [];
           setCompanySpecialities(specs);
         }
         toast.success("Tipo de restaurante atualizado!");
+        if (failedToRemoveOld) {
+          toast.warning(
+            "Não conseguimos remover o tipo antigo - a loja pode ficar com mais de um tipo cadastrado.",
+          );
+        }
       } else {
         toast.error("Erro ao atualizar tipo de restaurante");
       }
@@ -395,12 +404,12 @@ export const useCompanyProfileManagement = () => {
       } else {
         toast.error(response.message || "Erro ao atualizar perfil");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao atualizar perfil:", error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Erro ao atualizar perfil. Verifique os dados e tente novamente.";
+      const errorMessage = getErrorMessage(
+        error,
+        "Erro ao atualizar perfil. Verifique os dados e tente novamente.",
+      );
       toast.error(errorMessage);
     } finally {
       setIsSaving(false);
@@ -442,6 +451,7 @@ export const useCompanyProfileManagement = () => {
       };
 
       // Se o novo endereço for padrão, desmarcar todos os outros no backend
+      let failedToUnsetDefault = false;
       if (addressData.isDefault) {
         const currentAddresses = await apiService.address.getCompanyAddresses();
         if (currentAddresses.success && currentAddresses.data) {
@@ -454,21 +464,26 @@ export const useCompanyProfileManagement = () => {
 
           for (const addr of backendDefaults) {
             try {
-              await apiService.address.updateCompanyAddress(addr.id, {
-                zipCode: addr.zipCode,
-                state: addr.state,
-                city: addr.city,
-                neighborhood: addr.neighborhood,
-                street: addr.street,
-                number: addr.number,
-                complement: sanitizeOptionalText(addr.complement ?? ""),
-                reference: sanitizeOptionalText(addr.reference ?? ""),
-                latitude: addr.latitude ?? undefined,
-                longitude: addr.longitude ?? undefined,
-                isDefault: false,
-              });
+              const unsetResponse = await apiService.address.updateCompanyAddress(
+                addr.id,
+                {
+                  zipCode: addr.zipCode,
+                  state: addr.state,
+                  city: addr.city,
+                  neighborhood: addr.neighborhood,
+                  street: addr.street,
+                  number: addr.number,
+                  complement: sanitizeOptionalText(addr.complement ?? ""),
+                  reference: sanitizeOptionalText(addr.reference ?? ""),
+                  latitude: addr.latitude ?? undefined,
+                  longitude: addr.longitude ?? undefined,
+                  isDefault: false,
+                },
+              );
+              if (!unsetResponse.success) failedToUnsetDefault = true;
             } catch (error) {
               console.error("Erro ao desmarcar endereço padrão:", error);
+              failedToUnsetDefault = true;
             }
           }
         }
@@ -478,6 +493,11 @@ export const useCompanyProfileManagement = () => {
 
       if (response.success && response.data) {
         toast.success("Endereço adicionado com sucesso!");
+        if (failedToUnsetDefault) {
+          toast.warning(
+            "Não conseguimos desmarcar todos os endereços padrão antigos. Confira a lista de endereços.",
+          );
+        }
         await fetchAddresses();
         setIsAddingAddress(false);
         setNewAddress({
@@ -655,6 +675,7 @@ export const useCompanyProfileManagement = () => {
       };
 
       // Se o endereço editado virar padrão, desmarcar todos os outros
+      let failedToUnsetDefault = false;
       if (addressData.isDefault) {
         const currentAddresses = await apiService.address.getCompanyAddresses();
         if (currentAddresses.success && currentAddresses.data) {
@@ -667,21 +688,26 @@ export const useCompanyProfileManagement = () => {
 
           for (const addr of backendDefaults) {
             try {
-              await apiService.address.updateCompanyAddress(addr.id, {
-                zipCode: addr.zipCode,
-                state: addr.state,
-                city: addr.city,
-                neighborhood: addr.neighborhood,
-                street: addr.street,
-                number: addr.number,
-                complement: sanitizeOptionalText(addr.complement ?? ""),
-                reference: sanitizeOptionalText(addr.reference ?? ""),
-                latitude: addr.latitude ?? undefined,
-                longitude: addr.longitude ?? undefined,
-                isDefault: false,
-              });
+              const unsetResponse = await apiService.address.updateCompanyAddress(
+                addr.id,
+                {
+                  zipCode: addr.zipCode,
+                  state: addr.state,
+                  city: addr.city,
+                  neighborhood: addr.neighborhood,
+                  street: addr.street,
+                  number: addr.number,
+                  complement: sanitizeOptionalText(addr.complement ?? ""),
+                  reference: sanitizeOptionalText(addr.reference ?? ""),
+                  latitude: addr.latitude ?? undefined,
+                  longitude: addr.longitude ?? undefined,
+                  isDefault: false,
+                },
+              );
+              if (!unsetResponse.success) failedToUnsetDefault = true;
             } catch (error) {
               console.error("Erro ao desmarcar endereço padrão:", error);
+              failedToUnsetDefault = true;
             }
           }
         }
@@ -694,6 +720,11 @@ export const useCompanyProfileManagement = () => {
 
       if (response.success) {
         toast.success("Endereço atualizado com sucesso!");
+        if (failedToUnsetDefault) {
+          toast.warning(
+            "Não conseguimos desmarcar todos os endereços padrão antigos. Confira a lista de endereços.",
+          );
+        }
         await fetchAddresses();
         setIsAddingAddress(false);
         setEditingAddressId(null);

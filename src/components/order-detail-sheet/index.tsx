@@ -196,8 +196,8 @@ export function OrderDetailSheet<TOrder extends DetailableOrder>({
             <>
               <Separator />
               <section>
-                <h3 className="text-sm font-semibold mb-2 text-red-600">Motivo do Cancelamento</h3>
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                <h3 className="text-sm font-semibold mb-2 text-red-600 dark:text-red-400">Motivo do Cancelamento</h3>
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-md text-sm text-red-700 dark:text-red-400">
                   {order.cancelReason}
                 </div>
               </section>
@@ -273,7 +273,7 @@ export function OrderDetailSheet<TOrder extends DetailableOrder>({
                 </span>
               </div>
               {(order.discount || 0) > 0 && (
-                <div className="flex justify-between text-emerald-600">
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                   <span>Desconto</span>
                   <span>-{formatCurrency(order.discount || 0)}</span>
                 </div>
@@ -314,7 +314,7 @@ export function OrderDetailSheet<TOrder extends DetailableOrder>({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="cursor-pointer text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
                     onClick={() => onCancel(order)}
                   >
                     <X className="h-4 w-4 mr-1.5" />

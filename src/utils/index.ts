@@ -36,3 +36,21 @@ export function slugify(text: string): string {
     .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
     .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
 }
+
+/**
+ * Extrai uma mensagem legivel de um `catch (error)` tipado como `unknown`.
+ * Cobre `Error`, respostas de API com `{ message }` e strings soltas.
+ */
+export function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) return error.message
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message
+  }
+  if (typeof error === 'string') return error
+  return fallback
+}

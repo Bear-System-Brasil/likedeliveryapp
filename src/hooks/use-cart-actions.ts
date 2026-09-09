@@ -3,6 +3,7 @@ import { useSound } from "@/hooks/use-sound";
 import { apiService } from "@/services/api";
 import { useCartStore } from "@/stores";
 import { useAuthStore } from "@/stores/auth-store";
+import { getErrorMessage } from "@/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -32,6 +33,48 @@ const waitForPendingAdds = async () => {
   if (!pendingAddPromises.length) return;
   await Promise.allSettled(pendingAddPromises);
 };
+
+/**
+ * O carrinho no Redis devolve addOns/variations com o nome da relação
+ * aninhada variando conforme o include do backend (ver comentário em
+ * `syncCartFromBackend`) - por isso todos os campos de rótulo aqui são
+ * opcionais e checados em cascata.
+ */
+interface BackendCartAddOn {
+  productAddOnsId: string;
+  quantity?: number;
+  priceSnapshot?: number;
+  productAddOn?: { name?: string; description?: string };
+  productAddOns?: { name?: string; description?: string };
+  addOn?: { name?: string; description?: string };
+  name?: string;
+  description?: string;
+}
+
+interface BackendCartVariation {
+  productVariationId: string;
+  priceSnapshot?: number;
+  variation?: { name?: string; description?: string };
+  productVariation?: { name?: string; description?: string };
+  name?: string;
+  description?: string;
+}
+
+interface BackendCartItem {
+  productId: string;
+  unitPrice: number;
+  quantity: number;
+  addIngredient?: Record<string, unknown>;
+  product?: { name?: string; imageURL?: { url: string }[] };
+  addOns?: BackendCartAddOn[];
+  variations?: BackendCartVariation[];
+}
+
+interface BackendCart {
+  id: string;
+  companyId?: string;
+  orderedItems?: BackendCartItem[];
+}
 
 /**
  * Chave de LINHA do carrinho: produto + combinação exata de tamanho/
@@ -95,18 +138,19 @@ export const useCartActions = () => {
       const response = await apiService.orders.viewOrder(user.id, cartKey);
 
       if (response.success && response.data) {
-        const backendCart = response.data as any;
+        const backendCart = response.data as BackendCart;
         const orderId = backendCart.id;
 
         setOrderId(orderId);
 
-        const hasItems =
-          backendCart.orderedItems && backendCart.orderedItems.length > 0;
+        const orderedItems = backendCart.orderedItems;
+        const hasItems = orderedItems && orderedItems.length > 0;
 
-        if (hasItems) {
-          if (backendCart.companyId) {
+        if (orderedItems && hasItems) {
+          const companyId = backendCart.companyId || "";
+          if (companyId) {
             setRestaurant({
-              id: backendCart.companyId,
+              id: companyId,
               name: restaurant?.name || "Restaurante",
             });
           }
@@ -132,8 +176,7 @@ export const useCartActions = () => {
           // gerava 2 requests novos por sync sem necessidade).
           let addOnNameById = new Map<string, string>();
           let variationNameById = new Map<string, string>();
-          if (backendCart.companyId) {
-            const companyId = backendCart.companyId;
+          if (companyId) {
             const [addOnsRes, variationsRes] = await Promise.all([
               queryClient.fetchQuery({
                 queryKey: ["product-add-ons", "public", "company", companyId],
@@ -164,7 +207,7 @@ export const useCartActions = () => {
             }
           }
 
-          const cartItems = backendCart.orderedItems.map((item: any) => {
+          const cartItems = orderedItems.map((item) => {
             // item.unitPrice é só o preço base do produto - os extras de
             // tamanho/complemento vêm à parte, em addOns[]/variations[]
             // (cada um com seu priceSnapshot). Sem somar isso aqui, o
@@ -172,20 +215,20 @@ export const useCartActions = () => {
             // com o backend (ex: ao entrar em /cart), voltando pro preço
             // original do prato.
             const addOnsTotal = (item.addOns || []).reduce(
-              (sum: number, addOn: any) =>
+              (sum: number, addOn) =>
                 sum + (addOn.priceSnapshot || 0) * (addOn.quantity || 1),
               0,
             );
             const variationsTotal = (item.variations || []).reduce(
-              (sum: number, variation: any) =>
+              (sum: number, variation) =>
                 sum + (variation.priceSnapshot || 0),
               0,
             );
 
-            const variations = (item.variations || []).map((v: any) => ({
+            const variations = (item.variations || []).map((v) => ({
               productVariationId: v.productVariationId,
             }));
-            const addOns = (item.addOns || []).map((a: any) => ({
+            const addOns = (item.addOns || []).map((a) => ({
               productAddOnsId: a.productAddOnsId,
               quantity: a.quantity || 1,
             }));
@@ -200,7 +243,7 @@ export const useCartActions = () => {
             // no primeiro resync com o backend).
             const variationLabel = (item.variations || [])
               .map(
-                (v: any) =>
+                (v) =>
                   v.variation?.name ||
                   v.productVariation?.name ||
                   v.productVariation?.description ||
@@ -212,7 +255,7 @@ export const useCartActions = () => {
               .join(", ");
             const addOnLabels = (item.addOns || [])
               .map(
-                (a: any) =>
+                (a) =>
                   a.productAddOn?.name ||
                   a.productAddOns?.name ||
                   a.productAddOns?.description ||
@@ -221,7 +264,7 @@ export const useCartActions = () => {
                   a.description ||
                   addOnNameById.get(a.productAddOnsId),
               )
-              .filter(Boolean);
+              .filter((label): label is string => Boolean(label));
 
             const id = buildCartItemKey(item.productId, variations, addOns);
             const existing = currentItemsById.get(id);
@@ -233,7 +276,7 @@ export const useCartActions = () => {
               price: item.unitPrice + addOnsTotal + variationsTotal,
               quantity: item.quantity,
               imageUrl: item.product?.imageURL?.[0]?.url,
-              restaurantId: backendCart.companyId,
+              restaurantId: companyId,
               restaurantName: restaurant?.name || "Restaurante",
               customizations: item.addIngredient || undefined,
               variationLabel: variationLabel || existing?.variationLabel,
@@ -402,14 +445,28 @@ export const useCartActions = () => {
       // Timeout de 10 segundos (previne requisições travadas)
       const timeoutId = setTimeout(() => abortController.abort(), 10000);
 
+      // Reverte pela QUANTIDADE que essa chamada tentou adicionar, não pro
+      // valor absoluto de antes dela - se outra chamada mais recente para o
+      // mesmo item já mudou o carrinho nesse meio-tempo, subtrair só o que
+      // essa tentativa somou preserva a mudança da outra em vez de apagá-la.
+      const addedQuantity = item.quantity || 1;
+
       const revertAddToCart = (message?: string) => {
         const currentItems = useCartStore.getState().items;
-        const revertedItems = currentItems.filter((i) => i.id !== cartItemKey);
+        const existing = currentItems.find((i) => i.id === cartItemKey);
+        const revertedItems =
+          existing && existing.quantity > addedQuantity
+            ? currentItems.map((i) =>
+                i.id === cartItemKey
+                  ? { ...i, quantity: i.quantity - addedQuantity }
+                  : i,
+              )
+            : currentItems.filter((i) => i.id !== cartItemKey);
         setItems(revertedItems);
         toast.error(message || "Erro ao adicionar item. Tente novamente.");
       };
 
-      const addItemToBackend = async () => {
+      const addItemToBackend = async (signal: AbortSignal) => {
         const extras = { addOns: item.addOns, variations: item.variations };
 
         let response = await apiService.orderItems.addProductToCart(
@@ -418,6 +475,7 @@ export const useCartActions = () => {
           user.id,
           item.quantity || 1,
           extras,
+          signal,
         );
 
         // 404 aqui significa que o orderId guardado no localStorage não existe
@@ -441,6 +499,7 @@ export const useCartActions = () => {
               user.id,
               item.quantity || 1,
               extras,
+              signal,
             );
           }
         }
@@ -448,7 +507,7 @@ export const useCartActions = () => {
         return response;
       };
 
-      const backgroundAdd = addItemToBackend()
+      const backgroundAdd = addItemToBackend(abortController.signal)
         .then((response) => {
           clearTimeout(timeoutId);
           pendingRequests.current.delete(cartItemKey);
@@ -483,9 +542,9 @@ export const useCartActions = () => {
 
       // Retornar true imediatamente (optimistic)
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao adicionar item:", error);
-      toast.error(error.message || "Erro ao adicionar item ao carrinho");
+      toast.error(getErrorMessage(error, "Erro ao adicionar item ao carrinho"));
       return false;
     } finally {
       setLoading(false);
@@ -601,18 +660,28 @@ export const useCartActions = () => {
               user.id,
               diff,
               { addOns: item.addOns, variations: item.variations },
+              abortController.signal,
             )
           : apiService.orderItems.removeProductFromCart(
               user.id,
               orderId,
               item.productId,
               Math.abs(diff),
+              abortController.signal,
             );
 
+      // Reverte subtraindo o `diff` que ESSA chamada tentou aplicar, do
+      // valor atual - não pulando pro snapshot antigo (`item.quantity`), que
+      // ficaria stale se outra chamada pro mesmo item já tiver mudado a
+      // quantidade nesse meio-tempo (ver AbortController acima: o abort é
+      // best-effort e não garante que a chamada anterior nunca chegou a
+      // processar no backend).
       const revertQuantity = (message?: string) => {
         const currentItems = useCartStore.getState().items;
         const revertedItems = currentItems.map((i) =>
-          i.id === itemId ? { ...i, quantity: item.quantity } : i,
+          i.id === itemId
+            ? { ...i, quantity: Math.max(1, i.quantity - diff) }
+            : i,
         );
         setItems(revertedItems);
         toast.error(message || "Erro ao atualizar. Tente novamente.");

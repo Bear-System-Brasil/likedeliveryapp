@@ -105,7 +105,7 @@ export function Addresses({
           variant="outline"
           size="sm"
           onClick={addingAddressState.open}
-          className="rounded-xl border-gray-200"
+          className="rounded-xl border-border"
         >
           <Plus className="h-4 w-4 mr-2" />
           Adicionar
@@ -124,8 +124,8 @@ export function Addresses({
             addingAddressState.isOpen ? "hidden" : "block",
           )}
         >
-          <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600 mb-4">Nenhum endereço cadastrado</p>
+          <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground mb-4">Nenhum endereço cadastrado</p>
           <GradientButton onClick={addingAddressState.open}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Primeiro Endereço
@@ -136,7 +136,7 @@ export function Addresses({
           {addresses.map((address) => (
             <div
               key={address.id}
-              className="border border-gray-200 rounded-xl p-4"
+              className="border border-border rounded-xl p-4"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-2">
@@ -157,7 +157,7 @@ export function Addresses({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleEditAddress(address)}
-                    className="text-gray-600 hover:text-orange-600 hover:bg-orange-50"
+                    className="text-muted-foreground hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/40"
                     aria-label="Editar endereço"
                     title="Editar endereço"
                   >
@@ -168,7 +168,7 @@ export function Addresses({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteAddress(address.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
                     title="Excluir endereço"
                   >
                     <X className="h-4 w-4" />
@@ -176,8 +176,8 @@ export function Addresses({
                 </div>
               </div>
 
-              <div className="text-sm text-gray-600">
-                <p className="font-medium text-gray-900">
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">
                   {address.street}, {address.number}
                   {address.complement && ` - ${address.complement}`}
                 </p>

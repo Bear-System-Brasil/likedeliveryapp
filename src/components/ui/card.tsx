@@ -14,11 +14,11 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         "rounded-xl border text-card-foreground shadow relative overflow-hidden transition-all",
 
         // padrão
-        "bg-white/80 backdrop-blur-sm",
+        "bg-card/80 backdrop-blur-sm",
 
         //promoção
         promotion &&
-          "border-orange-300 bg-linear-to-br from-orange-50 via-white to-orange-50 shadow-orange-100 ring-2 ring-orange-200",
+          "border-orange-300 bg-linear-to-br from-orange-50 via-card to-orange-50 shadow-orange-100 ring-2 ring-orange-200 dark:border-orange-800 dark:from-orange-950 dark:via-card dark:to-orange-950 dark:shadow-none dark:ring-orange-900",
 
         className,
       )}
