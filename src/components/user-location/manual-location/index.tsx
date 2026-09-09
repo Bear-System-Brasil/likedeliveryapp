@@ -54,13 +54,13 @@ export function ManualLocation({ location, setLocation }: LocationType) {
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center max-w-lg mx-auto  px-2">
       <div className="relative flex-1 w-full">
-        <MapPin className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+        <MapPin className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 sm:h-5 sm:w-5" />
         <input
           type="text"
           value={decodeURIComponent(location)}
           placeholder="Onde você está?"
           onChange={(e) => setLocation(e.target.value)}
-          className="pl-10 sm:pl-12 h-12 sm:h-14 text-base sm:text-lg rounded-xl sm:rounded-2xl border-2 bg-white shadow-lg w-full outline-none"
+          className="pl-10 sm:pl-12 h-12 sm:h-14 text-base sm:text-lg rounded-xl sm:rounded-2xl border-2 bg-card shadow-lg w-full outline-none"
           style={{
             borderColor: "#e5e7eb",
             backgroundImage: "none",

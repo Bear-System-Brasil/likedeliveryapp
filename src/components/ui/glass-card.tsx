@@ -75,8 +75,8 @@ export interface GlassCardProps {
 }
 
 const variantClasses = {
-  glass: "bg-white/80 backdrop-blur-sm",
-  solid: "bg-white",
+  glass: "bg-card/80 backdrop-blur-sm",
+  solid: "bg-card",
   gradient: "bg-gradient-to-r from-orange-500 to-orange-500 text-white",
 };
 
@@ -92,7 +92,7 @@ const shadowClasses = {
 const borderClasses = {
   default: "border",
   none: "border-0",
-  accent: "border-2 border-orange-300",
+  accent: "border-2 border-orange-300 dark:border-orange-700",
 };
 
 /**

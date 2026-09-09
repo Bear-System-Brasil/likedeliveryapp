@@ -24,8 +24,8 @@ export function ErrorPage({ data }: Props) {
       />
       <div className="min-h-screen flex items-center justify-center pt-32">
         <div className="text-center max-w-md px-4">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 mb-4">
+          <AlertCircle className="h-12 w-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
+          <p className="text-red-600 dark:text-red-400 mb-4">
             {data.error || "Pedido não encontrado"}
           </p>
           <Button

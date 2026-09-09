@@ -90,13 +90,13 @@ export function CompanyCoverUpload({
   };
 
   if (!isMounted) {
-    return <div className="h-[150px] w-full bg-[#F4F5F7]" />;
+    return <div className="h-[150px] w-full bg-muted" />;
   }
 
   return (
     <div
       onClick={() => !uploading && fileInputRef.current?.click()}
-      className="group relative h-[150px] w-full cursor-pointer overflow-hidden bg-[#F4F5F7]"
+      className="group relative h-[150px] w-full cursor-pointer overflow-hidden bg-muted"
     >
       <input
         ref={fileInputRef}
@@ -114,7 +114,7 @@ export function CompanyCoverUpload({
           className="h-full w-full object-cover"
         />
       ) : (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-[#A0A6B0]">
+        <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground">
           <ImagePlus className="h-5 w-5" />
           <span className="text-[11.5px] font-semibold">
             Arraste a imagem de capa · 1200×400

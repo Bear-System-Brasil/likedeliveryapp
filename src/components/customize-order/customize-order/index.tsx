@@ -17,25 +17,15 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils";
 import { Minus, Plus, X } from "lucide-react";
+import type { Category, Product } from "@/services/api";
+import type { ProductCategory } from "@/types/restaurant";
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SelectOptions } from "../select-options";
 
-type ImageURLType = {
-  url: string;
-}[];
-
 type Props = {
-  productData: {
-    companyId: string;
-    id: string;
-    name: string;
-    imageURL: ImageURLType;
-    description: string;
-    salePrice: number;
-    productCategories: string[];
-  };
+  productData: Product;
   isModalOpen: boolean;
   setIsModalOpen: (val: boolean) => void;
 };
@@ -181,11 +171,11 @@ export function CustomizeOrder({
   const categoryMap = useMemo(() => {
     if (!categories) return {};
 
-    return Object.fromEntries(categories.map((c: any) => [c.id, c.name]));
+    return Object.fromEntries(categories.map((c: Category) => [c.id, c.name]));
   }, [categories]);
 
   const getProductCategoryNames = (
-    productCategories: any[],
+    productCategories: ProductCategory[] | undefined,
     categoryMap: Record<string, string>,
   ) => {
     if (!productCategories) return [];
@@ -279,7 +269,7 @@ export function CustomizeOrder({
         className="flex w-[calc(100%-2rem)] max-h-[86dvh] max-w-[440px] flex-col gap-0 overflow-hidden rounded-2xl border-0 p-0 shadow-2xl sm:w-full sm:rounded-2xl"
       >
         {/* Header image */}
-        <div className="relative h-[118px] shrink-0 bg-[#EDEEF1]">
+        <div className="relative h-[118px] shrink-0 bg-muted">
           {images.length > 1 ? (
             <Carousel setApi={setImageApi} className="h-full" opts={{ loop: true }}>
               <CarouselContent className="ml-0 h-[118px]">
@@ -314,7 +304,7 @@ export function CustomizeOrder({
                 <span
                   key={index}
                   className={cn(
-                    "h-1.5 rounded-full bg-white transition-all",
+                    "h-1.5 rounded-full bg-card transition-all",
                     currentImage === index ? "w-4 opacity-100" : "w-1.5 opacity-60",
                   )}
                 />
@@ -323,7 +313,7 @@ export function CustomizeOrder({
           )}
 
           {productTags.length > 0 && (
-            <span className="absolute left-3 top-3 z-20 rounded-md bg-white/95 px-2.5 py-[3px] text-[10.5px] font-extrabold text-[#3D4149]">
+            <span className="absolute left-3 top-3 z-20 rounded-md bg-card/95 px-2.5 py-[3px] text-[10.5px] font-extrabold text-foreground">
               {productTags[0]}
             </span>
           )}
@@ -331,7 +321,7 @@ export function CustomizeOrder({
           <button
             type="button"
             onClick={() => handleModalClose(false)}
-            className="absolute right-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-[#3D4149] transition hover:bg-white"
+            className="absolute right-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-lg bg-card/95 text-foreground transition hover:bg-card"
             aria-label="Fechar"
           >
             <X className="h-3.5 w-3.5" />
@@ -348,16 +338,16 @@ export function CustomizeOrder({
         <div className="min-h-0 flex-1 overflow-y-auto px-[18px] pb-3 pt-3.5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="truncate text-[18px] font-extrabold tracking-[-0.02em] text-[#14161A]">
+              <h2 className="truncate text-[18px] font-extrabold tracking-[-0.02em] text-foreground">
                 {productData.name}
               </h2>
               {productData.description && (
-                <p className="mt-[3px] text-[12.5px] font-medium text-[#8A8F99]">
+                <p className="mt-[3px] text-[12.5px] font-medium text-muted-foreground">
                   {productData.description}
                 </p>
               )}
             </div>
-            <span className="shrink-0 text-[16px] font-extrabold text-[#14161A]">
+            <span className="shrink-0 text-[16px] font-extrabold text-foreground">
               {formatCurrency(productData.salePrice || 0)}
             </span>
           </div>
@@ -365,11 +355,11 @@ export function CustomizeOrder({
           <div className="mt-3.5 flex flex-col gap-3.5">
             {isCustomizationLoading ? (
               <div className="flex flex-col gap-1.5">
-                <div className="h-3 w-24 animate-pulse rounded bg-[#EDEEF1]" />
+                <div className="h-3 w-24 animate-pulse rounded bg-muted" />
                 <div className="grid grid-cols-3 gap-1.5">
-                  <div className="h-[50px] animate-pulse rounded-[10px] bg-[#EDEEF1]" />
-                  <div className="h-[50px] animate-pulse rounded-[10px] bg-[#EDEEF1]" />
-                  <div className="h-[50px] animate-pulse rounded-[10px] bg-[#EDEEF1]" />
+                  <div className="h-[50px] animate-pulse rounded-[10px] bg-muted" />
+                  <div className="h-[50px] animate-pulse rounded-[10px] bg-muted" />
+                  <div className="h-[50px] animate-pulse rounded-[10px] bg-muted" />
                 </div>
               </div>
             ) : (
@@ -404,31 +394,31 @@ export function CustomizeOrder({
                   }))
                 }
                 rows={2}
-                className="mt-2 resize-none rounded-[9px] border border-[#E4E6EA] bg-[#FAFAFB] text-[12.5px] shadow-none focus-visible:ring-orange-400"
+                className="mt-2 resize-none rounded-[9px] border border-border bg-muted text-[12.5px] shadow-none focus-visible:ring-orange-400"
               />
             )}
           </div>
         </div>
 
         {/* Quantity and Add button */}
-        <div className="flex shrink-0 items-center gap-3 border-t border-[#E9EAEE] bg-white px-[18px] py-3">
-          <div className="flex h-10 shrink-0 items-center gap-0.5 rounded-[10px] bg-[#F4F5F7] px-1">
+        <div className="flex shrink-0 items-center gap-3 border-t border-border bg-card px-[18px] py-3">
+          <div className="flex h-10 shrink-0 items-center gap-0.5 rounded-[10px] bg-muted px-1">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
-              className="flex h-8 w-[30px] items-center justify-center rounded-lg text-[#3D4149] disabled:opacity-40"
+              className="flex h-8 w-[30px] items-center justify-center rounded-lg text-foreground disabled:opacity-40"
               aria-label="Diminuir quantidade"
             >
               <Minus className="h-3.5 w-3.5" />
             </button>
-            <span className="min-w-[22px] text-center text-sm font-extrabold text-[#14161A]">
+            <span className="min-w-[22px] text-center text-sm font-extrabold text-foreground">
               {quantity}
             </span>
             <button
               type="button"
               onClick={() => setQuantity((q) => q + 1)}
-              className="flex h-8 w-[30px] items-center justify-center rounded-lg text-[#3D4149]"
+              className="flex h-8 w-[30px] items-center justify-center rounded-lg text-foreground"
               aria-label="Aumentar quantidade"
             >
               <Plus className="h-3.5 w-3.5" />

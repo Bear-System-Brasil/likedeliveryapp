@@ -185,11 +185,11 @@ export const KITCHEN_COLUMNS: KitchenColumnConfig[] = [
     nextStatus: "IN_PRODUCTION",
     actionLabel: "Iniciar preparo",
     tone: {
-      header: "bg-amber-100 border-amber-200",
-      body: "bg-amber-50/40 border-amber-200",
-      text: "text-amber-800",
+      header: "bg-amber-100 dark:bg-amber-900 border-amber-200 dark:border-amber-800",
+      body: "bg-amber-50/40 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800",
+      text: "text-amber-800 dark:text-amber-300",
       badge: "bg-amber-500 text-white",
-      tab: "data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800",
+      tab: "data-[state=active]:bg-amber-100 dark:bg-amber-900 data-[state=active]:text-amber-800 dark:text-amber-300",
     },
   },
   {
@@ -200,11 +200,11 @@ export const KITCHEN_COLUMNS: KitchenColumnConfig[] = [
     nextStatus: "READY_FOR_PICKUP",
     actionLabel: "Marcar pronto",
     tone: {
-      header: "bg-blue-100 border-blue-200",
-      body: "bg-blue-50/40 border-blue-200",
-      text: "text-blue-800",
+      header: "bg-blue-100 dark:bg-blue-900 border-blue-200 dark:border-blue-800",
+      body: "bg-blue-50/40 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800",
+      text: "text-blue-800 dark:text-blue-300",
       badge: "bg-blue-500 text-white",
-      tab: "data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800",
+      tab: "data-[state=active]:bg-blue-100 dark:bg-blue-900 data-[state=active]:text-blue-800 dark:text-blue-300",
     },
   },
   {
@@ -215,11 +215,11 @@ export const KITCHEN_COLUMNS: KitchenColumnConfig[] = [
     nextStatus: "COMPLETED",
     actionLabel: "Concluir",
     tone: {
-      header: "bg-emerald-100 border-emerald-200",
-      body: "bg-emerald-50/40 border-emerald-200",
-      text: "text-emerald-800",
+      header: "bg-emerald-100 dark:bg-emerald-900 border-emerald-200 dark:border-emerald-800",
+      body: "bg-emerald-50/40 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800",
+      text: "text-emerald-800 dark:text-emerald-300",
       badge: "bg-emerald-500 text-white",
-      tab: "data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800",
+      tab: "data-[state=active]:bg-emerald-100 dark:bg-emerald-900 data-[state=active]:text-emerald-800 dark:text-emerald-300",
     },
   },
   {
@@ -246,11 +246,11 @@ export const KITCHEN_COLUMNS: KitchenColumnConfig[] = [
     actionLabel: null,
     hiddenByDefault: true,
     tone: {
-      header: "bg-rose-100 border-rose-200",
-      body: "bg-rose-50/40 border-rose-200",
-      text: "text-rose-800",
+      header: "bg-rose-100 dark:bg-rose-900 border-rose-200 dark:border-rose-800",
+      body: "bg-rose-50/40 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800",
+      text: "text-rose-800 dark:text-rose-300",
       badge: "bg-rose-500 text-white",
-      tab: "data-[state=active]:bg-rose-100 data-[state=active]:text-rose-800",
+      tab: "data-[state=active]:bg-rose-100 dark:bg-rose-900 data-[state=active]:text-rose-800 dark:text-rose-300",
     },
   },
 ];

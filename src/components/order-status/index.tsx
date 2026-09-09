@@ -15,9 +15,9 @@ type Props = {
   };
 };
 
-const CARD = "rounded-[13px] border border-[#e9eaee] bg-white";
+const CARD = "rounded-[13px] border border-border bg-card";
 const CARD_TITLE =
-  "flex items-center gap-[7px] text-[13px] font-extrabold text-[#14161a]";
+  "flex items-center gap-[7px] text-[13px] font-extrabold text-foreground";
 
 function summarizeItems(items: OrderInfo["items"]) {
   const totalQuantity = items.reduce(
@@ -44,10 +44,10 @@ export function OrderStatus({ data }: Props) {
   return (
     <div>
       <div className="mb-4 text-center">
-        <h1 className="text-[19px] font-extrabold tracking-[-0.02em] text-[#14161a]">
+        <h1 className="text-[19px] font-extrabold tracking-[-0.02em] text-foreground">
           Acompanhe seu Pedido
         </h1>
-        <p className="mt-[3px] text-xs font-semibold text-[#8a8f99]">
+        <p className="mt-[3px] text-xs font-semibold text-muted-foreground">
           Pedido #{order.orderNumber}
         </p>
         {data.isRefreshing && (
@@ -77,11 +77,11 @@ export function OrderStatus({ data }: Props) {
             {/* Pedido cancelado não tem progresso: a linha do tempo daria a
                 entender que ele ainda esta em andamento. */}
             {order.isCanceled ? (
-              <div className="mt-4 rounded-[10px] bg-red-50 px-[13px] py-[11px]">
-                <p className="text-[12.5px] font-bold text-red-700">
+              <div className="mt-4 rounded-[10px] bg-red-50 dark:bg-red-950/40 px-[13px] py-[11px]">
+                <p className="text-[12.5px] font-bold text-red-700 dark:text-red-400">
                   Pedido cancelado
                 </p>
-                <p className="mt-[5px] text-[11.5px] font-semibold text-red-600">
+                <p className="mt-[5px] text-[11.5px] font-semibold text-red-600 dark:text-red-400">
                   Este pedido foi cancelado e não será preparado.
                 </p>
               </div>
@@ -103,10 +103,10 @@ export function OrderStatus({ data }: Props) {
                 📍
               </span>
               <div className="min-w-0">
-                <p className="text-[12.5px] font-bold text-[#14161a]">
+                <p className="text-[12.5px] font-bold text-foreground">
                   {order.customerInfo.name}
                 </p>
-                <p className="mt-px text-xs font-medium text-[#8a8f99]">
+                <p className="mt-px text-xs font-medium text-muted-foreground">
                   {order.customerInfo.address}
                 </p>
               </div>
@@ -116,17 +116,17 @@ export function OrderStatus({ data }: Props) {
               <span aria-hidden className="shrink-0">
                 📞
               </span>
-              <span className="text-[12.5px] font-semibold text-[#3d4149]">
+              <span className="text-[12.5px] font-semibold text-foreground">
                 {formatPhoneDisplay(order.customerInfo.phone)}
               </span>
             </div>
 
             {order.delivery?.observations && (
-              <div className="mt-[11px] border-t border-[#f0f1f4] pt-[9px]">
-                <p className="text-[11.5px] font-bold text-[#3d4149]">
+              <div className="mt-[11px] border-t border-border pt-[9px]">
+                <p className="text-[11.5px] font-bold text-foreground">
                   Observações
                 </p>
-                <p className="mt-px text-xs font-medium text-[#8a8f99]">
+                <p className="mt-px text-xs font-medium text-muted-foreground">
                   {order.delivery.observations}
                 </p>
               </div>
@@ -141,23 +141,23 @@ export function OrderStatus({ data }: Props) {
               Resumo do Pedido
             </h2>
 
-            <p className="truncate text-[12.5px] font-semibold text-[#3d4149]">
+            <p className="truncate text-[12.5px] font-semibold text-foreground">
               {summarizeItems(order.items)}
             </p>
 
-            <div className="my-2.5 h-px bg-[#f0f1f4]" />
+            <div className="my-2.5 h-px bg-muted" />
 
             <div className="flex items-baseline justify-between">
-              <span className="text-[13px] font-extrabold text-[#14161a]">
+              <span className="text-[13px] font-extrabold text-foreground">
                 Total
               </span>
-              <span className="text-base font-extrabold tracking-[-0.02em] text-[#14161a]">
+              <span className="text-base font-extrabold tracking-[-0.02em] text-foreground">
                 {formatCurrency(order.total)}
               </span>
             </div>
           </section>
 
-          <div className="flex flex-col gap-2 rounded-[13px] bg-[#fff7ed] p-3">
+          <div className="flex flex-col gap-2 rounded-[13px] bg-orange-50 dark:bg-orange-950/40 p-3">
             <button
               type="button"
               onClick={() => router.push("/#lojas")}
@@ -169,14 +169,14 @@ export function OrderStatus({ data }: Props) {
             <button
               type="button"
               onClick={() => router.push("/orders")}
-              className="h-[38px] rounded-[10px] border border-[#ffd9b3] bg-white text-[12.5px] font-extrabold text-[#e05a00] transition-colors hover:bg-[#fff7ed]"
+              className="h-[38px] rounded-[10px] border border-orange-200 dark:border-orange-800 bg-card text-[12.5px] font-extrabold text-[#e05a00] transition-colors hover:bg-orange-50 dark:hover:bg-orange-950/40"
             >
               Ver Meus Pedidos
             </button>
           </div>
 
           {order.status === "delivered" || order.isCanceled ? (
-            <p className="text-center text-[11px] font-semibold text-[#a2a7b0]">
+            <p className="text-center text-[11px] font-semibold text-muted-foreground">
               Pedido finalizado - atualização automática desativada
             </p>
           ) : (
@@ -184,7 +184,7 @@ export function OrderStatus({ data }: Props) {
               type="button"
               onClick={data.refresh}
               disabled={data.isRefreshing}
-              className="flex items-center justify-center gap-1.5 text-center text-[11px] font-semibold text-[#a2a7b0] transition-colors hover:text-[#3d4149] disabled:opacity-60"
+              className="flex items-center justify-center gap-1.5 text-center text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
             >
               <RefreshCw
                 className={`h-3 w-3 ${data.isRefreshing ? "animate-spin" : ""}`}

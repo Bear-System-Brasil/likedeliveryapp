@@ -45,7 +45,7 @@ const emptyForm: FormState = {
 };
 
 const fieldClassName =
-  "h-9 rounded-[10px] border-[#E9EAEE] bg-white text-xs shadow-none focus-visible:ring-1 focus-visible:ring-[#FF6B00]";
+  "h-9 rounded-[10px] border-border bg-card text-xs shadow-none focus-visible:ring-1 focus-visible:ring-[#FF6B00]";
 
 export function ProductAddOnsDialog({
   productId,
@@ -127,12 +127,12 @@ export function ProductAddOnsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[85vh] rounded-[14px] border-[#E9EAEE] bg-white p-0 shadow-[0_24px_70px_rgba(20,22,26,0.18)] sm:max-w-[480px]">
-        <DialogHeader className="shrink-0 border-b border-[#E9EAEE] px-4 pb-3 pt-4 sm:px-6">
-          <DialogTitle className="text-base font-extrabold text-[#14161A] sm:text-lg">
+      <DialogContent className="max-h-[85vh] rounded-[14px] border-border bg-card p-0 shadow-[0_24px_70px_rgba(20,22,26,0.18)] sm:max-w-[480px]">
+        <DialogHeader className="shrink-0 border-b border-border px-4 pb-3 pt-4 sm:px-6">
+          <DialogTitle className="text-base font-extrabold text-foreground sm:text-lg">
             Complementos
           </DialogTitle>
-          <DialogDescription className="text-xs font-medium text-[#8A8F99] sm:text-sm">
+          <DialogDescription className="text-xs font-medium text-muted-foreground sm:text-sm">
             {productName
               ? `Extras que o cliente pode adicionar a "${productName}"`
               : "Extras que o cliente pode adicionar a este prato"}
@@ -140,10 +140,10 @@ export function ProductAddOnsDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
-          <div className="grid gap-2 rounded-[10px] border border-[#E9EAEE] bg-[#FAFAFB] p-3">
+          <div className="grid gap-2 rounded-[10px] border border-border bg-muted p-3">
             <div className="grid grid-cols-[1fr_120px] gap-2">
               <div className="grid gap-1">
-                <Label className="text-[11px] font-bold text-[#3D4149]">
+                <Label className="text-[11px] font-bold text-foreground">
                   Nome *
                 </Label>
                 <Input
@@ -160,13 +160,13 @@ export function ProductAddOnsDialog({
                   )}
                 />
                 {isDuplicateName && (
-                  <p className="text-[10.5px] font-semibold text-red-500">
+                  <p className="text-[10.5px] font-semibold text-red-500 dark:text-red-400">
                     Já existe um complemento com esse nome
                   </p>
                 )}
               </div>
               <div className="grid gap-1">
-                <Label className="text-[11px] font-bold text-[#3D4149]">
+                <Label className="text-[11px] font-bold text-foreground">
                   Preço extra *
                 </Label>
                 <CurrencyCentsInput
@@ -182,7 +182,7 @@ export function ProductAddOnsDialog({
             </div>
 
             <div className="flex items-center justify-between gap-2">
-              <label className="flex items-center gap-2 text-[11.5px] font-semibold text-[#3D4149]">
+              <label className="flex items-center gap-2 text-[11.5px] font-semibold text-foreground">
                 <input
                   type="checkbox"
                   checked={form.isAvailable}
@@ -203,7 +203,7 @@ export function ProductAddOnsDialog({
                     type="button"
                     variant="ghost"
                     onClick={resetForm}
-                    className="h-8 cursor-pointer rounded-[8px] px-2.5 text-[11.5px] font-bold text-[#8A8F99] hover:bg-white"
+                    className="h-8 cursor-pointer rounded-[8px] px-2.5 text-[11.5px] font-bold text-muted-foreground hover:bg-card"
                   >
                     Cancelar
                   </Button>
@@ -234,7 +234,7 @@ export function ProductAddOnsDialog({
             </div>
           </div>
 
-          <div className="mt-3 divide-y divide-[#F4F5F7]">
+          <div className="mt-3 divide-y divide-border">
             {isLoading &&
               [1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center gap-2 py-2.5">
@@ -245,13 +245,13 @@ export function ProductAddOnsDialog({
 
             {!isLoading && addOns.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#F4F5F7] text-[#FF6B00]">
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-[10px] bg-muted text-[#FF6B00]">
                   <Sandwich className="h-5 w-5" />
                 </div>
-                <p className="text-[12.5px] font-bold text-[#14161A]">
+                <p className="text-[12.5px] font-bold text-foreground">
                   Nenhum complemento cadastrado
                 </p>
-                <p className="mt-1 text-[11px] font-medium text-[#8A8F99]">
+                <p className="mt-1 text-[11px] font-medium text-muted-foreground">
                   Adicione o primeiro complemento acima
                 </p>
               </div>
@@ -261,14 +261,14 @@ export function ProductAddOnsDialog({
               addOns.map((addOn) => (
                 <div key={addOn.id} className="flex items-center gap-2 py-2.5">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12.5px] font-bold text-[#14161A]">
+                    <p className="truncate text-[12.5px] font-bold text-foreground">
                       {addOn.name}
                     </p>
-                    <p className="text-[10.5px] font-semibold text-[#A2A7B0]">
+                    <p className="text-[10.5px] font-semibold text-muted-foreground">
                       {addOn.isAvailable ? "Disponível" : "Indisponível"}
                     </p>
                   </div>
-                  <span className="shrink-0 text-[12.5px] font-extrabold text-[#14161A]">
+                  <span className="shrink-0 text-[12.5px] font-extrabold text-foreground">
                     + {formatCurrency(addOn.priceModifier)}
                   </span>
                   <div className="flex shrink-0 gap-1">
@@ -276,7 +276,7 @@ export function ProductAddOnsDialog({
                       type="button"
                       onClick={() => handleEdit(addOn)}
                       aria-label={`Editar ${addOn.name}`}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F4F5F7] text-[#3D4149] transition-colors hover:bg-[#E9EAEE]"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-foreground transition-colors hover:bg-muted"
                     >
                       <Edit className="h-3.5 w-3.5" />
                     </button>
@@ -284,7 +284,7 @@ export function ProductAddOnsDialog({
                       type="button"
                       onClick={() => handleDelete(addOn)}
                       aria-label={`Remover ${addOn.name}`}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FDEEEE] text-[#D64545] transition-colors hover:bg-[#F9DCDC]"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-950/40"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

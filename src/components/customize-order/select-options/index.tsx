@@ -15,7 +15,7 @@ type Props = {
 // usava outro (texto simples minúsculo). Padronizado nos dois.
 function OptionalBadge() {
   return (
-    <span className="rounded-md bg-[#F4F5F7] px-[7px] py-[1px] text-[9.5px] font-extrabold tracking-wide text-[#8A8F99]">
+    <span className="rounded-md bg-muted px-[7px] py-[1px] text-[9.5px] font-extrabold tracking-wide text-muted-foreground">
       OPCIONAL
     </span>
   );
@@ -41,7 +41,7 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
     return (
       <div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-extrabold tracking-tight text-[#14161A]">
+          <span className="text-xs font-extrabold tracking-tight text-foreground">
             {group.title}
           </span>
           <OptionalBadge />
@@ -57,16 +57,16 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
                 type="button"
                 onClick={() => handleSelectSingle(option.id)}
                 className={cn(
-                  "flex h-[50px] flex-col items-center justify-center gap-0.5 rounded-[10px] border bg-white transition-colors",
+                  "flex h-[50px] flex-col items-center justify-center gap-0.5 rounded-[10px] border bg-card transition-colors",
                   isSelected
-                    ? "border-orange-500 bg-orange-50"
-                    : "border-[#E4E6EA] hover:border-[#c9cdd4]",
+                    ? "border-orange-500 bg-orange-50 dark:bg-orange-950/40"
+                    : "border-border hover:border-muted-foreground",
                 )}
               >
                 <span
                   className={cn(
                     "truncate px-1 text-[12.5px] font-bold",
-                    isSelected ? "text-orange-600" : "text-[#14161A]",
+                    isSelected ? "text-orange-600 dark:text-orange-400" : "text-foreground",
                   )}
                 >
                   {option.label}
@@ -74,7 +74,7 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
                 <span
                   className={cn(
                     "text-[10.5px] font-semibold",
-                    isSelected ? "text-orange-500/90" : "text-[#A2A7B0]",
+                    isSelected ? "text-orange-500/90" : "text-muted-foreground",
                   )}
                 >
                   {option.price > 0
@@ -92,7 +92,7 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="text-xs font-extrabold tracking-tight text-[#14161A]">
+        <span className="text-xs font-extrabold tracking-tight text-foreground">
           {group.title}
         </span>
         <OptionalBadge />
@@ -108,10 +108,10 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
               type="button"
               onClick={() => handleToggleMultiple(option.id)}
               className={cn(
-                "flex h-[38px] min-w-0 items-center gap-2 rounded-[9px] border bg-white px-2.5 text-left transition-colors",
+                "flex h-[38px] min-w-0 items-center gap-2 rounded-[9px] border bg-card px-2.5 text-left transition-colors",
                 isSelected
-                  ? "border-orange-500 bg-orange-50/70"
-                  : "border-[#E4E6EA] hover:border-[#c9cdd4]",
+                  ? "border-orange-500 bg-orange-50/70 dark:bg-orange-950/40"
+                  : "border-border hover:border-muted-foreground",
               )}
             >
               <span
@@ -124,10 +124,10 @@ export function SelectOptions({ group, selectedIds, onChange }: Props) {
               >
                 {isSelected && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
               </span>
-              <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[#14161A]">
+              <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground">
                 {option.label}
               </span>
-              <span className="shrink-0 text-[11px] font-bold text-[#A2A7B0]">
+              <span className="shrink-0 text-[11px] font-bold text-muted-foreground">
                 {option.price === 0 ? "Grátis" : `+ ${formatCurrency(option.price)}`}
               </span>
             </button>

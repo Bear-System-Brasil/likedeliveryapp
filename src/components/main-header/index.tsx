@@ -31,6 +31,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { LikeDeliveryLogo } from "../ui/likedelivery-logo";
+import { ThemeToggle } from "../ui/theme-toggle";
 import Link from "next/link";
 
 const DEFAULT_LOCATION_LABEL = "Escolha seu endereço";
@@ -81,30 +82,31 @@ export function MainHeader({
     if (searchOpen) mobileSearchInputRef.current?.focus();
   }, [searchOpen]);
 
-const handleSearchSubmit = () => {
+  const handleSearchSubmit = () => {
     const query = searchQuery.trim();
     if (!query) {
       router.push("/");
       return;
     }
-    
+
     // Redireciona para a página inicial com o parâmetro de busca
     router.push(`/?search=${encodeURIComponent(query)}`);
-    
+
     setSearchOpen(false);
     searchInputRef.current?.blur();
     mobileSearchInputRef.current?.blur();
   };
-// Nova função de busca ao vivo
+  // Nova função de busca ao vivo
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    
 
     if (pathname === "/") {
       if (value.trim() === "") {
         router.replace("/", { scroll: false });
       } else {
-        router.replace(`/?search=${encodeURIComponent(value)}`, { scroll: false });
+        router.replace(`/?search=${encodeURIComponent(value)}`, {
+          scroll: false,
+        });
       }
     }
   };
@@ -278,7 +280,7 @@ const handleSearchSubmit = () => {
     <header
       className={clsx(
         "fixed top-1 left-1 right-1 z-50",
-        "bg-white/95 border border-orange-100/50",
+        "bg-background/95 border border-orange-100/50 dark:border-orange-900/50",
         "rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden",
       )}
     >
@@ -311,45 +313,45 @@ const handleSearchSubmit = () => {
                   <SheetTrigger asChild>
                     <button
                       type="button"
-                      className="flex max-w-[90px] cursor-pointer items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-200 xs:max-w-[120px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[240px]"
+                      className="flex max-w-[90px] cursor-pointer items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted xs:max-w-[120px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[240px]"
                       title="Alterar endereço"
                     >
                       <MapPin className="h-3.5 w-3.5 shrink-0 fill-orange-500 text-orange-500" />
                       <span className="truncate" title={locationLabel}>
                         {locationLabel}
                       </span>
-                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     </button>
                   </SheetTrigger>
 
                   <SheetContent
                     side="bottom"
-                    className="rounded-t-3xl border-t border-orange-100 bg-white px-4 pb-8 pt-4 sm:px-6"
+                    className="rounded-t-3xl border-t border-orange-100 dark:border-orange-900 bg-card px-4 pb-8 pt-4 sm:px-6"
                   >
                     {/* Handle visual (opcional mas fica bonito) */}
-                    <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-gray-200" />
+                    <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-muted" />
 
                     <div className="mx-auto w-full max-w-xl space-y-4">
                       <div className="space-y-1">
-                        <SheetTitle className="text-lg font-bold text-gray-950">
+                        <SheetTitle className="text-lg font-bold text-foreground">
                           Endereço de entrega
                         </SheetTitle>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           Onde seu pedido será entregue
                         </p>
                       </div>
 
                       {/* Card do endereço atual */}
-                      <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
+                      <div className="rounded-2xl border border-orange-100 dark:border-orange-900 bg-orange-50/60 dark:bg-orange-950/40 dark:bg-orange-950/30 p-4">
                         <div className="flex gap-3">
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-orange-500 shadow-sm">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card text-orange-500 shadow-sm">
                             <MapPin className="h-5 w-5 fill-orange-500" />
                           </span>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-orange-600">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-orange-600 dark:text-orange-400">
                               Entregando em
                             </p>
-                            <p className="mt-1 text-sm font-semibold leading-snug text-gray-950">
+                            <p className="mt-1 text-sm font-semibold leading-snug text-foreground">
                               {currentLocationText}
                             </p>
                           </div>
@@ -364,7 +366,7 @@ const handleSearchSubmit = () => {
                               setLocationError("");
                               setIsChangingLocation(true);
                             }}
-                            className="h-11 justify-center rounded-xl border-orange-200 bg-white text-orange-600 hover:bg-orange-50"
+                            className="h-11 justify-center rounded-xl border-orange-200 dark:border-orange-800 bg-card text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/40"
                           >
                             <PencilLine className="mr-2 h-4 w-4" />
                             Trocar
@@ -374,7 +376,7 @@ const handleSearchSubmit = () => {
                             variant="outline"
                             disabled={locationLoading}
                             onClick={handleCurrentLocation}
-                            className="h-11 justify-center rounded-xl border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            className="h-11 justify-center rounded-xl border-border bg-card text-foreground hover:bg-muted"
                           >
                             <Navigation className="mr-2 h-4 w-4" />
                             Usar atual
@@ -386,9 +388,9 @@ const handleSearchSubmit = () => {
                       {isChangingLocation && (
                         <form
                           onSubmit={handleManualLocation}
-                          className="rounded-2xl border border-gray-200 bg-gray-50 p-4"
+                          className="rounded-2xl border border-border bg-muted p-4"
                         >
-                          <p className="mb-3 text-sm font-semibold text-gray-950">
+                          <p className="mb-3 text-sm font-semibold text-foreground">
                             Digite o novo endereço
                           </p>
                           <div className="flex flex-col gap-2">
@@ -398,7 +400,7 @@ const handleSearchSubmit = () => {
                                 setManualLocation(event.target.value)
                               }
                               placeholder="Ex.: Rua Machado de Assis, 334"
-                              className="h-11 rounded-xl bg-white"
+                              className="h-11 rounded-xl bg-card"
                               // ← sem autoFocus
                             />
                             <div className="flex gap-2">
@@ -427,7 +429,7 @@ const handleSearchSubmit = () => {
                       )}
 
                       {locationError && (
-                        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+                        <p className="rounded-xl bg-red-50 dark:bg-red-950/40 px-3 py-2 text-sm text-red-600 dark:text-red-400">
                           {locationError}
                         </p>
                       )}
@@ -456,7 +458,7 @@ const handleSearchSubmit = () => {
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="h-9 w-9 shrink-0 rounded-xl border-0 bg-gray-50/50"
+                      className="h-9 w-9 shrink-0 rounded-xl border-0 bg-muted/50"
                       onClick={() => setSearchOpen(true)}
                       aria-label="Buscar"
                     >
@@ -470,7 +472,7 @@ const handleSearchSubmit = () => {
                       }}
                       className="relative flex min-w-0 flex-1 items-center"
                     >
-                      <Search className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-gray-400" />
+                      <Search className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
                       <Input
                         ref={mobileSearchInputRef}
                         placeholder="Buscar..."
@@ -486,7 +488,7 @@ const handleSearchSubmit = () => {
                           if (!searchQuery.trim()) setSearchOpen(false);
                         }}
                         className={clsx(
-                          "h-9 w-full rounded-xl border-0 bg-gray-50/50 pl-8 text-sm focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-orange-400",
+                          "h-9 w-full rounded-xl border-0 bg-muted/50 pl-8 text-sm focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-orange-400",
                           searchQuery ? "pr-7" : "pr-2",
                         )}
                       />
@@ -498,7 +500,7 @@ const handleSearchSubmit = () => {
                             mobileSearchInputRef.current?.focus();
                           }}
                           aria-label="Limpar busca"
-                          className="absolute right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600"
+                          className="absolute right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-muted-foreground"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -516,7 +518,7 @@ const handleSearchSubmit = () => {
                   }}
                   className="relative hidden items-center sm:flex"
                 >
-                  <Search className="pointer-events-none absolute left-3 h-4 w-4 text-gray-400" />
+                  <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     ref={searchInputRef}
                     placeholder="Buscar..."
@@ -529,7 +531,7 @@ const handleSearchSubmit = () => {
                       }
                     }}
                     className={clsx(
-                      "h-10 w-36 rounded-xl border-0 bg-gray-50/50 pl-9 text-sm focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-orange-400 md:w-44 lg:w-56",
+                      "h-10 w-36 rounded-xl border-0 bg-muted/50 pl-9 text-sm focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-orange-400 md:w-44 lg:w-56",
                       searchQuery ? "pr-7" : "pr-2",
                     )}
                   />
@@ -541,7 +543,7 @@ const handleSearchSubmit = () => {
                         searchInputRef.current?.focus();
                       }}
                       aria-label="Limpar busca"
-                      className="absolute right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600"
+                      className="absolute right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-muted-foreground"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -549,12 +551,11 @@ const handleSearchSubmit = () => {
                 </form>
               </>
             )}
-
             {/* Carrinho */}
             <Button
               variant="outline"
               size="icon"
-              className="relative hidden h-9 w-9 rounded-xl border-0 bg-gray-50/50 md:flex md:h-10 md:w-10"
+              className="relative hidden h-9 w-9 rounded-xl border-0 bg-muted/50 md:flex md:h-10 md:w-10"
               onClick={handleCartClick}
               aria-label="Carrinho"
             >
@@ -571,7 +572,7 @@ const handleSearchSubmit = () => {
               <Button
                 variant="outline"
                 size="icon"
-                className="hidden h-9 w-9 rounded-xl border-0 bg-gray-50/50 md:flex md:h-10 md:w-10"
+                className="hidden h-9 w-9 rounded-xl border-0 bg-muted/50 md:flex md:h-10 md:w-10"
                 onClick={() => router.push("/orders")}
                 aria-label="Meus Pedidos"
               >
@@ -595,7 +596,7 @@ const handleSearchSubmit = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border-0 bg-gray-50/50 cursor-pointer"
+                        className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border-0 bg-muted/50 cursor-pointer"
                       >
                         <Menu className="h-5 w-5" />
                       </Button>
@@ -609,9 +610,15 @@ const handleSearchSubmit = () => {
                         Menu de navegação
                       </SheetTitle>
                       <div className="flex flex-col h-full">
-                        <div className="flex items-center space-x-2 mb-6">
-                          <LikeDeliveryLogo />
-                          <h2 className="text-lg font-bold">Menu</h2>
+                        <div className="mb-6 flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <LikeDeliveryLogo />
+                            <div className="flex items-center justify-between gap-4">
+                              <h2 className="text-lg font-bold">Menu</h2>
+                              <ThemeToggle />
+                            </div>
+
+                          </div>
                         </div>
 
                         <div className="space-y-2">
@@ -705,7 +712,7 @@ const handleSearchSubmit = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="hidden rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-orange-600 sm:inline-flex"
+                      className="hidden rounded-xl text-xs font-medium text-muted-foreground hover:bg-muted hover:text-orange-600 dark:hover:text-orange-400 sm:inline-flex"
                       onClick={() => router.push("/restaurant-landing-page")}
                     >
                       <Store className="mr-1.5 h-3.5 w-3.5" />
@@ -714,7 +721,7 @@ const handleSearchSubmit = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-xl border-0 bg-orange-50 text-orange-600 hover:bg-orange-100 font-medium"
+                      className="rounded-xl border-0 bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900 font-medium"
                       onClick={() => showAuthModal("login")}
                     >
                       Entrar

@@ -57,8 +57,8 @@ export function ConfirmDialog({
             <div
               className={`flex items-center justify-center w-12 h-12 rounded-full ${
                 variant === "danger"
-                  ? "bg-red-100 text-red-600"
-                  : "bg-orange-100 text-orange-600"
+                  ? "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400"
+                  : "bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400"
               }`}
             >
               {variant === "danger" ? (
@@ -67,32 +67,32 @@ export function ConfirmDialog({
                 <AlertTriangle className="w-6 h-6" />
               )}
             </div>
-            <DialogTitle className="text-xl font-bold text-gray-900">
+            <DialogTitle className="text-xl font-bold text-foreground">
               {title}
             </DialogTitle>
           </div>
 
           {currentRestaurant && newRestaurant ? (
-            <DialogDescription className="text-base text-gray-600 leading-relaxed pt-2" asChild>
+            <DialogDescription className="text-base text-muted-foreground leading-relaxed pt-2" asChild>
               <div className="space-y-3">
                 <span className="block">Você já tem itens no carrinho:</span>
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <div className="bg-muted rounded-lg p-3 border border-border">
                   <div className="flex items-center gap-2 text-sm">
-                    <ShoppingCart className="w-4 h-4 text-gray-500" />
-                    <span className="font-semibold text-gray-900">
+                    <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-semibold text-foreground">
                       {currentRestaurant}
                     </span>
                   </div>
                 </div>
                 <span className="block text-sm">
                   Deseja{" "}
-                  <strong className="text-red-600">limpar o carrinho</strong> e
+                  <strong className="text-red-600 dark:text-red-400">limpar o carrinho</strong> e
                   adicionar itens de:
                 </span>
-                <div className="bg-linear-to-r from-orange-50 to-orange-50 rounded-lg p-3 border border-orange-200">
+                <div className="bg-linear-to-r from-orange-50 to-orange-50 rounded-lg p-3 border border-orange-200 dark:border-orange-800">
                   <div className="flex items-center gap-2 text-sm">
-                    <ShoppingCart className="w-4 h-4 text-orange-600" />
-                    <span className="font-semibold text-gray-900">
+                    <ShoppingCart className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <span className="font-semibold text-foreground">
                       {newRestaurant}
                     </span>
                   </div>
@@ -100,7 +100,7 @@ export function ConfirmDialog({
               </div>
             </DialogDescription>
           ) : (
-            <DialogDescription className="text-base text-gray-600 leading-relaxed">
+            <DialogDescription className="text-base text-muted-foreground leading-relaxed">
               {description}
             </DialogDescription>
           )}
@@ -110,7 +110,7 @@ export function ConfirmDialog({
           <Button
             variant="outline"
             onClick={handleCancel}
-            className="flex-1 h-11 text-base font-medium border-2 hover:bg-gray-50"
+            className="flex-1 h-11 text-base font-medium border-2 hover:bg-muted"
           >
             {cancelText}
           </Button>

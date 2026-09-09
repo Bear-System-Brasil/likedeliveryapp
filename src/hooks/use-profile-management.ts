@@ -52,7 +52,7 @@ export const useProfileManagement = () => {
         city: addr.city || "",
         state: addr.state || "",
         zipCode: addr.zipCode || "",
-        isDefault: (addr as any).isDefault ?? false,
+        isDefault: addr.isDefault ?? false,
       })),
     [rawAddresses],
   );
@@ -307,6 +307,7 @@ export const useProfileManagement = () => {
       };
 
       // Se for marcado como padrão, desmarca os outros
+      let failedToUnsetDefault = false;
       if (payload.isDefault) {
         const currentAddresses = await apiService.address.getUserAddresses();
         if (currentAddresses.success && currentAddresses.data) {
@@ -315,20 +316,25 @@ export const useProfileManagement = () => {
             : [];
 
           const backendDefaults = backendAddresses.filter(
-            (addr) => (addr as any).isDefault,
+            (addr) => addr.isDefault,
           );
 
           for (const addr of backendDefaults) {
             if (editingAddressId && addr.id === editingAddressId) continue;
 
             try {
-              await apiService.address.updateUserAddress(addr.id, {
-                isDefault: false,
-                latitude: addr.latitude ?? undefined,
-                longitude: addr.longitude ?? undefined,
-              });
+              const unsetResponse = await apiService.address.updateUserAddress(
+                addr.id,
+                {
+                  isDefault: false,
+                  latitude: addr.latitude ?? undefined,
+                  longitude: addr.longitude ?? undefined,
+                },
+              );
+              if (!unsetResponse.success) failedToUnsetDefault = true;
             } catch (error) {
               console.error("Erro ao desmarcar endereço padrão:", error);
+              failedToUnsetDefault = true;
             }
           }
         }
@@ -362,6 +368,12 @@ export const useProfileManagement = () => {
             ? "Endereço atualizado com sucesso!"
             : "Endereço adicionado com sucesso!",
         );
+
+        if (failedToUnsetDefault) {
+          toast.warning(
+            "Não conseguimos desmarcar todos os endereços padrão antigos. Confira sua lista de endereços.",
+          );
+        }
       } else {
         toast.error(
           response.message ||

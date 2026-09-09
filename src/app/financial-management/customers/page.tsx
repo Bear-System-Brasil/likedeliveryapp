@@ -94,7 +94,7 @@ export default function CustomersPage() {
       icon={Users}
       mainClassName="p-4 pb-20 sm:p-6 md:pb-10 lg:pl-64 lg:pr-8"
       actions={
-        <span className="rounded-[8px] border border-[#E9EAEE] bg-white px-2.5 py-1 text-[11.5px] font-bold text-[#3D4149]">
+        <span className="rounded-[8px] border border-border bg-card px-2.5 py-1 text-[11.5px] font-bold text-foreground">
           {total} cliente{total !== 1 ? "s" : ""}
         </span>
       }
@@ -108,13 +108,13 @@ export default function CustomersPage() {
             ))
           ) : (
             <>
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <p className="text-xs text-gray-500 mb-1">Total de clientes</p>
-                <p className="text-2xl font-bold text-blue-600">{total}</p>
+              <div className="bg-card rounded-xl border border-border p-4">
+                <p className="text-xs text-muted-foreground mb-1">Total de clientes</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{total}</p>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <p className="text-xs text-gray-500 mb-1">Nesta página</p>
-                <p className="text-2xl font-bold text-gray-700">
+              <div className="bg-card rounded-xl border border-border p-4">
+                <p className="text-xs text-muted-foreground mb-1">Nesta página</p>
+                <p className="text-2xl font-bold text-foreground">
                   {customers.length}
                 </p>
               </div>
@@ -125,7 +125,7 @@ export default function CustomersPage() {
         {/* Search */}
         <div className="w-full sm:w-72">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Nome, e-mail ou telefone"
               value={search}
@@ -133,7 +133,7 @@ export default function CustomersPage() {
               className="pl-10 rounded-xl"
             />
           </div>
-          <p className="mt-1.5 text-xs text-gray-400">
+          <p className="mt-1.5 text-xs text-muted-foreground">
             {search.trim()
               ? `${filtered.length} de ${customers.length} nesta página`
               : "Filtra os clientes da página atual"}
@@ -141,7 +141,7 @@ export default function CustomersPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           {isLoading ? (
             <div className="p-4 space-y-3">
               {[...Array(5)].map((_, i) => (
@@ -149,13 +149,13 @@ export default function CustomersPage() {
               ))}
             </div>
           ) : isError ? (
-            <div className="p-12 text-center text-gray-400">
+            <div className="p-12 text-center text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
               <p className="font-medium">Não foi possível carregar os clientes</p>
               <p className="text-sm mt-1">Tente novamente em instantes</p>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">
+            <div className="p-12 text-center text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
               <p className="font-medium">Nenhum cliente encontrado</p>
               {search.trim() && (
@@ -167,27 +167,27 @@ export default function CustomersPage() {
           ) : (
             <>
               {/* Mobile: lista em cards */}
-              <div className="divide-y divide-gray-100 md:hidden">
+              <div className="divide-y divide-border md:hidden">
                 {filtered.map((customer) => (
                   <div key={customer.id} className="p-3.5" title={customer.id}>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900 text-sm font-bold text-orange-700 dark:text-orange-400">
                         {getInitial(customer.name)}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900">
+                        <p className="truncate text-sm font-semibold text-foreground">
                           {customer.name || "Cliente"}
                         </p>
-                        <p className="truncate text-xs text-gray-500">
+                        <p className="truncate text-xs text-muted-foreground">
                           {customer.email || "—"}
                         </p>
                       </div>
                     </div>
                     <div className="mt-2 flex items-center justify-between gap-2">
-                      <span className="text-xs text-gray-600">
+                      <span className="text-xs text-muted-foreground">
                         {formatCustomerPhone(customer.phone) ?? "Sem telefone"}
                       </span>
-                      <span className="shrink-0 text-xs text-gray-500">
+                      <span className="shrink-0 text-xs text-muted-foreground">
                         Desde {formatCustomerSince(customer)}
                       </span>
                     </div>
@@ -198,46 +198,46 @@ export default function CustomersPage() {
               {/* Desktop/tablet: tabela */}
               <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-muted border-b border-border">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Cliente
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         E-mail
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Telefone
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Cliente Desde
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border">
                     {filtered.map((customer) => (
                       <tr
                         key={customer.id}
                         title={customer.id}
-                        className="hover:bg-gray-50 transition-colors"
+                        className="hover:bg-muted transition-colors"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900 text-xs font-bold text-orange-700 dark:text-orange-400">
                               {getInitial(customer.name)}
                             </span>
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-foreground">
                               {customer.name || "Cliente"}
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-muted-foreground">
                           {customer.email || "—"}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-muted-foreground">
                           {formatCustomerPhone(customer.phone) ?? "—"}
                         </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">
+                        <td className="px-4 py-3 text-muted-foreground text-xs">
                           {formatCustomerSince(customer)}
                         </td>
                       </tr>
@@ -249,8 +249,8 @@ export default function CustomersPage() {
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between gap-2 border-t border-gray-200 px-4 py-3">
-              <span className="text-xs text-gray-500">
+            <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3">
+              <span className="text-xs text-muted-foreground">
                 Página {meta?.page ?? page} de {totalPages} ({total} clientes)
               </span>
               <div className="flex gap-2">

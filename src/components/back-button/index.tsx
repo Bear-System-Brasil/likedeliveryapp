@@ -34,9 +34,9 @@ export function BackButton({
       onClick={handleClick}
       className={cn(
         "h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center",
-        "border-2 border-gray-200 bg-white shadow-sm hover:shadow-md",
+        "border-2 border-border bg-card shadow-sm hover:shadow-md",
         "transition-all cursor-pointer",
-        "hover:border-orange-300 hover:bg-linear-to-br hover:from-orange-50 hover:to-orange-50",
+        "hover:border-orange-300 dark:hover:border-orange-700 hover:bg-linear-to-br hover:from-orange-50 hover:to-orange-50",
         sticky && "fixed top-24 left-4 z-50",
         className,
       )}

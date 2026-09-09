@@ -21,32 +21,36 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCartActions, useRestaurant } from "@/hooks";
+import {
+  getDeliveryDiscount,
+  getPromoDiscount,
+  isValidPromoCode,
+  useCartStore,
+  type CartItem,
+} from "@/stores/cart-store";
 import { formatCurrency } from "@/utils/format-currency";
 
-function getItemImage(item: any) {
-  return item.imageUrl || item.image || "/placeholder.svg";
+function getItemImage(item?: CartItem) {
+  return item?.imageUrl || "/placeholder.svg";
 }
 
 // Tamanho + complementos escolhidos - o que distingue essa linha de outra
 // do mesmo prato com uma combinação diferente (ver buildCartItemKey).
-function getItemExtrasLabel(item: any) {
+function getItemExtrasLabel(item: CartItem) {
   const parts: string[] = [];
   if (item.variationLabel) parts.push(item.variationLabel);
   if (item.addOnLabels?.length) parts.push(item.addOnLabels.join(", "));
   return parts.join(" · ");
 }
 
-function getItemNote(item: any) {
+function getItemNote(item: CartItem) {
+  const customizations = item.customizations as
+    | { instructions?: string; specialInstructions?: string }
+    | undefined;
   const instructions =
-    item.specialInstructions ||
-    item.customizations?.instructions ||
-    item.customizations?.specialInstructions;
+    customizations?.instructions || customizations?.specialInstructions;
 
   if (instructions) return `Obs.: ${instructions}`;
-
-  if (typeof item.customizations === "string") {
-    return item.customizations;
-  }
 
   return "";
 }
@@ -62,13 +66,12 @@ export default function CartPage() {
     handleGoToCheckout,
   } = useCartActions();
 
+  const { appliedPromo, setAppliedPromo } = useCartStore();
   const [promoCode, setPromoCode] = useState("");
-  const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   const restaurantId = items[0]?.restaurantId || null;
-  const { data: restaurantResponse } = useRestaurant(restaurantId);
-  const restaurantData = restaurantResponse as any;
+  const { data: restaurant } = useRestaurant(restaurantId);
 
   useEffect(() => {
     setIsMounted(true);
@@ -81,19 +84,17 @@ export default function CartPage() {
   // "adicionar" e sobrescrevia o item otimista com uma leitura desatualizada.
 
   const restaurantName =
-    restaurantData?.tradeName || items[0]?.restaurantName || "Restaurante";
-  const restaurantImage =
-    restaurantData?.logo_url || getItemImage(items[0] || {});
-  const restaurantTime = restaurantData?.time || "30-40 min";
+    restaurant?.tradeName || items[0]?.restaurantName || "Restaurante";
+  const restaurantImage = restaurant?.logo_url || getItemImage(items[0]);
+  const restaurantTime = restaurant?.time || "30-40 min";
   const rawDeliveryFee = Number.parseFloat(
-    String(restaurantData?.deliveryFee ?? "0").replace(",", "."),
+    String(restaurant?.deliveryFee ?? "0").replace(",", "."),
   );
   const deliveryFee = Number.isFinite(rawDeliveryFee) ? rawDeliveryFee : 0;
-  const deliveryDiscount =
-    appliedPromo === "FRETE10" ? Math.min(deliveryFee, 10) : 0;
+  const deliveryDiscount = getDeliveryDiscount(appliedPromo, deliveryFee);
 
   const subtotal = totalPrice || 0;
-  const promoDiscount = appliedPromo === "PRIMEIRA20" ? subtotal * 0.2 : 0;
+  const promoDiscount = getPromoDiscount(appliedPromo, subtotal);
   const total = subtotal + deliveryFee - deliveryDiscount - promoDiscount;
 
   const deliveryLabel =
@@ -112,7 +113,7 @@ export default function CartPage() {
   const applyPromoCode = () => {
     const code = promoCode.trim().toUpperCase();
 
-    if (code === "PRIMEIRA20" || code === "FRETE10") {
+    if (isValidPromoCode(code)) {
       setAppliedPromo(code);
       setPromoCode("");
       toast.success(
@@ -137,18 +138,18 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <AnimatedBackground showBlobs={false} className="bg-[#f4f5f7] py-0">
+      <AnimatedBackground showBlobs={false} className="bg-muted py-0">
         <MainHeader cartItems={0} showSearch={false} showNav={true} />
         <main className="px-3 pb-16 pt-24 sm:px-5">
           <div className="mx-auto flex min-h-[70vh] max-w-[1160px] items-center justify-center">
-            <Card className="w-full max-w-md border-[#e9eaee] bg-white p-8 text-center shadow-sm">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
+            <Card className="w-full max-w-md border-border bg-card p-8 text-center shadow-sm">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-orange-500">
                 <ShoppingBag className="h-8 w-8" />
               </div>
-              <h1 className="mt-5 text-xl font-extrabold text-[#14161a]">
+              <h1 className="mt-5 text-xl font-extrabold text-foreground">
                 Seu carrinho está vazio
               </h1>
-              <p className="mt-2 text-sm text-[#8a8f99]">
+              <p className="mt-2 text-sm text-muted-foreground">
                 Adicione itens do cardápio para continuar.
               </p>
               <Button
@@ -166,7 +167,7 @@ export default function CartPage() {
   }
 
   return (
-    <AnimatedBackground showBlobs={false} className="bg-[#f4f5f7] py-0">
+    <AnimatedBackground showBlobs={false} className="bg-muted py-0">
       <MainHeader
         cartItems={totalItems}
         onCartClick={() => router.push("/cart")}
@@ -180,35 +181,35 @@ export default function CartPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e9eaee] bg-white text-[#3d4149] transition hover:border-gray-300"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-foreground transition hover:border-border"
               aria-label="Voltar"
               title="Voltar"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <h1 className="text-[19px] font-extrabold tracking-[-0.02em] text-[#14161a]">
+            <h1 className="text-[19px] font-extrabold tracking-[-0.02em] text-foreground">
               Seu carrinho
             </h1>
-            <span className="rounded-md bg-[#edeef1] px-2 py-1 text-[11px] font-bold text-[#3d4149]">
+            <span className="rounded-md bg-muted px-2 py-1 text-[11px] font-bold text-foreground">
               {totalItems} {totalItems === 1 ? "item" : "itens"}
             </span>
           </div>
 
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
             <section className="space-y-3">
-              <Card className="flex items-center gap-3 border-[#e9eaee] bg-white p-3 shadow-sm">
+              <Card className="flex items-center gap-3 border-border bg-card p-3 shadow-sm">
                 <Image
                   width={44}
                   height={44}
                   src={restaurantImage}
                   alt={restaurantName}
-                  className="h-11 w-11 shrink-0 rounded-[10px] bg-[#edeef1] object-cover"
+                  className="h-11 w-11 shrink-0 rounded-[10px] bg-muted object-cover"
                 />
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-sm font-bold text-[#14161a]">
+                  <h2 className="truncate text-sm font-bold text-foreground">
                     {restaurantName}
                   </h2>
-                  <div className="mt-1 flex flex-wrap gap-2 text-[11px] font-semibold text-[#8a8f99]">
+                  <div className="mt-1 flex flex-wrap gap-2 text-[11px] font-semibold text-muted-foreground">
                     {restaurantMeta.map(({ label, icon: Icon }) => (
                       <span key={label} className="flex items-center gap-1">
                         <Icon className="h-3 w-3" />
@@ -221,7 +222,7 @@ export default function CartPage() {
                   <button
                     type="button"
                     onClick={() => router.push("/#lojas")}
-                    className="shrink-0 text-xs font-bold text-orange-500 hover:text-orange-600"
+                    className="shrink-0 text-xs font-bold text-orange-500 hover:text-orange-600 dark:hover:text-orange-400"
                   >
                     Ver lojas
                   </button>
@@ -236,18 +237,18 @@ export default function CartPage() {
                 return (
                   <Card
                     key={item.id}
-                    className="flex gap-3 border-[#e9eaee] bg-white p-3 shadow-sm"
+                    className="flex gap-3 border-border bg-card p-3 shadow-sm"
                   >
                     <Image
                       width={72}
                       height={72}
                       src={getItemImage(item)}
                       alt={item.name}
-                      className="h-[72px] w-[72px] shrink-0 rounded-[10px] bg-[#edeef1] object-cover"
+                      className="h-[72px] w-[72px] shrink-0 rounded-[10px] bg-muted object-cover"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="truncate text-sm font-bold text-[#14161a]">
+                        <h3 className="truncate text-sm font-bold text-foreground">
                           {item.name}
                         </h3>
                         <button
@@ -257,7 +258,7 @@ export default function CartPage() {
                             e.preventDefault();
                             handleRemoveFromCart(item.id);
                           }}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#8a8f99] transition hover:bg-red-50 hover:text-red-500"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-500 dark:hover:text-red-400"
                           aria-label={`Remover ${item.name}`}
                           title={`Remover ${item.name}`}
                         >
@@ -266,22 +267,22 @@ export default function CartPage() {
                       </div>
 
                       {extrasLabel && (
-                        <p className="mt-1 truncate text-xs font-bold text-orange-600">
+                        <p className="mt-1 truncate text-xs font-bold text-orange-600 dark:text-orange-400">
                           {extrasLabel}
                         </p>
                       )}
 
                       {note && (
-                        <p className="mt-0.5 truncate text-xs font-medium text-[#8a8f99]">
+                        <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground">
                           {note}
                         </p>
                       )}
 
                       <div className="mt-3 flex items-center justify-between gap-3">
-                        <span className="text-[15px] font-extrabold text-[#14161a]">
+                        <span className="text-[15px] font-extrabold text-foreground">
                           {formatCurrency(itemTotal)}
                         </span>
-                        <div className="flex items-center gap-2 rounded-lg bg-[#f4f5f7] p-1">
+                        <div className="flex items-center gap-2 rounded-lg bg-muted p-1">
                           <Button
                             type="button"
                             variant="ghost"
@@ -289,13 +290,13 @@ export default function CartPage() {
                             onClick={() =>
                               handleUpdateQuantity(item.id, item.quantity - 1)
                             }
-                            className="h-7 w-7 rounded-md text-[#3d4149] hover:bg-white"
+                            className="h-7 w-7 rounded-md text-foreground hover:bg-card"
                             aria-label={`Diminuir quantidade de ${item.name}`}
                             title="Diminuir quantidade"
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </Button>
-                          <span className="min-w-5 text-center text-xs font-extrabold text-[#14161a]">
+                          <span className="min-w-5 text-center text-xs font-extrabold text-foreground">
                             {item.quantity}
                           </span>
                           <Button
@@ -305,7 +306,7 @@ export default function CartPage() {
                             onClick={() =>
                               handleUpdateQuantity(item.id, item.quantity + 1)
                             }
-                            className="h-7 w-7 rounded-md text-[#3d4149] hover:bg-white"
+                            className="h-7 w-7 rounded-md text-foreground hover:bg-card"
                             aria-label={`Aumentar quantidade de ${item.name}`}
                             title="Aumentar quantidade"
                           >
@@ -320,14 +321,14 @@ export default function CartPage() {
             </section>
 
             <aside className="lg:sticky lg:top-24">
-              <Card className="border-[#e9eaee] bg-white p-4 shadow-sm">
-                <h2 className="text-sm font-extrabold text-[#14161a]">
+              <Card className="border-border bg-card p-4 shadow-sm">
+                <h2 className="text-sm font-extrabold text-foreground">
                   Resumo do pedido
                 </h2>
 
                 <div className="mt-4 flex gap-2">
                   <div className="relative min-w-0 flex-1">
-                    <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a8f99]" />
+                    <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       value={promoCode}
                       onChange={(event) =>
@@ -337,44 +338,44 @@ export default function CartPage() {
                         if (event.key === "Enter") applyPromoCode();
                       }}
                       placeholder="Código promocional"
-                      className="h-10 rounded-lg border-[#e9eaee] pl-9 text-xs"
+                      className="h-10 rounded-lg border-border pl-9 text-xs"
                     />
                   </div>
                   <Button
                     type="button"
                     onClick={applyPromoCode}
-                    className="h-10 rounded-lg bg-[#14161a] px-3 text-xs font-bold hover:bg-gray-800"
+                    className="h-10 rounded-lg bg-zinc-900 px-3 text-xs font-bold hover:bg-zinc-800"
                   >
                     Ativar
                   </Button>
                 </div>
 
                 {appliedPromo && (
-                  <div className="mt-2 flex items-center justify-between text-xs font-semibold text-[#1b7f4c]">
+                  <div className="mt-2 flex items-center justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                     <span>{appliedPromo} aplicado</span>
                     <button
                       type="button"
                       onClick={removePromoCode}
-                      className="text-[#8a8f99] underline hover:text-red-500"
+                      className="text-muted-foreground underline hover:text-red-500 dark:hover:text-red-400"
                     >
                       remover
                     </button>
                   </div>
                 )}
 
-                <div className="my-4 space-y-3 border-y border-[#e9eaee] py-4 text-xs font-semibold">
-                  <div className="flex items-center justify-between text-[#8a8f99]">
+                <div className="my-4 space-y-3 border-y border-border py-4 text-xs font-semibold">
+                  <div className="flex items-center justify-between text-muted-foreground">
                     <span>Subtotal</span>
-                    <span className="text-[#14161a]">
+                    <span className="text-foreground">
                       {formatCurrency(subtotal)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[#8a8f99]">
+                  <div className="flex items-center justify-between text-muted-foreground">
                     <span>Taxa de entrega</span>
-                    <span className="text-[#1b7f4c]">{deliveryLabel}</span>
+                    <span className="text-emerald-700 dark:text-emerald-400">{deliveryLabel}</span>
                   </div>
                   {promoDiscount > 0 && (
-                    <div className="flex items-center justify-between text-[#1b7f4c]">
+                    <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
                       <span>Desconto ({appliedPromo})</span>
                       <span>-{formatCurrency(promoDiscount)}</span>
                     </div>
@@ -382,10 +383,10 @@ export default function CartPage() {
                 </div>
 
                 <div className="flex items-end justify-between gap-3">
-                  <span className="text-sm font-bold text-[#3d4149]">
+                  <span className="text-sm font-bold text-foreground">
                     Total
                   </span>
-                  <span className="text-2xl font-extrabold tracking-[-0.02em] text-[#14161a]">
+                  <span className="text-2xl font-extrabold tracking-[-0.02em] text-foreground">
                     {formatCurrency(Math.max(0, total))}
                   </span>
                 </div>
@@ -398,7 +399,7 @@ export default function CartPage() {
                   Finalizar pedido
                 </Button>
 
-                <p className="mt-3 text-center text-[11px] font-semibold text-[#8a8f99]">
+                <p className="mt-3 text-center text-[11px] font-semibold text-muted-foreground">
                   Pix · Cartão · Dinheiro · Vale-refeição
                 </p>
               </Card>
@@ -412,19 +413,19 @@ export default function CartPage() {
 
 function CartPageSkeleton() {
   return (
-    <div className="min-h-screen bg-[#f4f5f7] pt-24">
+    <div className="min-h-screen bg-muted pt-24">
       <div className="mx-auto max-w-[1160px] space-y-3 px-3 sm:px-5">
-        <div className="h-7 w-48 animate-pulse rounded bg-gray-200" />
+        <div className="h-7 w-48 animate-pulse rounded bg-muted" />
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-3">
             {["a", "b", "c"].map((item) => (
               <div
                 key={item}
-                className="h-28 animate-pulse rounded-xl bg-white"
+                className="h-28 animate-pulse rounded-xl bg-card"
               />
             ))}
           </div>
-          <div className="h-80 animate-pulse rounded-xl bg-white" />
+          <div className="h-80 animate-pulse rounded-xl bg-card" />
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { apiService, MAX_PAGE_LIMIT } from "@/services/api";
+import { apiService, MAX_PAGE_LIMIT, type Category, type CreateCategoryRequest } from "@/services/api";
 import { useAuthStore } from "@/stores";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -108,7 +108,7 @@ export const useCreateCategory = () => {
   const companyIdToMatch = user?.companyId || user?.id;
 
   return useMutation({
-    mutationFn: async (categoryData: any) => {
+    mutationFn: async (categoryData: CreateCategoryRequest) => {
       const response = await apiService.createMyCategory(categoryData);
       if (!response.success) {
         throw new Error(response.message || "Falha ao criar categoria");
@@ -125,7 +125,7 @@ export const useCreateCategory = () => {
       if (data) {
         queryClient.setQueryData(
           ["categories", "my", companyIdToMatch],
-          (old: any[] = []) =>
+          (old: Category[] = []) =>
             old.some((c) => c.id === data.id) ? old : [...old, data],
         );
       }
@@ -147,7 +147,13 @@ export const useUpdateCategory = () => {
   const companyIdToMatch = user?.companyId || user?.id;
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: CreateCategoryRequest;
+    }) => {
       const response = await apiService.updateMyCategory(id, data);
       if (!response.success) {
         throw new Error(response.message || "Falha ao atualizar categoria");
@@ -159,7 +165,7 @@ export const useUpdateCategory = () => {
 
       queryClient.setQueryData(
         ["categories", "my", companyIdToMatch],
-        (old: any[] = []) =>
+        (old: Category[] = []) =>
           old.map((c) =>
             c.id === variables.id ? { ...c, ...(data || variables.data) } : c,
           ),
@@ -194,7 +200,7 @@ export const useDeleteCategory = () => {
 
       queryClient.setQueryData(
         ["categories", "my", companyIdToMatch],
-        (old: any[] = []) => old.filter((c) => c.id !== categoryId),
+        (old: Category[] = []) => old.filter((c) => c.id !== categoryId),
       );
 
       toast.success("Categoria deletada com sucesso!");

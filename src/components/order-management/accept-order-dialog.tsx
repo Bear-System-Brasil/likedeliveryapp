@@ -53,9 +53,9 @@ export function AcceptOrderDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {columnId === "ready" ? (
-              <CheckCircle className="h-5 w-5 text-emerald-600" />
+              <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             ) : (
-              <ChefHat className="h-5 w-5 text-blue-600" />
+              <ChefHat className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             )}
             {action?.label || "Confirmar ação"} — Pedido #{orderNumber}
           </DialogTitle>

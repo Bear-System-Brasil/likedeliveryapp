@@ -28,6 +28,8 @@
 
 import { Coords, ProductCategory, Restaurant } from "@/types/restaurant";
 import { STORAGE_KEYS, storageManager } from "@/utils/storage-manager";
+import { getErrorMessage } from "@/utils";
+import type { User as AuthUser } from "@/stores/auth-store";
 
 /**
  * Client fala com o BFF do próprio Next. Cookie httpOnly vai junto
@@ -39,18 +41,22 @@ const API_BASE_URL = "/api/proxy";
  * Helper para obter usuário autenticado
  * Tenta primeiro do Zustand store, depois fallback para formato legado
  */
-const getAuthUser = (): any | null => {
+const getAuthUser = (): AuthUser | null => {
   if (typeof window === "undefined") return null;
 
   try {
     // Tentar pegar do Zustand store
-    const authData = storageManager.local.get<any>(STORAGE_KEYS.AUTH);
+    const authData = storageManager.local.get<{ state?: { user?: AuthUser } }>(
+      STORAGE_KEYS.AUTH,
+    );
     if (authData?.state?.user) {
       return authData.state.user;
     }
 
     // Fallback para formato legado
-    const legacyUser = storageManager.local.get<any>(STORAGE_KEYS.LEGACY_USER);
+    const legacyUser = storageManager.local.get<AuthUser>(
+      STORAGE_KEYS.LEGACY_USER,
+    );
     return legacyUser;
   } catch {
     return null;
@@ -254,6 +260,17 @@ export interface CustomerRef {
   photoUrl?: string;
 }
 
+/**
+ * Recorte da empresa que o backend devolve embutido na relação de Order
+ * (ver order.md), simétrico ao `CustomerRef` acima.
+ */
+export interface OrderCompanyRef {
+  id: string;
+  tradeName: string;
+  legalName?: string;
+  logo_url?: string;
+}
+
 export interface LoginResponse {
   token: string;
   user: User | Company;
@@ -265,12 +282,35 @@ export interface LoginApiResponse {
 }
 
 /**
+ * Formato cru devolvido por /api/auth/login, /api/auth/register e
+ * /api/auth/session (BFF) - mistura campos de cliente (User) e empresa
+ * (Company) num único objeto, dependendo do tipo de conta. Os campos
+ * específicos de cada tipo são opcionais porque só um dos dois conjuntos
+ * vem preenchido; `role`/`companyId` distinguem qual é qual.
+ */
+export interface RawAuthUser {
+  id: string;
+  email: string;
+  phone?: string;
+  role?: string;
+  companyId?: string | null;
+  name?: string;
+  cpf?: string;
+  birthDate?: string;
+  photoUrl?: string;
+  tradeName?: string;
+  legalName?: string;
+  cnpj?: string;
+  logo_url?: string;
+}
+
+/**
  * Contrato real devolvido por /api/auth/login e /api/auth/register (BFF).
  * Sem token - a sessão vive no cookie httpOnly, o client só recebe o user.
  */
 export interface AuthBffResponse {
   data: {
-    user: (User | Company) & { companyId?: string | null };
+    user: RawAuthUser;
   };
 }
 
@@ -355,11 +395,13 @@ async function apiRequest<T>(
   // 401 aí não é "sessão expirada", é só "visitante sem login ainda". Não
   // dispara o popup global de login nem o toast de sessão nesses casos.
   silentUnauthorized: boolean = false,
+  signal?: AbortSignal,
 ): Promise<ApiResponse<T>> {
   try {
     const config: RequestInit = {
       method,
       headers: { "Content-Type": "application/json" },
+      signal,
     };
 
     // Add body for POST, PUT, PATCH requests
@@ -494,6 +536,15 @@ async function apiRequest<T>(
 
     return { success: true, data: result, status: response.status };
   } catch (error) {
+    // Repropaga abort pro caller distinguir "cancelado de propósito" (ex:
+    // debounce mandando uma chamada mais nova) de falha de rede de verdade -
+    // sem isso, todo `AbortController.abort()` vira um `{success:false}`
+    // normal e o caller reverte um estado otimista que só foi superado por
+    // uma chamada mais nova, não por um erro real.
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+
     return {
       success: false,
       message: "Erro de conexão. Verifique sua internet.",
@@ -643,6 +694,8 @@ export interface Company {
   logo_url?: string;
   cover_url?: string;
   status: string;
+  /** Se a loja está aceitando pedidos agora (não confundir com `status`). */
+  isOpen?: boolean;
   categories?: Category[];
   speciality?: Speciality[];
   created_at: string;
@@ -738,6 +791,8 @@ export interface Order {
   customerId: string;
   /** Relação incluída por GET /order/company (ver order.md). */
   customer?: CustomerRef;
+  /** Relação incluída por GET /order/customer/me (ver order.md). */
+  company?: OrderCompanyRef;
   discount: number;
   totalShipping: number;
   totalValue: number;
@@ -767,6 +822,8 @@ export interface OrderItem {
   productId: string;
   quantity: number;
   unitPrice: number;
+  /** Relação incluída por GET /order-item/order/:orderId (ver order.md). */
+  product?: Pick<Product, "id" | "name" | "salePrice" | "imageURL">;
   created_at: string;
   updated_at: string;
 }
@@ -867,6 +924,8 @@ export interface Payment {
   paymentMethod: PaymentMethod;
   status: PaymentStatus;
   transaction?: string;
+  /** Devolvido em métodos que exigem redirecionamento externo (ex. PIX via gateway). */
+  gatewayUrl?: string;
   date?: Date;
   created_at?: string;
   updated_at?: string;
@@ -1031,6 +1090,7 @@ export interface Delivery {
   cancellationReason?: string;
   deliveryAddress: Address;
   estimatedTime: string;
+  observations?: string;
   created_at: string;
   updated_at: string;
   order: Order;
@@ -1112,12 +1172,28 @@ export const apiService = {
   },
 
   logout: async (): Promise<void> => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // O Zustand já foi limpo antes de chamar isso (ver auth-provider) -
+      // sem rede, o cookie httpOnly expira sozinho; não há o que mais fazer.
+    }
   },
 
-  getSession: async (): Promise<{ authenticated: boolean; user: any }> => {
-    const res = await fetch("/api/auth/session", { cache: "no-store" });
-    return res.json();
+  // Chamado sem tratamento de erro no boot da sessão (ver auth-provider.tsx)
+  // derrubaria a reconciliação de sessão inteira com uma unhandled rejection
+  // silenciosa - backend fora do ar ou corpo não-JSON precisa cair pra
+  // "não autenticado" e não travar a inicialização do app.
+  getSession: async (): Promise<{
+    authenticated: boolean;
+    user: RawAuthUser | null;
+  }> => {
+    try {
+      const res = await fetch("/api/auth/session", { cache: "no-store" });
+      return await res.json();
+    } catch {
+      return { authenticated: false, user: null };
+    }
   },
 
   getInitialPhone: () =>
@@ -1376,7 +1452,7 @@ export const apiService = {
     categoryId: string,
     description: string,
   ) =>
-    apiRequest<any>(
+    apiRequest<void>(
       "POST",
       `/category-product/${productId}/${categoryId}`,
       { description },
@@ -1386,7 +1462,7 @@ export const apiService = {
   // Rota exige productId + categoryId juntos (não o id da relação
   // productCategories) - ver category-product.md.
   unlinkCategoryFromProduct: (productId: string, categoryId: string) =>
-    apiRequest<any>(
+    apiRequest<void>(
       "DELETE",
       `/category-product/${productId}/${categoryId}`,
       undefined,
@@ -1458,10 +1534,10 @@ export const apiService = {
         }
 
         return { success: true, data: result, status: response.status };
-      } catch (error: any) {
+      } catch (error) {
         return {
           success: false,
-          message: error.message || "Erro ao cadastrar empresa",
+          message: getErrorMessage(error, "Erro ao cadastrar empresa"),
         };
       }
     },
@@ -1513,10 +1589,10 @@ export const apiService = {
           data: result,
           message: undefined,
         };
-      } catch (error: any) {
+      } catch (error) {
         return {
           success: false,
-          message: error.message || "Erro ao atualizar empresa",
+          message: getErrorMessage(error, "Erro ao atualizar empresa"),
           data: undefined,
         };
       }
@@ -1575,7 +1651,7 @@ export const apiService = {
     userData?: { name?: string; email?: string; cpf?: string; phone?: string },
   ): Promise<ApiResponse<User>> => {
     try {
-      let dataToSend: any = {};
+      let dataToSend: { name?: string } = {};
 
       // Se userData foi passado, usar esses dados
       if (userData && Object.keys(userData).length > 0) {
@@ -1637,7 +1713,13 @@ export const apiService = {
     },
   ): Promise<ApiResponse<Company>> => {
     try {
-      let dataToSend: any = {};
+      let dataToSend: {
+        tradeName?: string;
+        legalName?: string;
+        cnpj?: string;
+        email?: string;
+        phone?: string;
+      } = {};
 
       // Se companyData foi passado, usar esses dados
       if (companyData && Object.keys(companyData).length > 0) {
@@ -1708,7 +1790,13 @@ export const apiService = {
     },
   ): Promise<ApiResponse<Company>> => {
     try {
-      let dataToSend: any = {};
+      let dataToSend: {
+        tradeName?: string;
+        legalName?: string;
+        cnpj?: string;
+        email?: string;
+        phone?: string;
+      } = {};
 
       // Se companyData foi passado, usar esses dados
       if (companyData && Object.keys(companyData).length > 0) {
@@ -1915,6 +2003,7 @@ export const apiService = {
         addOns?: { productAddOnsId: string; quantity: number }[];
         variations?: { productVariationId: string }[];
       },
+      signal?: AbortSignal,
     ) =>
       apiRequest<Order>(
         "POST",
@@ -1929,6 +2018,8 @@ export const apiService = {
             : {}),
         },
         true,
+        false,
+        signal,
       ),
 
     removeProductFromCart: (
@@ -1936,12 +2027,15 @@ export const apiService = {
       orderId: string,
       productId: string,
       quantity: number,
+      signal?: AbortSignal,
     ) =>
       apiRequest<void>(
         "DELETE",
         `/order-item/cart/${encodeOrderId(orderId)}/products/${productId}/${quantity}`,
         undefined,
         true,
+        false,
+        signal,
       ),
   },
 
@@ -2160,13 +2254,13 @@ export const apiService = {
         true,
       ),
     withdrawal: (data: CashWithdrawalRequest) =>
-      apiRequest<any>("POST", "/cash-movement/withdrawal", data, true),
+      apiRequest<CashMovement>("POST", "/cash-movement/withdrawal", data, true),
     deposit: (data: CashDepositRequest) =>
-      apiRequest<any>("POST", "/cash-movement/deposit", data, true),
+      apiRequest<CashMovement>("POST", "/cash-movement/deposit", data, true),
     sale: (data: CashSaleRequest) =>
-      apiRequest<any>("POST", "/cash-movement/sale", data, true),
+      apiRequest<CashMovement>("POST", "/cash-movement/sale", data, true),
     refund: (data: CashRefundRequest) =>
-      apiRequest<any>("POST", "/cash-movement/refund", data, true),
+      apiRequest<CashMovement>("POST", "/cash-movement/refund", data, true),
   },
   // Cash Register endpoints
   cashRegister: {

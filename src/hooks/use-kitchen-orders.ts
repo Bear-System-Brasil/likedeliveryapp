@@ -26,6 +26,7 @@ import {
 } from "@/components/kitchen/types";
 import { getPeriodRange, isSameLocalDay } from "@/components/kitchen/helpers";
 import { useSound } from "@/hooks/use-sound";
+import { socketAuthProvider } from "@/lib/socket-auth";
 import {
   advanceKitchenOrderStatus,
   cancelKitchenOrder,
@@ -390,40 +391,34 @@ export function useKitchenOrders() {
       return;
     }
 
-    let socket: Socket | null = null;
-    let cancelled = false;
+    // `auth` como função (não `{ token }` estático) é buscado a cada
+    // tentativa de conexão, inclusive reconexões automáticas do socket.io -
+    // sem isso, um token expirado depois de uma queda de rede ficava sendo
+    // reenviado pra sempre, travando em `connect_error` até dar F5.
+    const socket = io(KITCHEN_SOCKET_URL, { auth: socketAuthProvider });
+    socketRef.current = socket;
 
-    fetch("/api/auth/socket-token")
-      .then((res) => res.json())
-      .then(({ token }: { token: string | null }) => {
-        if (cancelled || !token) return;
+    socket.on("connect", () => {
+      setIsLive(true);
+      // Ao reconectar, refaz a consulta REST do intervalo atual — o
+      // socket não substitui a sincronização inicial.
+      queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] });
 
-        socket = io(KITCHEN_SOCKET_URL, { auth: { token } });
-        socketRef.current = socket;
-
-        socket.on("connect", () => {
-          setIsLive(true);
-          // Ao reconectar, refaz a consulta REST do intervalo atual — o
-          // socket não substitui a sincronização inicial.
-          queryClient.invalidateQueries({ queryKey: ["kitchen-orders"] });
-
-          socket!.emit("joinCompanyOrders", undefined, (ack?: { ok?: boolean }) => {
-            if (!ack?.ok) {
-              toast.error("Não foi possível acompanhar os pedidos em tempo real.");
-            }
-          });
-        });
-
-        socket.on("disconnect", () => setIsLive(false));
-        socket.on("connect_error", () => setIsLive(false));
-
-        socket.on("orderCreated", (order: KitchenOrder) => applyOrderSnapshot(order));
-        socket.on("orderStatusUpdated", (order: KitchenOrder) => applyOrderSnapshot(order));
+      socket.emit("joinCompanyOrders", undefined, (ack?: { ok?: boolean }) => {
+        if (!ack?.ok) {
+          toast.error("Não foi possível acompanhar os pedidos em tempo real.");
+        }
       });
+    });
+
+    socket.on("disconnect", () => setIsLive(false));
+    socket.on("connect_error", () => setIsLive(false));
+
+    socket.on("orderCreated", (order: KitchenOrder) => applyOrderSnapshot(order));
+    socket.on("orderStatusUpdated", (order: KitchenOrder) => applyOrderSnapshot(order));
 
     return () => {
-      cancelled = true;
-      socket?.disconnect();
+      socket.disconnect();
       socketRef.current = null;
       setIsLive(false);
     };

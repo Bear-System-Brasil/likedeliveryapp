@@ -39,11 +39,11 @@ export default function SettingsPage() {
       mainClassName="p-4 pb-20 sm:p-6 md:pb-10 lg:pl-64 lg:pr-8"
     >
       <div className="mx-auto max-w-3xl space-y-6">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Preferências de operação do caixa e do financeiro.
         </p>
 
-        <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+        <div className="flex items-start gap-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 p-3 text-sm text-blue-800 dark:text-blue-300">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             Essas preferências ficam salvas só neste navegador - não existe
@@ -53,14 +53,14 @@ export default function SettingsPage() {
         </div>
 
         {/* Movimentação de caixa */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="rounded-xl border border-border bg-card p-5">
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
               <Wallet className="h-4.5 w-4.5" />
             </div>
             <div>
               <h3 className="font-semibold">Movimentação de caixa</h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Aplica-se às telas de Controle de Caixa e Dashboard
               </p>
             </div>
@@ -83,7 +83,7 @@ export default function SettingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="mt-1.5 text-xs text-gray-400">
+            <p className="mt-1.5 text-xs text-muted-foreground">
               Pré-selecionado ao abrir sangria, suprimento, venda manual ou
               reembolso.
             </p>
@@ -91,14 +91,14 @@ export default function SettingsPage() {
         </div>
 
         {/* Segurança operacional */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="rounded-xl border border-border bg-card p-5">
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-50 text-orange-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">
               <ShieldCheck className="h-4.5 w-4.5" />
             </div>
             <div>
               <h3 className="font-semibold">Segurança operacional</h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Evita fechamentos de caixa por engano
               </p>
             </div>
@@ -116,7 +116,7 @@ export default function SettingsPage() {
               <span className="font-medium">
                 Confirmar antes de fechar o caixa
               </span>
-              <p className="mt-0.5 text-xs text-gray-500">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Exige marcar uma confirmação extra no diálogo de fechamento
                 antes de liberar o botão de confirmar - fechamento não pode
                 ser desfeito.

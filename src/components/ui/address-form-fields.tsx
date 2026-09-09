@@ -124,7 +124,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
           <div className="space-y-2">
             <Label
               htmlFor="zipCode"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               CEP {isRequired("zipCode") && "*"}
             </Label>
@@ -135,7 +135,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
               value={data.zipCode}
               onChange={(e) => onChange("zipCode", e.target.value)}
               disabled={disabled}
-              className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
+              className="rounded-xl border-2 border-border focus:border-orange-400"
               maxLength={9}
             />
           </div>
@@ -144,7 +144,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
           <div className="space-y-2">
             <Label
               htmlFor="state"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Estado {isRequired("state") && "*"}
             </Label>
@@ -155,7 +155,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
               value={data.state}
               onChange={(e) => onChange("state", e.target.value)}
               disabled={disabled}
-              className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
+              className="rounded-xl border-2 border-border focus:border-orange-400"
               maxLength={2}
             />
           </div>
@@ -164,7 +164,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
           <div className="space-y-2">
             <Label
               htmlFor="city"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Cidade {isRequired("city") && "*"}
             </Label>
@@ -175,7 +175,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
               value={data.city}
               onChange={(e) => onChange("city", e.target.value)}
               disabled={disabled}
-              className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
+              className="rounded-xl border-2 border-border focus:border-orange-400"
             />
           </div>
 
@@ -183,7 +183,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
           <div className="space-y-2">
             <Label
               htmlFor="neighborhood"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Bairro {isRequired("neighborhood") && "*"}
             </Label>
@@ -194,7 +194,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
               value={data.neighborhood}
               onChange={(e) => onChange("neighborhood", e.target.value)}
               disabled={disabled}
-              className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
+              className="rounded-xl border-2 border-border focus:border-orange-400"
             />
           </div>
 
@@ -202,7 +202,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
           <div className="space-y-2">
             <Label
               htmlFor="street"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Rua {isRequired("street") && "*"}
             </Label>
@@ -213,7 +213,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
               value={data.street}
               onChange={(e) => onChange("street", e.target.value)}
               disabled={disabled}
-              className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
+              className="rounded-xl border-2 border-border focus:border-orange-400"
             />
           </div>
 
@@ -221,7 +221,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
           <div className="space-y-2">
             <Label
               htmlFor="number"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Número {isRequired("number") && "*"}
             </Label>
@@ -232,7 +232,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
               value={data.number}
               onChange={(e) => onChange("number", e.target.value)}
               disabled={disabled}
-              className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
+              className="rounded-xl border-2 border-border focus:border-orange-400"
             />
           </div>
 
@@ -240,7 +240,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
           <div className="space-y-2 md:col-span-2">
             <Label
               htmlFor="complement"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Complemento {isRequired("complement") && "*"}
             </Label>
@@ -251,7 +251,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
               value={data.complement || ""}
               onChange={(e) => onChange("complement", e.target.value)}
               disabled={disabled}
-              className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
+              className="rounded-xl border-2 border-border focus:border-orange-400"
             />
           </div>
 
@@ -259,7 +259,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
           <div className="space-y-2 md:col-span-2">
             <Label
               htmlFor="reference"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Ponto de Referência {isRequired("reference") && "*"}
             </Label>
@@ -270,7 +270,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
               value={data.reference || ""}
               onChange={(e) => onChange("reference", e.target.value)}
               disabled={disabled}
-              className="rounded-xl border-2 border-gray-200 focus:border-orange-400"
+              className="rounded-xl border-2 border-border focus:border-orange-400"
             />
           </div>
         </div>
@@ -287,7 +287,7 @@ export const AddressFormFields = React.memo<AddressFormFieldsProps>(
               />
               <Label
                 htmlFor="saveAddress"
-                className="text-sm text-gray-600 cursor-pointer select-none"
+                className="text-sm text-muted-foreground cursor-pointer select-none"
               >
                 Salvar este endereço para pedidos futuros
               </Label>

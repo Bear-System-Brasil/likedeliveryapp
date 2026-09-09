@@ -32,6 +32,8 @@ import { useAuth } from "@/contexts/auth-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { formatCurrency } from "@/utils/format-currency";
 import { toast } from "sonner";
+import type { Category, Product } from "@/services/api";
+import type { ProductCategory } from "@/types/restaurant";
 
 // Função para gerar IDs seguros e sem colisão
 function slugify(text: string) {
@@ -45,7 +47,7 @@ function slugify(text: string) {
 }
 
 function getProductCategoryName(
-  productCategory: any,
+  productCategory: ProductCategory | string | undefined,
   categoryMap: Record<string, string>,
 ) {
   if (typeof productCategory === "string") {
@@ -53,15 +55,14 @@ function getProductCategoryName(
   }
 
   return (
-    categoryMap[productCategory?.categoryId] ||
+    categoryMap[productCategory?.categoryId ?? ""] ||
     productCategory?.category?.name ||
-    productCategory?.name ||
     ""
   );
 }
 
-function getImageUrl(item: any) {
-  return item?.imageURL?.[0]?.url || item?.image || "/placeholder.svg";
+function getImageUrl(item: Product) {
+  return item.imageURL?.[0]?.url || "/placeholder.svg";
 }
 
 export default function RestaurantPage() {
@@ -90,7 +91,7 @@ export default function RestaurantPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<Product | null>(null);
   
   const navRef = useRef<HTMLElement>(null);
 
@@ -100,7 +101,7 @@ export default function RestaurantPage() {
   const categoryMap = useMemo(() => {
     if (!allCategories) return {};
     return Object.fromEntries(
-      allCategories.map((category: any) => [category.id, category.name]),
+      allCategories.map((category: Category) => [category.id, category.name]),
     );
   }, [allCategories]);
 
@@ -128,9 +129,9 @@ export default function RestaurantPage() {
 
   // 1. Em vez de filtrar, agrupamos os itens por categoria
   const groupedItems = useMemo(() => {
-    const groups: Record<string, any[]> = {};
+    const groups: Record<string, Product[]> = {};
 
-    menuItems.forEach((item: any) => {
+    menuItems.forEach((item) => {
       // Pega a primeira categoria do produto, ou "Outros" se não tiver
       let catName = "Outros";
       if (item.productCategories && item.productCategories.length > 0) {
@@ -213,27 +214,25 @@ export default function RestaurantPage() {
     }
   };
 
-  const restaurantData = restaurant as any;
-  const specialties =
-    restaurantData?.specialty || restaurantData?.speciality || [];
+  const specialties = restaurant?.specialty || [];
   const restaurantCategory =
-    specialties[0]?.name || restaurantData?.categories?.[0]?.name || "Delivery";
-  const restaurantRating = Number(restaurantData?.rating || 0);
-  const totalReviews = Number(restaurantData?.totalReviews || 0);
+    specialties[0]?.name || restaurant?.categories?.[0]?.name || "Delivery";
+  const restaurantRating = Number(restaurant?.rating || 0);
+  const totalReviews = Number(restaurant?.totalReviews || 0);
   const hasRating = Number.isFinite(restaurantRating) && restaurantRating > 0;
-  const deliveryTime = restaurantData?.time || "30-40 min";
+  const deliveryTime = restaurant?.time || "30-40 min";
   const deliveryFee = Number.parseFloat(
-    String(restaurantData?.deliveryFee ?? "").replace(",", "."),
+    String(restaurant?.deliveryFee ?? "").replace(",", "."),
   );
   const deliveryLabel =
     Number.isFinite(deliveryFee) && deliveryFee > 0
       ? formatCurrency(deliveryFee)
       : "Entrega grátis";
   const isOpen =
-    typeof restaurantData?.isOpen === "boolean" ? restaurantData.isOpen : null;
-  const restaurantDescription = restaurantData?.description?.trim();
+    typeof restaurant?.isOpen === "boolean" ? restaurant.isOpen : null;
+  const restaurantDescription = restaurant?.description?.trim();
 
-  const handleOpenModal = (item: any) => {
+  const handleOpenModal = (item: Product) => {
     if (!isAuthenticated) {
       showAuthModal("login");
       return;
@@ -251,7 +250,7 @@ export default function RestaurantPage() {
   };
 
   return (
-    <AnimatedBackground showBlobs={false} className="bg-[#f4f5f7] py-0">
+    <AnimatedBackground showBlobs={false} className="bg-muted py-0">
       <MainHeader
         cartItems={totalItems}
         onCartClick={() => router.push("/cart")}
@@ -264,8 +263,8 @@ export default function RestaurantPage() {
           {loading ? (
             <RestaurantPageSkeleton />
           ) : error || !restaurant ? (
-            <Card className="border-[#e9eaee] bg-white p-8 text-center shadow-sm">
-              <p className="mb-4 text-red-600">
+            <Card className="border-border bg-card p-8 text-center shadow-sm">
+              <p className="mb-4 text-red-600 dark:text-red-400">
                 {error?.message || "Restaurante não encontrado"}
               </p>
               <GradientButton onClick={() => router.push("/#lojas")} size="sm">
@@ -275,18 +274,18 @@ export default function RestaurantPage() {
           ) : (
             <>
               {/* === CABEÇALHO DO RESTAURANTE === */}
-              <section className="overflow-hidden rounded-[14px] border border-[#e9eaee] bg-white shadow-sm">
-                <div className="relative h-32 bg-[#edeef1] sm:h-40 md:h-[158px]">
+              <section className="overflow-hidden rounded-[14px] border border-border bg-card shadow-sm">
+                <div className="relative h-32 bg-muted sm:h-40 md:h-[158px]">
                   <Image
                     fill
                     priority
                     sizes="(max-width: 640px) 100vw, 1160px"
                     src={
-                      restaurantData.cover_url ||
-                      restaurantData.logo_url ||
+                      restaurant.cover_url ||
+                      restaurant.logo_url ||
                       "/placeholder.svg"
                     }
-                    alt={restaurantData.tradeName || "Restaurante"}
+                    alt={restaurant.tradeName || "Restaurante"}
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-linear-to-t from-black/35 to-transparent" />
@@ -294,7 +293,7 @@ export default function RestaurantPage() {
                   <button
                     type="button"
                     onClick={() => router.push("/#lojas")}
-                    className="absolute left-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-gray-700 shadow-sm transition hover:bg-white"
+                    className="absolute left-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card/95 text-foreground shadow-sm transition hover:bg-card"
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </button>
@@ -302,10 +301,10 @@ export default function RestaurantPage() {
                   <button
                     type="button"
                     onClick={() => setIsFavorite((favorite) => !favorite)}
-                    className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-gray-700 shadow-sm transition hover:bg-white"
+                    className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-card/95 text-foreground shadow-sm transition hover:bg-card"
                   >
                     <Heart
-                      className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`}
+                      className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500 dark:text-red-400" : ""}`}
                     />
                   </button>
                 </div>
@@ -314,22 +313,22 @@ export default function RestaurantPage() {
                   <Image
                     width={56}
                     height={56}
-                    src={restaurantData.logo_url || "/placeholder.svg"}
-                    alt={`Logo de ${restaurantData.tradeName || "restaurante"}`}
-                    className="relative z-10 -mt-7 h-14 w-14 shrink-0 rounded-[14px] border-[3px] border-white bg-[#edeef1] object-cover"
+                    src={restaurant.logo_url || "/placeholder.svg"}
+                    alt={`Logo de ${restaurant.tradeName || "restaurante"}`}
+                    className="relative z-10 -mt-7 h-14 w-14 shrink-0 rounded-[14px] border-[3px] border-background bg-muted object-cover"
                   />
 
                   <div className="min-w-0 flex-1 pt-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="truncate text-[18px] font-extrabold tracking-[-0.02em] text-[#14161a]">
-                        {restaurantData.tradeName}
+                      <h1 className="truncate text-[18px] font-extrabold tracking-[-0.02em] text-foreground">
+                        {restaurant.tradeName}
                       </h1>
                       {isOpen !== null && (
                         <span
                           className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-extrabold ${
                             isOpen
-                              ? "bg-[#e9f7ef] text-[#1b7f4c]"
-                              : "bg-[#fff1e7] text-[#e05a00]"
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
+                              : "bg-orange-50 dark:bg-orange-950/40 text-[#e05a00]"
                           }`}
                         >
                           {isOpen ? "Aberto" : "Fechado"}
@@ -338,14 +337,14 @@ export default function RestaurantPage() {
                     </div>
 
                     {restaurantDescription && (
-                      <p className="mt-1 line-clamp-2 text-xs font-medium text-[#8a8f99]">
+                      <p className="mt-1 line-clamp-2 text-xs font-medium text-muted-foreground">
                         {restaurantDescription}
                       </p>
                     )}
 
                     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold">
                       {hasRating && (
-                        <span className="flex items-center gap-1 rounded-full bg-[#f4f5f7] px-2.5 py-1 text-[#14161a]">
+                        <span className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-foreground">
                           <Star className="h-3 w-3 fill-[#ffb020] text-[#ffb020]" />
                           {restaurantRating.toLocaleString("pt-BR", {
                             minimumFractionDigits: 1,
@@ -353,14 +352,14 @@ export default function RestaurantPage() {
                           })}
                         </span>
                       )}
-                      <span className="rounded-full bg-[#f4f5f7] px-2.5 py-1 text-[#3d4149]">
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-foreground">
                         {restaurantCategory}
                       </span>
-                      <span className="flex items-center gap-1 rounded-full bg-[#f4f5f7] px-2.5 py-1 text-[#3d4149]">
+                      <span className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-foreground">
                         <Clock3 className="h-3 w-3" />
                         {deliveryTime}
                       </span>
-                      <span className="rounded-full bg-[#e9f7ef] px-2.5 py-1 text-[#1b7f4c]">
+                      <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 text-emerald-700 dark:text-emerald-400">
                         {deliveryLabel}
                       </span>
                     </div>
@@ -371,7 +370,7 @@ export default function RestaurantPage() {
               {/* === BARRA DE NAVEGAÇÃO DE CATEGORIAS FIXA === */}
               <nav
                 ref={navRef}
-                className="sticky top-[72px] z-30 -mx-3 flex gap-2 overflow-x-auto bg-[#f4f5f7]/95 px-3 py-3 backdrop-blur scrollbar-hide sm:top-[82px] sm:-mx-5 sm:px-5"
+                className="sticky top-[72px] z-30 -mx-3 flex gap-2 overflow-x-auto bg-muted/95 px-3 py-3 backdrop-blur scrollbar-hide sm:top-[82px] sm:-mx-5 sm:px-5"
               >
                 {categories.map((category) => {
                   const isActive = selectedCategory === category;
@@ -383,8 +382,8 @@ export default function RestaurantPage() {
                       onClick={() => scrollToCategory(category)}
                       className={`shrink-0 rounded-lg border px-3.5 py-1.5 text-xs font-bold transition-all ${
                         isActive
-                          ? "border-gray-900 bg-gray-900 text-white"
-                          : "border-[#e9eaee] bg-white text-[#3d4149] hover:border-gray-300"
+                          ? "border-zinc-900 bg-zinc-900 text-white"
+                          : "border-border bg-card text-foreground hover:border-border"
                       }`}
                     >
                       {category}
@@ -396,8 +395,8 @@ export default function RestaurantPage() {
               {/* === LISTA DE PRODUTOS AGRUPADOS POR CATEGORIA === */}
               <section aria-label="Itens do cardápio" className="mt-2 space-y-8">
                 {menuItems.length === 0 ? (
-                  <Card className="border-[#e9eaee] bg-white p-10 text-center shadow-sm">
-                    <p className="text-sm font-medium text-gray-600">
+                  <Card className="border-border bg-card p-10 text-center shadow-sm">
+                    <p className="text-sm font-medium text-muted-foreground">
                       Nenhum produto disponível no momento.
                     </p>
                   </Card>
@@ -408,12 +407,12 @@ export default function RestaurantPage() {
                       id={`category-${slugify(category)}`} // Uso do slug
                       className="scroll-mt-[130px]"
                     >
-                      <h2 className="mb-4 text-xl font-extrabold text-gray-900">
+                      <h2 className="mb-4 text-xl font-extrabold text-foreground">
                         {category}
                       </h2>
                       
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {items.map((item: any) => {
+                        {items.map((item) => {
                           const isAvailable = item.isAvailable !== false;
 
                           // priceModifier é delta sobre o salePrice, então
@@ -431,29 +430,24 @@ export default function RestaurantPage() {
                             <Card
                               key={item.id}
                               onClick={() => isAvailable && handleOpenModal(item)}
-                              className={`group flex min-w-0 min-h-[116px] gap-3 overflow-visible rounded-[13px] border border-[#e9eaee] bg-white p-3 shadow-sm transition hover:border-[#dddfe4] hover:shadow-md ${
+                              className={`group flex min-w-0 min-h-[116px] gap-3 overflow-visible rounded-[13px] border border-border bg-card p-3 shadow-sm transition hover:border-border hover:shadow-md ${
                                 isAvailable ? "cursor-pointer" : "cursor-default"
                               }`}
                             >
                               <div className="flex min-w-0 flex-1 flex-col">
-                                <h3 className="line-clamp-2 wrap-break-word text-sm font-bold tracking-[-0.01em] text-[#14161a]">
+                                <h3 className="line-clamp-2 wrap-break-word text-sm font-bold tracking-[-0.01em] text-foreground">
                                   {item.name}
                                 </h3>
                                 
                                 {item.description && (
-                                  <p className="mt-1 line-clamp-2 wrap-break-word text-xs font-medium leading-relaxed text-[#8a8f99]">
+                                  <p className="mt-1 line-clamp-2 wrap-break-word text-xs font-medium leading-relaxed text-muted-foreground">
                                     {item.description}
                                   </p>
                                 )}
                                 
-                                <div className="mt-auto flex items-baseline gap-1.5 pt-3">
-                                  {hasSellableVariation && (
-                                    <span className="text-[11px] font-semibold text-[#8a8f99]">
-                                      A partir de
-                                    </span>
-                                  )}
-                                  <span className="text-[15px] font-extrabold tracking-[-0.02em] text-[#14161a]">
-                                    {formatCurrency(displayPrice)}
+                                <div className="mt-auto flex items-center gap-2 pt-3">
+                                  <span className="text-[15px] font-extrabold tracking-[-0.02em] text-foreground">
+                                    {formatCurrency(Number(item.salePrice || 0))}
                                   </span>
                                 </div>
                               </div>
@@ -464,7 +458,7 @@ export default function RestaurantPage() {
                                   height={184}
                                   src={getImageUrl(item)}
                                   alt={item.name}
-                                  className={`h-full w-full rounded-[10px] bg-[#edeef1] object-cover ${
+                                  className={`h-full w-full rounded-[10px] bg-muted object-cover ${
                                     !isAvailable ? "opacity-60" : ""
                                   }`}
                                 />
@@ -510,7 +504,7 @@ export default function RestaurantPage() {
 
       {totalItems > 0 && (
         <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-3 right-3 z-40 sm:left-4 sm:right-4 md:bottom-4">
-          <div className="mx-auto max-w-[1160px] rounded-xl bg-[#14161a] px-3 py-3 text-white shadow-xl sm:px-4">
+          <div className="mx-auto max-w-[1160px] rounded-xl bg-zinc-900 px-3 py-3 text-white shadow-xl sm:px-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
                 <ShoppingBag className="h-4 w-4 shrink-0 text-orange-400" />
@@ -519,7 +513,7 @@ export default function RestaurantPage() {
                     {totalItems} {totalItems === 1 ? "item" : "itens"} no
                     carrinho
                   </p>
-                  <p className="text-[11px] font-medium text-gray-300 sm:text-xs">
+                  <p className="text-[11px] font-medium text-muted-foreground sm:text-xs">
                     Total: {formatCurrency(totalPrice || 0)}
                   </p>
                 </div>
@@ -527,7 +521,7 @@ export default function RestaurantPage() {
               <Button
                 type="button"
                 onClick={() => router.push("/cart")}
-                className="h-9 shrink-0 rounded-lg bg-white px-3 text-xs font-bold text-orange-600 hover:bg-orange-50 sm:px-4"
+                className="h-9 shrink-0 rounded-lg bg-card px-3 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/40 sm:px-4"
               >
                 Ver carrinho
               </Button>
@@ -542,7 +536,7 @@ export default function RestaurantPage() {
 function RestaurantPageSkeleton() {
   return (
     <div className="space-y-3">
-      <Card className="overflow-hidden border-[#e9eaee] bg-white shadow-sm">
+      <Card className="overflow-hidden border-border bg-card shadow-sm">
         <Skeleton className="h-32 w-full rounded-none sm:h-40 md:h-[158px]" />
         <div className="flex gap-3 px-3 pb-4 sm:px-4">
           <Skeleton className="relative z-10 -mt-7 h-14 w-14 shrink-0 rounded-[14px]" />
@@ -564,7 +558,7 @@ function RestaurantPageSkeleton() {
         {["a", "b", "c", "d", "e", "f"].map((item) => (
           <Card
             key={item}
-            className="flex min-h-[116px] gap-3 border-[#e9eaee] bg-white p-3"
+            className="flex min-h-[116px] gap-3 border-border bg-card p-3"
           >
             <div className="flex flex-1 flex-col gap-2">
               <Skeleton className="h-4 w-3/4" />

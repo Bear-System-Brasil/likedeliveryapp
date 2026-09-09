@@ -7,6 +7,14 @@
 
 import { USER_ROLES, hasRoutePermission } from "./permissions";
 import { STORAGE_KEYS, storageManager } from "./storage-manager";
+import type { User } from "@/stores/auth-store";
+
+interface PersistedAuthState {
+  state?: {
+    token?: string;
+    user?: User;
+  };
+}
 
 /**
  * Verifica se há um token válido
@@ -16,7 +24,7 @@ export function hasValidToken(): boolean {
   if (typeof window === "undefined") return false;
 
   // Tentar pegar do novo formato (Zustand)
-  const authData = storageManager.local.get<any>(STORAGE_KEYS.AUTH);
+  const authData = storageManager.local.get<PersistedAuthState>(STORAGE_KEYS.AUTH);
   if (authData?.state?.token) {
     return !!authData.state.token && authData.state.token.length > 0;
   }
@@ -35,13 +43,13 @@ export function getStoredUser() {
 
   try {
     // Tentar pegar do novo formato (Zustand)
-    const authData = storageManager.local.get<any>(STORAGE_KEYS.AUTH);
+    const authData = storageManager.local.get<PersistedAuthState>(STORAGE_KEYS.AUTH);
     if (authData?.state?.user) {
       return authData.state.user;
     }
 
     // Fallback para formato legado
-    const legacyUser = storageManager.local.get<any>(STORAGE_KEYS.LEGACY_USER);
+    const legacyUser = storageManager.local.get<User>(STORAGE_KEYS.LEGACY_USER);
     return legacyUser;
   } catch (error) {
     console.error("Erro ao recuperar usuário:", error);
@@ -53,7 +61,7 @@ export function getStoredUser() {
  * Save user data
  * @deprecated Use useAuthStore.login() instead — this is a no-op to prevent legacy double-writes
  */
-export function saveUser(_user: any) {
+export function saveUser(_user: User) {
   // No-op: legacy function kept for API compatibility.
   // Auth data is managed exclusively by Zustand auth-store.
 }

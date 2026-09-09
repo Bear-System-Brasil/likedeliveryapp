@@ -51,7 +51,7 @@ export function LateralMenu({ selectedLabel }: LateralMenuProps) {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-white border-r">
+    <div className="flex h-screen w-64 flex-col bg-card border-r">
       <div className="flex h-16 items-center border-b px-6">
         <BarChart3 className="h-6 w-6 text-primary" />
         <span className="ml-2 text-lg font-semibold">Gestão Financeira</span>

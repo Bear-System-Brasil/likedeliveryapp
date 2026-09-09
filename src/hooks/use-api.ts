@@ -1,4 +1,4 @@
-import { apiService } from "@/services/api";
+import { apiService, type UpdateUserRequest } from "@/services/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 /**
@@ -55,7 +55,11 @@ export function useApiMutation<TData, TVariables = void>(
  */
 export function useProfile() {
   const updateProfile = useApiMutation(
-    (data: any) => apiService.updateUser(data),
+    // A tela de "editar perfil" só coleta dados pessoais (nunca role/status),
+    // por isso o payload real é mais estreito que `UpdateUserRequest` - o
+    // backend aceita o PUT parcial mesmo assim.
+    (data: Partial<UpdateUserRequest> & { id: string }) =>
+      apiService.updateUser(data as UpdateUserRequest),
     {
       invalidateQueries: [["profile"]],
     },

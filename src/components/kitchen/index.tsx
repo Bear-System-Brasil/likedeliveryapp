@@ -89,7 +89,7 @@ function KitchenPrintArea({ order }: { order: KitchenOrder | null }) {
   const observations = order.observations?.trim();
 
   return (
-    <div className="print-area hidden print:mx-auto print:block print:w-[80mm] print:bg-white print:font-mono print:text-xs print:text-black">
+    <div className="print-area hidden print:mx-auto print:block print:w-[80mm] print:bg-card print:font-mono print:text-xs print:text-black">
       <div className="mb-2 text-center">
         <h2 className="text-base font-bold">COZINHA</h2>
         <p>───────────────────────</p>
@@ -221,21 +221,21 @@ export default function Kitchen() {
     <div className="flex h-[calc(100dvh-52px)] min-h-0 flex-col overflow-hidden">
       {/* Cabeçalho compacto: identidade da estação, relógio, total ativo e controles */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-card px-3 py-2 print:hidden">
-        <div className="flex min-w-0 items-center gap-2 font-bold text-slate-800">
+        <div className="flex min-w-0 items-center gap-2 font-bold text-foreground">
           <Store className="h-4 w-4 shrink-0 text-orange-500" />
           <span className="truncate">{restaurantName}</span>
         </div>
 
-        <span className="tabular-nums text-sm font-semibold text-slate-500">{clockLabel}</span>
+        <span className="tabular-nums text-sm font-semibold text-muted-foreground">{clockLabel}</span>
 
-        <span className="text-sm font-semibold text-slate-600">
+        <span className="text-sm font-semibold text-muted-foreground">
           {activeOrderTotal} {activeOrderTotal === 1 ? "pedido ativo" : "pedidos ativos"}
         </span>
 
         <span
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold",
-            isLive ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700",
+            isLive ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-400" : "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-400",
           )}
         >
           <span
@@ -256,7 +256,7 @@ export default function Kitchen() {
             value={period}
             onChange={(event) => setPeriod(event.target.value as KitchenPeriod)}
             aria-label="Período de Concluídos e Cancelados"
-            className="h-9 cursor-pointer rounded-lg border border-input bg-background px-2 text-sm text-slate-600"
+            className="h-9 cursor-pointer rounded-lg border border-input bg-background px-2 text-sm text-muted-foreground"
           >
             {PERIOD_PRESETS.map((preset) => (
               <option key={preset} value={preset}>
@@ -273,7 +273,7 @@ export default function Kitchen() {
               max={toDateInputValue(new Date())}
               onChange={(event) => handleCustomDateChange(event.target.value)}
               aria-label="Selecionar data específica"
-              className="h-9 cursor-pointer rounded-lg border border-input bg-background px-2 text-sm text-slate-600"
+              className="h-9 cursor-pointer rounded-lg border border-input bg-background px-2 text-sm text-muted-foreground"
             />
           )}
 
@@ -316,7 +316,7 @@ export default function Kitchen() {
 
       {/* Cards de contador — em telas estreitas também trocam a coluna visível */}
       <div
-        className="flex shrink-0 gap-2 overflow-x-auto border-b bg-white p-2 print:hidden"
+        className="flex shrink-0 gap-2 overflow-x-auto border-b bg-card p-2 print:hidden"
         role="tablist"
         aria-label="Colunas da cozinha"
       >

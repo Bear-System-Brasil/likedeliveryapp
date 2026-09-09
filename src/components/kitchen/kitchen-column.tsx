@@ -9,7 +9,7 @@ import type { KitchenColumnState, KitchenOrder } from "./types";
 
 function CardSkeleton() {
   return (
-    <div className="space-y-3 rounded-2xl border border-slate-200 bg-card p-4">
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
       <div className="flex justify-between">
         <Skeleton className="h-7 w-20" />
         <Skeleton className="h-7 w-16 rounded-full" />

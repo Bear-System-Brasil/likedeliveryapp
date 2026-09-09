@@ -5,6 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { useDeliveries } from "@/hooks/use-deliveries";
 import { cn } from "@/lib/utils";
+import { socketAuthProvider } from "@/lib/socket-auth";
 import { Delivery } from "@/services/api";
 import { MapPinIcon, PackageIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -94,23 +95,17 @@ export function DeliveryList({ items }: Props) {
 
   useEffect(() => {
     const socketBaseUrl = `${process.env.NEXT_PUBLIC_API_URL}/delivery-tracking`;
-    let socket: Socket | null = null;
-    let cancelled = false;
 
-    // O JWT não fica no client - busca no BFF (cookie httpOnly) só na hora
-    // de abrir o handshake do socket, que conecta direto no NestJS.
-    fetch("/api/auth/socket-token")
-      .then((res) => res.json())
-      .then(({ token }: { token: string | null }) => {
-        if (cancelled || !token) return;
-
-        socket = io(socketBaseUrl, { auth: { token } });
-        socketRef.current = socket;
-      });
+    // O JWT não fica no client - busca no BFF (cookie httpOnly) a cada
+    // tentativa de conexão (inclusive reconexões automáticas), que conecta
+    // direto no NestJS. `auth` como função (ver socket-auth.ts) garante um
+    // token fresco em vez de travar em erro depois que o token expira.
+    const socket = io(socketBaseUrl, { auth: socketAuthProvider });
+    socketRef.current = socket;
 
     return () => {
-      cancelled = true;
-      socket?.disconnect();
+      socket.disconnect();
+      socketRef.current = null;
     };
   }, []);
 
@@ -140,7 +135,7 @@ export function DeliveryList({ items }: Props) {
       </div>
 
       <div className="flex items-center justify-end w-full">
-        <h1 className=" px-2 mt-4 mr-4 text-[#109f70] bg-gray-100 rounded-lg">
+        <h1 className=" px-2 mt-4 mr-4 text-emerald-700 dark:text-emerald-400 bg-muted rounded-lg">
           {items.length} pendentes
         </h1>
       </div>
@@ -151,8 +146,8 @@ export function DeliveryList({ items }: Props) {
             <div
               key={product.id}
               className={cn(
-                "flex flex-col gap-8 cursor-pointer items-start border-2 border-gray-300 p-4 rounded-lg",
-                deliverySelected === product.id && "border-gray-900",
+                "flex flex-col gap-8 cursor-pointer items-start border-2 border-border p-4 rounded-lg",
+                deliverySelected === product.id && "border-zinc-900",
               )}
               onClick={() =>
                 handleChangeCoordinates({
@@ -163,7 +158,7 @@ export function DeliveryList({ items }: Props) {
               }
             >
               <div className="flex items-start">
-                <div className="p-2 bg-gray-300 text-gray-700 rounded-lg">
+                <div className="p-2 bg-muted text-foreground rounded-lg">
                   <PackageIcon className="size-4" />
                 </div>
 
@@ -173,8 +168,8 @@ export function DeliveryList({ items }: Props) {
                   </div>
 
                   <span className="flex items-center gap-2">
-                    <MapPinIcon className="size-4 text-gray-400" />
-                    <span className="text-gray-500">
+                    <MapPinIcon className="size-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">
                       {product.deliveryAddress.street},{" "}
                       {product.deliveryAddress.number} -{" "}
                       {product.deliveryAddress.neighborhood}

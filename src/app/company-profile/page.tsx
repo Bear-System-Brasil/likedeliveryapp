@@ -354,8 +354,8 @@ function CompanyProfileContent() {
                           className={cn(
                             "shrink-0 rounded-md px-2 py-0.5 text-[10.5px] font-extrabold",
                             isOpen
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-red-50 text-red-600",
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
+                              : "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400",
                           )}
                         >
                           {isOpen ? "Aberto" : "Fechado"}
@@ -520,7 +520,7 @@ function CompanyProfileContent() {
                       </SelectContent>
                     </Select>
                     {(!specialities || specialities.length === 0) && (
-                      <p className="mt-1 text-[11px] font-medium text-amber-600">
+                      <p className="mt-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
                         ⚠️ Especialidades não encontradas no servidor - usando
                         lista local
                       </p>
@@ -550,7 +550,7 @@ function CompanyProfileContent() {
                 </Button>
               }
             >
-              <div className="mb-3 rounded-[9px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
+              <div className="mb-3 rounded-[9px] border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
                 Em construção: ainda não salva no servidor.
               </div>
 

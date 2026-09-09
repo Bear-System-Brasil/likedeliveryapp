@@ -1,4 +1,4 @@
-import type { CustomerRef, Order, OrderItem, Payment } from '@/services/api'
+import type { CustomerRef, Delivery, Order, OrderItem, Payment } from '@/services/api'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types — Order com relações do Prisma retornadas por GET /order/company
@@ -49,6 +49,14 @@ export interface CompanyOrder extends Omit<Order, 'orderedItems'> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Types — Order com relações retornadas por GET /order/customer/me
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CustomerOrder extends Order {
+  delivery?: Pick<Delivery, 'status' | 'estimatedTime'>
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Colunas do Kanban — baseadas em status de Order
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -71,33 +79,33 @@ export const COLUMNS: ColumnConfig[] = [
     id: 'new',
     label: 'Novos',
     description: 'Aguardando início do preparo',
-    color: 'text-amber-700',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
+    color: 'text-amber-700 dark:text-amber-400',
+    bgColor: 'bg-amber-50 dark:bg-amber-950/40',
+    borderColor: 'border-amber-200 dark:border-amber-800',
     badgeColor: 'bg-amber-500',
-    headerBg: 'bg-amber-100',
+    headerBg: 'bg-amber-100 dark:bg-amber-900',
     orderStatuses: ['ORDERED'],
   },
   {
     id: 'preparing',
     label: 'Em Preparo',
     description: 'Pedidos sendo preparados',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: 'text-blue-700 dark:text-blue-400',
+    bgColor: 'bg-blue-50 dark:bg-blue-950/40',
+    borderColor: 'border-blue-200 dark:border-blue-800',
     badgeColor: 'bg-blue-500',
-    headerBg: 'bg-blue-100',
+    headerBg: 'bg-blue-100 dark:bg-blue-900',
     orderStatuses: ['IN_PRODUCTION'],
   },
   {
     id: 'ready',
     label: 'Prontos',
     description: 'Prontos para retirada ou entrega',
-    color: 'text-emerald-700',
-    bgColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-200',
+    color: 'text-emerald-700 dark:text-emerald-400',
+    bgColor: 'bg-emerald-50 dark:bg-emerald-950/40',
+    borderColor: 'border-emerald-200 dark:border-emerald-800',
     badgeColor: 'bg-emerald-500',
-    headerBg: 'bg-emerald-100',
+    headerBg: 'bg-emerald-100 dark:bg-emerald-900',
     orderStatuses: ['READY_FOR_PICKUP'],
   },
 ]

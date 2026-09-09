@@ -29,14 +29,14 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <div className={cn("space-y-2", className)}>
-      <Label htmlFor={id} className="text-sm font-semibold text-gray-700">
+      <Label htmlFor={id} className="text-sm font-semibold text-foreground">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-red-500 dark:text-red-400 ml-1">*</span>}
       </Label>
 
       <div className="relative">
         {icon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
             {icon}
           </div>
         )}
@@ -45,7 +45,7 @@ export function FormField({
           <Input
             id={id}
             className={cn(
-              "rounded-xl border-2 border-gray-200 focus:border-orange-400",
+              "rounded-xl border-2 border-border focus:border-orange-400",
               icon && "pl-10",
               error && "border-red-500 focus:border-red-500",
             )}
@@ -54,7 +54,7 @@ export function FormField({
         )}
       </div>
 
-      {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>}
     </div>
   );
 }

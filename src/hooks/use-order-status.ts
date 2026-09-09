@@ -1,5 +1,5 @@
 import { useSound } from "@/hooks/use-sound";
-import { apiService } from "@/services/api";
+import { apiService, type Address, type Delivery, type Order } from "@/services/api";
 import {
   getOrderTrackingStatus,
   isCanceledOrder,
@@ -10,6 +10,23 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+
+/**
+ * `/delivery/customer/me` e `/order/:id` nem sempre batem 100% com os tipos
+ * `Delivery`/`Order` (variam por endpoint/versão do backend) - por isso os
+ * campos usados de forma defensiva aqui ficam como extensão opcional em vez
+ * de confiar cegamente no tipo base.
+ */
+type RawDelivery = Partial<Omit<Delivery, "deliveryAddress">> & {
+  deliveryAddressId?: string;
+  deliveryAddress?: Address | string;
+  estimatedDeliveryTime?: string;
+};
+
+type RawOrder = Order & {
+  orderNumber?: string | number;
+  total?: number;
+};
 
 export type OrderStatus = OrderTrackingStatus;
 
@@ -38,7 +55,7 @@ export interface OrderInfo {
     address: string;
     phone: string;
   };
-  delivery?: any;
+  delivery?: RawDelivery | null;
   rawStatus: string;
   isCanceled: boolean;
 }
@@ -49,28 +66,28 @@ async function fetchOrderData(
   userName?: string,
   userPhone?: string,
 ): Promise<OrderInfo> {
-  const orderData = await apiService.orders.viewOrder(userId, orderId);
+  // As três chamadas são independentes entre si (nenhuma usa o resultado da
+  // outra) - rodar em paralelo em vez de em sequência corta o tempo de
+  // espera de cada poll (a cada 30s enquanto o pedido está ativo) de "soma
+  // das três" pra "a mais lenta das três".
+  const [orderData, orderItemsData, deliveriesResponse] = await Promise.all([
+    apiService.orders.viewOrder(userId, orderId),
+    apiService.orderItems.listByOrder(orderId, userId),
+    apiService.deliveries.getCustomerDeliveries().catch(() => null),
+  ]);
 
   if (!orderData.success || !orderData.data) {
     throw new Error(orderData.message || "Não foi possível carregar o pedido");
   }
 
-  const orderItemsData = await apiService.orderItems.listByOrder(
-    orderId,
-    userId,
-  );
-
-  let delivery: any = null;
-  try {
-    const allDeliveries = await apiService.deliveries.getCustomerDeliveries();
-    const deliveries = (allDeliveries.data as any) || [];
-    delivery = deliveries.find((d: any) => d.orderId === orderId) ?? null;
-  } catch {
-    // silencioso
+  let delivery: RawDelivery | null = null;
+  if (deliveriesResponse) {
+    const deliveries = deliveriesResponse.data || [];
+    delivery = deliveries.find((d) => d.orderId === orderId) ?? null;
   }
 
-  const items = (orderItemsData as any)?.data || [];
-  const order = orderData.data as any;
+  const items = orderItemsData.data || [];
+  const order = orderData.data as RawOrder;
 
   let fullAddress = "Endereço não disponível";
 
@@ -83,8 +100,8 @@ async function fetchOrderData(
         } - ${address.neighborhood}, ${address.city}/${address.state} - CEP: ${address.zipCode}`;
       } else {
         const addressResponse = await apiService.address.getUserAddresses();
-        const userAddress = (addressResponse.data as any)?.find(
-          (addr: any) => addr.id === delivery.deliveryAddressId,
+        const userAddress = addressResponse.data?.find(
+          (addr) => addr.id === delivery?.deliveryAddressId,
         );
         if (userAddress) {
           fullAddress = `${userAddress.street}, ${userAddress.number}${
@@ -103,18 +120,17 @@ async function fetchOrderData(
 
   return {
     id: order.id,
-    orderNumber: order.orderNumber,
+    orderNumber: String(order.orderNumber ?? ""),
     status: getOrderTrackingStatus(trackedOrder),
     rawStatus: String(order.status ?? ""),
     isCanceled: isCanceledOrder(trackedOrder),
     estimatedTime:
       delivery?.estimatedDeliveryTime || delivery?.estimatedTime || "30-40 min",
     total: order.totalValue || order.total || 0,
-    items: items.map((item: any) => ({
+    items: items.map((item) => ({
       name: item.product?.name || "Item",
       quantity: item.quantity || 1,
-      price:
-        item.unitPrice || item.product?.salePrice || item.product?.price || 0,
+      price: item.unitPrice || item.product?.salePrice || 0,
     })),
     customerInfo: {
       name: userName || "Cliente",

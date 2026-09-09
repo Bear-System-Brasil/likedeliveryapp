@@ -10,7 +10,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 export const cardClass =
-  "rounded-[13px] border border-[#E9EAEE] bg-white px-4 py-[13px]";
+  "rounded-[13px] border border-border bg-card px-4 py-[13px]";
 
 export function BandTitle({
   children,
@@ -21,9 +21,9 @@ export function BandTitle({
 }) {
   return (
     <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-      <h2 className="text-[13px] font-extrabold text-[#14161A]">{children}</h2>
+      <h2 className="text-[13px] font-extrabold text-foreground">{children}</h2>
       {hint && (
-        <span className="text-[11px] font-semibold text-[#A2A7B0]">{hint}</span>
+        <span className="text-[11px] font-semibold text-muted-foreground">{hint}</span>
       )}
     </div>
   );
@@ -54,7 +54,7 @@ export function DeltaBadge({
   if (value === null) {
     return (
       <span
-        className="text-[11px] font-bold text-[#A2A7B0]"
+        className="text-[11px] font-bold text-muted-foreground"
         title="Sem base de comparação no período anterior"
       >
         —
@@ -74,7 +74,7 @@ export function DeltaBadge({
     <span
       className={cn(
         "text-[11px] font-bold",
-        isFlat ? "text-[#A2A7B0]" : good ? "text-[#1B7F4C]" : "text-[#C0392B]",
+        isFlat ? "text-muted-foreground" : good ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
       )}
     >
       {formatted}
@@ -96,23 +96,23 @@ export function MetricCard({
   emphasis?: boolean;
 }) {
   return (
-    <div className={cn(cardClass, emphasis && "border-[#FFD9BC] bg-[#FFF9F4]")}>
+    <div className={cn(cardClass, emphasis && "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40")}>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[11.5px] font-semibold text-[#8A8F99]">
+        <span className="text-[11.5px] font-semibold text-muted-foreground">
           {label}
         </span>
         {delta}
       </div>
       <div
         className={cn(
-          "mt-1.5 whitespace-nowrap font-extrabold tracking-tight text-[#14161A]",
+          "mt-1.5 whitespace-nowrap font-extrabold tracking-tight text-foreground",
           emphasis ? "text-[26px]" : "text-[19px]",
         )}
       >
         {value}
       </div>
       {sub && (
-        <div className="mt-0.5 text-[11px] font-semibold text-[#A2A7B0]">
+        <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
           {sub}
         </div>
       )}
@@ -144,35 +144,35 @@ export function LinkCard({
       className={cn(
         "group flex items-center gap-3.5 rounded-[13px] border px-4 py-[15px] transition-colors",
         alert
-          ? "border-[#F1C9C3] bg-[#FDF4F3] hover:bg-[#FBEAE8]"
-          : "border-[#E9EAEE] bg-white hover:bg-[#FAFAFB]",
+          ? "border-[#F1C9C3] bg-red-50 dark:bg-red-950/40 hover:bg-red-50 dark:hover:bg-red-950/40"
+          : "border-border bg-card hover:bg-muted",
       )}
     >
       <span
         className={cn(
           "flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px]",
-          alert ? "bg-[#F7DDD9] text-[#C0392B]" : "bg-[#F4F5F7] text-[#3D4149]",
+          alert ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "bg-muted text-foreground",
         )}
       >
         {icon}
       </span>
 
       <div className="min-w-0 flex-1">
-        <div className="text-[11.5px] font-semibold text-[#8A8F99]">{label}</div>
+        <div className="text-[11.5px] font-semibold text-muted-foreground">{label}</div>
         <div
           className={cn(
             "mt-0.5 truncate text-[17px] font-extrabold tracking-tight",
-            alert ? "text-[#C0392B]" : "text-[#14161A]",
+            alert ? "text-red-600 dark:text-red-400" : "text-foreground",
           )}
         >
           {value}
         </div>
-        <div className="mt-0.5 truncate text-[11.5px] font-semibold text-[#A2A7B0]">
+        <div className="mt-0.5 truncate text-[11.5px] font-semibold text-muted-foreground">
           {sub}
         </div>
       </div>
 
-      <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[11.5px] font-bold text-[#8A8F99] transition-colors group-hover:text-[#3D4149]">
+      <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[11.5px] font-bold text-muted-foreground transition-colors group-hover:text-foreground">
         {action}
         <ChevronRight className="h-3.5 w-3.5" />
       </span>
