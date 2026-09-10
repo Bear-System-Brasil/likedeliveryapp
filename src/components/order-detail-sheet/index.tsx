@@ -55,12 +55,16 @@ export interface DetailableOrder {
       addOn?: { name?: string; description?: string } | null;
       name?: string | null;
       description?: string | null;
+      /** Observação específica deste adicional (ex.: "bem crocante"). */
+      observations?: string | null;
     }> | null;
     variations?: Array<{
       variation?: { name?: string; description?: string } | null;
       productVariation?: { name?: string; description?: string } | null;
       name?: string | null;
       description?: string | null;
+      /** Observação específica desta variação (ex.: "sem pimenta"). */
+      observations?: string | null;
     }> | null;
   }> | null;
   payments?: Array<{ paymentMethod: string }> | null;
@@ -169,14 +173,28 @@ export function OrderDetailSheet<TOrder extends DetailableOrder>({
                       {item.quantity}x {getOrderItemDisplayName(item)}
                     </p>
                     {item.addOns?.map((addon, i) => (
-                      <p key={i} className="text-xs text-muted-foreground pl-4">
-                        + {getAddOnLabel(addon)}
-                      </p>
+                      <div key={i} className="pl-4">
+                        <p className="text-xs text-muted-foreground">
+                          + {getAddOnLabel(addon)}
+                        </p>
+                        {addon.observations && (
+                          <p className="text-xs italic text-muted-foreground/80 pl-2">
+                            {`"${addon.observations}"`}
+                          </p>
+                        )}
+                      </div>
                     ))}
                     {item.variations?.map((v, i) => (
-                      <p key={i} className="text-xs text-muted-foreground pl-4">
-                        {getVariationLabel(v)}
-                      </p>
+                      <div key={i} className="pl-4">
+                        <p className="text-xs text-muted-foreground">
+                          {getVariationLabel(v)}
+                        </p>
+                        {v.observations && (
+                          <p className="text-xs italic text-muted-foreground/80 pl-2">
+                            {`"${v.observations}"`}
+                          </p>
+                        )}
+                      </div>
                     ))}
                   </div>
                   <span className="text-sm font-medium">

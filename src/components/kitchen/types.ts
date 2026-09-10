@@ -71,12 +71,16 @@ export interface KitchenAddOn {
   id: string;
   quantity: number;
   priceSnapshot?: number;
+  /** Observação específica deste adicional (ex.: "bem crocante"). */
+  observations?: string | null;
   productAddOns?: { description: string } | null;
 }
 
 export interface KitchenVariation {
   id: string;
   priceSnapshot?: number;
+  /** Observação específica desta variação (ex.: "sem pimenta"). */
+  observations?: string | null;
   productVariation?: { description: string } | null;
 }
 

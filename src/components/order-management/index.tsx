@@ -190,11 +190,13 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
             {item.addOns?.map((addon, i) => (
               <p key={i} className="pl-2">
                 + {getAddOnLabel(addon)}
+                {addon.observations ? ` (${addon.observations})` : ""}
               </p>
             ))}
             {item.variations?.map((v, i) => (
               <p key={i} className="pl-2">
                 {getVariationLabel(v)}
+                {v.observations ? ` (${v.observations})` : ""}
               </p>
             ))}
           </div>

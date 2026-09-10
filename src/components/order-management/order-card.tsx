@@ -129,15 +129,29 @@ export function OrderCard({
               </p>
 
               {item.addOns?.map((addon, i) => (
-                <p key={i} className="pl-5 text-xs text-muted-foreground">
-                  + {getAddOnLabel(addon)}
-                </p>
+                <div key={i} className="pl-5">
+                  <p className="text-xs text-muted-foreground">
+                    + {getAddOnLabel(addon)}
+                  </p>
+                  {addon.observations && (
+                    <p className="pl-2 text-xs italic text-muted-foreground/80">
+                      {`"${addon.observations}"`}
+                    </p>
+                  )}
+                </div>
               ))}
 
               {item.variations?.map((variation, i) => (
-                <p key={i} className="pl-5 text-xs text-muted-foreground">
-                  {getVariationLabel(variation)}
-                </p>
+                <div key={i} className="pl-5">
+                  <p className="text-xs text-muted-foreground">
+                    {getVariationLabel(variation)}
+                  </p>
+                  {variation.observations && (
+                    <p className="pl-2 text-xs italic text-muted-foreground/80">
+                      {`"${variation.observations}"`}
+                    </p>
+                  )}
+                </div>
               ))}
             </div>
           ))}
