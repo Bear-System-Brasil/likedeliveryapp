@@ -16,6 +16,7 @@ import {
   getVariationLabel,
 } from "@/constants/order-management";
 import { useOrderManagement } from "@/hooks";
+import { useAuthStore } from "@/stores";
 import {
   Bell,
   BellOff,
@@ -252,6 +253,12 @@ export default function OrderManagement() {
     isCanceling,
   } = useOrderManagement();
 
+  // `owner` não tem permissão pra cancelar pedido (order.md) - o backend
+  // rejeita com 403. Sem esconder o botão, a pessoa só descobre isso depois
+  // de tentar e ver o erro.
+  const userRole = useAuthStore((state) => state.user?.role);
+  const canCancelOrder = userRole !== "owner";
+
   const [printOrder, setPrintOrder] = useState<CompanyOrder | null>(null);
   const printRef = useRef(false);
 
@@ -319,7 +326,7 @@ export default function OrderManagement() {
             order={order}
             columnId={columnId}
             onAction={setActionTarget}
-            onCancel={setCancelTarget}
+            onCancel={canCancelOrder ? setCancelTarget : undefined}
             onViewDetails={handleViewDetails}
             onPrint={handlePrint}
             isUpdating={isUpdating}
@@ -565,7 +572,7 @@ export default function OrderManagement() {
           selectedOrder ? (COLUMN_ACTIONS[getColumnIdForOrder(selectedOrder)]?.label ?? null) : null
         }
         onAction={setActionTarget}
-        onCancel={setCancelTarget}
+        onCancel={canCancelOrder ? setCancelTarget : undefined}
         onPrint={handlePrint}
         isUpdating={isUpdating}
       />

@@ -244,6 +244,33 @@ export function getVariationLabel(variation: VariationLabelSource): string {
   )
 }
 
+interface OrderItemTotalSource {
+  quantity: number
+  unitPrice?: number
+  addOns?: Array<{ priceSnapshot?: number; quantity?: number }> | null
+  variations?: Array<{ priceSnapshot?: number }> | null
+}
+
+/**
+ * Total da linha do item, incluindo adicionais e variações - não só
+ * `unitPrice × quantity` (ver order-item.md: o preço do complemento é
+ * cobrado por unidade do produto, `quantity × addOn.quantity × priceSnapshot`).
+ * Mesma fórmula de `use-cart-actions.ts`, reaplicada aqui pro item já
+ * finalizado (cozinha/gestão de pedidos), que não passa pelo carrinho.
+ */
+export function getOrderItemTotal(item: OrderItemTotalSource): number {
+  const addOnsTotal = (item.addOns ?? []).reduce(
+    (sum, addOn) => sum + (addOn.priceSnapshot ?? 0) * (addOn.quantity ?? 1),
+    0,
+  )
+  const variationsTotal = (item.variations ?? []).reduce(
+    (sum, variation) => sum + (variation.priceSnapshot ?? 0),
+    0,
+  )
+
+  return ((item.unitPrice ?? 0) + addOnsTotal + variationsTotal) * item.quantity
+}
+
 export function getPaymentMethodLabel(method?: string): string {
   const labels: Record<string, string> = {
     CASH: 'Dinheiro',

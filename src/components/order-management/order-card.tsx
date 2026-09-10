@@ -226,14 +226,16 @@ export function OrderCard({
               <Printer className="h-4 w-4" />
             </Button>
 
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={() => onCancel?.(order)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {onCancel && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => onCancel(order)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
 
             {action && (
               <Button
