@@ -282,6 +282,35 @@ export interface CompanyCustomer {
 }
 
 /**
+ * Parâmetros de GET /company/customers.
+ *
+ * TODO(backend): `status` ainda NÃO é implementado pela rota - ela aceita o
+ * param e devolve a lista inteira do mesmo jeito. O caminho daqui até a tela
+ * já está ligado; o seletor é que fica desabilitado, para não parecer que
+ * filtra. Ver STATUS_FILTER_DISABLED na tela de clientes.
+ */
+export interface CompanyCustomersParams extends PaginationParams {
+  status?: CompanyCustomerStatus;
+}
+
+/** Só entra na query string o que foi informado - sem `status`, a rota
+ *  devolve ativos e inativos juntos. */
+function withCompanyCustomerFilters(
+  endpoint: string,
+  params?: CompanyCustomersParams,
+): string {
+  if (!params) return endpoint;
+  const qs = new URLSearchParams();
+  if (params.page) qs.set("page", String(params.page));
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.status) qs.set("status", params.status);
+  const query = qs.toString();
+  if (!query) return endpoint;
+  const separator = endpoint.includes("?") ? "&" : "?";
+  return `${endpoint}${separator}${query}`;
+}
+
+/**
  * Recorte da empresa que o backend devolve embutido na relação de Order
  * (ver order.md), simétrico ao `CustomerRef` acima.
  */
@@ -1138,10 +1167,10 @@ export const apiService = {
 
   // Clientes vinculados à empresa autenticada (ver pagination.md).
   // A rota saiu de /user/company/customers para /company/customers.
-  getCompanyCustomers: (params?: PaginationParams) =>
+  getCompanyCustomers: (params?: CompanyCustomersParams) =>
     apiRequest<PaginatedResponse<CompanyCustomer>>(
       "GET",
-      withPagination("/company/customers", params),
+      withCompanyCustomerFilters("/company/customers", params),
       undefined,
       true,
     ),

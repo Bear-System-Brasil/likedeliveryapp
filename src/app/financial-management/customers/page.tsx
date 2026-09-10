@@ -10,6 +10,7 @@ import {
   toPaginated,
   type CompanyCustomer,
   type CompanyCustomerStatus,
+  type CompanyCustomersParams,
 } from "@/services/api";
 import { useAuthStore } from "@/stores";
 import { formatPhone, formatPhoneDisplay } from "@/utils";
@@ -57,6 +58,26 @@ const STATUS_BADGE: Record<
   active: { label: "Ativo", variant: "success" },
   inactive: { label: "Inativo", variant: "secondary" },
 };
+
+type StatusFilter = "ALL" | CompanyCustomerStatus;
+
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "ALL", label: "Todos" },
+  { value: "active", label: "Ativos" },
+  { value: "inactive", label: "Inativos" },
+];
+
+/**
+ * TODO(backend): GET /company/customers aceita ?status= mas ainda ignora o
+ * filtro e devolve a lista inteira. Um filtro que parece funcionar e não
+ * funciona é pior que filtro nenhum, então o seletor fica desabilitado.
+ *
+ * Quando o backend subir, trocar para `false` habilita tudo - o estado, a
+ * queryKey e o param da requisição já estão ligados.
+ */
+const STATUS_FILTER_DISABLED: boolean = true;
+const STATUS_FILTER_PENDING_HINT =
+  "O filtro por status ainda não está disponível: a rota aceita o parâmetro, mas o backend ainda não aplica.";
 
 function CustomerStatusBadge({ status }: { status: CompanyCustomerStatus }) {
   const badge = STATUS_BADGE[status];
@@ -116,6 +137,7 @@ export default function CustomersPage() {
   const { isAuthenticated } = useAuthStore();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
   // Rota dedicada à tela financeira de clientes (ver pagination.md): já vem
   // paginada e ordenada por nome, sem usuários excluídos. Antes essa tela
@@ -127,9 +149,15 @@ export default function CustomersPage() {
   // `response.data` como array é o que deixa a tela vazia - `toPaginated`
   // resolve os dois formatos.
   const { data, isLoading, isFetching, isError } = useQuery({
-    queryKey: ["financial", "customers", page],
+    queryKey: ["financial", "customers", page, statusFilter],
     queryFn: async () => {
-      const params = { page, limit: PAGE_SIZE };
+      // "Todos" é a ausência do param, não um valor - a rota devolve ativos
+      // e inativos juntos quando `status` não vai.
+      const params: CompanyCustomersParams = {
+        page,
+        limit: PAGE_SIZE,
+        status: statusFilter === "ALL" ? undefined : statusFilter,
+      };
       const response = await apiService.getCompanyCustomers(params);
       if (!response.success || !response.data) {
         throw new Error(response.message || "Falha ao carregar clientes");
@@ -157,6 +185,14 @@ export default function CustomersPage() {
       ),
     );
   }, [customers, search]);
+
+  // Filtro novo sempre volta pra página 1: a página 3 do recorte anterior
+  // pode nem existir no novo.
+  const changeStatusFilter = (value: StatusFilter) => {
+    setStatusFilter(value);
+    setPage(1);
+    setSearch("");
+  };
 
   const goToPage = (target: number) => {
     setPage(Math.min(Math.max(target, 1), totalPages));
@@ -197,22 +233,51 @@ export default function CustomersPage() {
           )}
         </div>
 
-        {/* Search */}
-        <div className="w-full sm:w-72">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Nome, e-mail ou telefone"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 rounded-xl"
-            />
+        {/* Busca e filtro */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="w-full sm:w-72">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Nome, e-mail ou telefone"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 rounded-xl"
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {search.trim()
+                ? `${filtered.length} de ${customers.length} nesta página`
+                : "Filtra os clientes da página atual"}
+            </p>
           </div>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {search.trim()
-              ? `${filtered.length} de ${customers.length} nesta página`
-              : "Filtra os clientes da página atual"}
-          </p>
+
+          {/* O title vai no wrapper, não no <select>: elemento de formulário
+              desabilitado não recebe evento de mouse na maioria dos
+              navegadores, e a dica presa nele nunca apareceria. */}
+          <div
+            className="w-full sm:w-44"
+            title={STATUS_FILTER_DISABLED ? STATUS_FILTER_PENDING_HINT : undefined}
+          >
+            <select
+              aria-label="Filtrar por status"
+              value={statusFilter}
+              onChange={(e) => changeStatusFilter(e.target.value as StatusFilter)}
+              disabled={STATUS_FILTER_DISABLED}
+              className="h-9 w-full rounded-xl border border-input bg-transparent px-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {STATUS_FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {STATUS_FILTER_DISABLED
+                ? "Aguardando o backend aplicar o filtro"
+                : "Filtra a consulta no servidor"}
+            </p>
+          </div>
         </div>
 
         {/* Table */}

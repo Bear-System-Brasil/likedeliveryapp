@@ -5,13 +5,11 @@ import * as SheetPrimitive from "@radix-ui/react-dialog";
 import {
   ChefHat,
   ClipboardList,
-  CreditCard,
   House,
   LayoutDashboard,
   LayoutGrid,
   LogOut,
   Settings,
-  ThumbsUp,
   TrendingUp,
   User,
   UserCog,
