@@ -52,6 +52,12 @@ const initialCustomOrder = (): CustomOrderType => ({
   specialInstructions: "",
 });
 
+/**
+ * Teto por complemento, aplicado a cada um de forma independente: dá pra
+ * levar 4 de cada tipo, e não há limite de quantos tipos o cliente escolhe.
+ */
+const ADD_ON_MAX_QUANTITY = 4;
+
 export function CustomizeOrder({
   productData,
   isModalOpen,
@@ -60,10 +66,15 @@ export function CustomizeOrder({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [notesOpen, setNotesOpen] = useState(false);
+  // Tamanho é escolha única (ids); complemento agora carrega quantidade,
+  // então mora em `addOnQuantities` (id -> quantidade, 0 = fora do pedido).
   const [selections, setSelections] = useState<Record<string, string[]>>({
     variation: [],
     addon: [],
   });
+  const [addOnQuantities, setAddOnQuantities] = useState<
+    Record<string, number>
+  >({});
 
   // O back já suporta várias fotos por prato (productData.imageURL é um
   // array) - antes só a primeira era exibida. Sem foto nenhuma, cai no
@@ -165,15 +176,39 @@ export function CustomizeOrder({
     setSelections((prev) => ({ ...prev, [groupId]: selectedIds }));
   };
 
+  // Trava o intervalo aqui também, e não só no `disabled` dos botões, pra
+  // que o teto valha mesmo se a chamada vier de outro caminho.
+  const handleAddOnQuantityChange = (
+    optionId: string,
+    nextQuantity: number,
+  ) => {
+    const clamped = Math.min(Math.max(nextQuantity, 0), ADD_ON_MAX_QUANTITY);
+    setAddOnQuantities((prev) => ({ ...prev, [optionId]: clamped }));
+  };
+
+  // Valor dos extras POR UNIDADE do produto: o complemento entra
+  // multiplicado pela quantidade escolhida dele, e o resultado ainda é
+  // multiplicado pela quantidade do item lá embaixo (totalPrice).
   const extrasTotal = useMemo(() => {
     return extraGroups.reduce((total, group) => {
+      if (group.id === "addon") {
+        return (
+          total +
+          group.options.reduce(
+            (sum, option) =>
+              sum + option.price * (addOnQuantities[option.id] ?? 0),
+            0,
+          )
+        );
+      }
+
       const selectedIds = selections[group.id] || [];
       const groupTotal = group.options
         .filter((option) => selectedIds.includes(option.id))
         .reduce((sum, option) => sum + option.price, 0);
       return total + groupTotal;
     }, 0);
-  }, [extraGroups, selections]);
+  }, [extraGroups, selections, addOnQuantities]);
 
   const categoryMap = useMemo(() => {
     if (!categories) return {};
@@ -197,6 +232,7 @@ export function CustomizeOrder({
     setQuantity(1);
     setNotesOpen(false);
     setSelections({ variation: [], addon: [] });
+    setAddOnQuantities({});
   };
 
   const handleConfirmAddToCart = async () => {
@@ -207,16 +243,22 @@ export function CustomizeOrder({
 
     try {
       const selectedVariationId = selections.variation?.[0];
-      const selectedAddOnIds = selections.addon || [];
 
       const variationGroup = extraGroups.find((g) => g.id === "variation");
       const addOnGroup = extraGroups.find((g) => g.id === "addon");
       const variationLabel = variationGroup?.options.find(
         (o) => o.id === selectedVariationId,
       )?.label;
-      const addOnLabels = addOnGroup?.options
-        .filter((o) => selectedAddOnIds.includes(o.id))
-        .map((o) => o.label);
+
+      // Só entra no pedido o complemento com quantidade > 0.
+      const selectedAddOns = (addOnGroup?.options ?? [])
+        .map((option) => ({
+          option,
+          addOnQuantity: addOnQuantities[option.id] ?? 0,
+        }))
+        .filter((entry) => entry.addOnQuantity > 0);
+
+      const addOnLabels = selectedAddOns.map(({ option }) => option.label);
 
       const success = await addToCart({
         id: productData.id.toString(),
@@ -230,14 +272,14 @@ export function CustomizeOrder({
         variations: selectedVariationId
           ? [{ productVariationId: selectedVariationId }]
           : undefined,
-        addOns: selectedAddOnIds.length
-          ? selectedAddOnIds.map((id) => ({
-              productAddOnsId: id,
-              quantity: 1,
+        addOns: selectedAddOns.length
+          ? selectedAddOns.map(({ option, addOnQuantity }) => ({
+              productAddOnsId: option.id,
+              quantity: addOnQuantity,
             }))
           : undefined,
         variationLabel,
-        addOnLabels: addOnLabels?.length ? addOnLabels : undefined,
+        addOnLabels: addOnLabels.length ? addOnLabels : undefined,
       });
 
       if (success) {
@@ -381,6 +423,9 @@ export function CustomizeOrder({
                   group={group}
                   selectedIds={selections[group.id] || []}
                   onChange={handleSelectionChange}
+                  quantities={addOnQuantities}
+                  onQuantityChange={handleAddOnQuantityChange}
+                  maxQuantity={ADD_ON_MAX_QUANTITY}
                 />
               ))
             )}
