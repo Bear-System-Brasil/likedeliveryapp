@@ -1,10 +1,16 @@
 "use client";
 
 import { AdminPageLayout } from "@/components/admin-page-layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiService, toPaginated, type CompanyCustomer } from "@/services/api";
+import {
+  apiService,
+  toPaginated,
+  type CompanyCustomer,
+  type CompanyCustomerStatus,
+} from "@/services/api";
 import { useAuthStore } from "@/stores";
 import { formatPhone, formatPhoneDisplay } from "@/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -35,6 +41,34 @@ function formatCustomerSince(customer: CompanyCustomer) {
     month: "2-digit",
     year: "numeric",
   });
+}
+
+/**
+ * Rótulo e cor de cada status.
+ *
+ * É um `Record` sobre a união e não um if/else: se a rota ganhar um status
+ * novo, o compilador cobra a entrada aqui em vez de a tela renderizar um
+ * badge em branco.
+ */
+const STATUS_BADGE: Record<
+  CompanyCustomerStatus,
+  { label: string; variant: "success" | "secondary" }
+> = {
+  active: { label: "Ativo", variant: "success" },
+  inactive: { label: "Inativo", variant: "secondary" },
+};
+
+function CustomerStatusBadge({ status }: { status: CompanyCustomerStatus }) {
+  const badge = STATUS_BADGE[status];
+  // O tipo diz que sempre acha, mas quem responde é o backend: valor fora do
+  // contrato não vira badge vazio nem rótulo inventado, simplesmente não sai.
+  if (!badge) return null;
+
+  return (
+    <Badge variant={badge.variant} className="text-xs">
+      {badge.label}
+    </Badge>
+  );
 }
 
 /**
@@ -214,9 +248,12 @@ export default function CustomersPage() {
                     <div className="flex items-center gap-3">
                       <CustomerAvatar customer={customer} className="h-9 w-9 text-sm" />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {customer.name || "Cliente"}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {customer.name || "Cliente"}
+                          </p>
+                          <CustomerStatusBadge status={customer.status} />
+                        </div>
                         <p className="truncate text-xs text-muted-foreground">
                           {customer.email || "—"}
                         </p>
@@ -249,6 +286,9 @@ export default function CustomersPage() {
                         Telefone
                       </th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Status
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Cliente Desde
                       </th>
                     </tr>
@@ -273,6 +313,9 @@ export default function CustomersPage() {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {formatCustomerPhone(customer.phone) ?? "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <CustomerStatusBadge status={customer.status} />
                         </td>
                         <td className="px-4 py-3 text-muted-foreground text-xs">
                           {formatCustomerSince(customer)}

@@ -260,6 +260,9 @@ export interface CustomerRef {
   photoUrl?: string;
 }
 
+/** Os dois únicos valores de `status` em /company/customers. */
+export type CompanyCustomerStatus = "active" | "inactive";
+
 /**
  * Cliente vinculado à empresa autenticada (GET /company/customers).
  *
@@ -274,7 +277,7 @@ export interface CompanyCustomer {
   email: string;
   phone: string;
   photoUrl: string;
-  status: string;
+  status: CompanyCustomerStatus;
   created_at: string;
 }
 
