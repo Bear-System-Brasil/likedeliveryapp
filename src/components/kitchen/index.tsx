@@ -172,6 +172,10 @@ export default function Kitchen() {
 
   const restaurantUser = useAuthStore((state) => state.user);
   const restaurantName = restaurantUser?.tradeName || restaurantUser?.legalName || "Cozinha";
+  // `owner` não tem permissão pra cancelar pedido (order.md) - o backend
+  // rejeita com 403. Sem esconder o botão, a pessoa só descobre isso depois
+  // de tentar e ver o erro.
+  const canCancelOrder = restaurantUser?.role !== "owner";
 
   const [cancelTarget, setCancelTarget] = useState<KitchenOrder | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<KitchenOrder | null>(null);
@@ -206,7 +210,7 @@ export default function Kitchen() {
     highlightedIds,
     advancingOrderId,
     onAdvance: advanceOrder,
-    onCancel: setCancelTarget,
+    onCancel: canCancelOrder ? setCancelTarget : undefined,
     onPrint: handlePrint,
     onViewDetails: handleViewDetails,
   });
@@ -367,7 +371,7 @@ export default function Kitchen() {
         onClose={() => setSelectedOrder(null)}
         actionLabel={selectedOrder ? KITCHEN_COLUMN_BY_STATUS[selectedOrder.status]?.actionLabel : null}
         onAction={advanceOrder}
-        onCancel={setCancelTarget}
+        onCancel={canCancelOrder ? setCancelTarget : undefined}
         onPrint={handlePrint}
         isUpdating={!!selectedOrder && advancingOrderId === selectedOrder.id}
       />

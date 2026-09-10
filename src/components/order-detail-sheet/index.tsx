@@ -16,6 +16,7 @@ import {
   getAddOnLabel,
   getElapsedTime,
   getOrderItemDisplayName,
+  getOrderItemTotal,
   getPaymentMethodLabel,
   getVariationLabel,
 } from "@/constants/order-management";
@@ -57,6 +58,10 @@ export interface DetailableOrder {
       description?: string | null;
       /** Observação específica deste adicional (ex.: "bem crocante"). */
       observations?: string | null;
+      /** Preço histórico do adicional, por unidade do produto. */
+      priceSnapshot?: number;
+      /** Quantas unidades deste adicional por unidade do produto. */
+      quantity?: number;
     }> | null;
     variations?: Array<{
       variation?: { name?: string; description?: string } | null;
@@ -65,6 +70,8 @@ export interface DetailableOrder {
       description?: string | null;
       /** Observação específica desta variação (ex.: "sem pimenta"). */
       observations?: string | null;
+      /** Preço histórico da variação, por unidade do produto. */
+      priceSnapshot?: number;
     }> | null;
   }> | null;
   payments?: Array<{ paymentMethod: string }> | null;
@@ -198,7 +205,7 @@ export function OrderDetailSheet<TOrder extends DetailableOrder>({
                     ))}
                   </div>
                   <span className="text-sm font-medium">
-                    {formatCurrency((item.unitPrice ?? 0) * item.quantity)}
+                    {formatCurrency(getOrderItemTotal(item))}
                   </span>
                 </div>
               ))}

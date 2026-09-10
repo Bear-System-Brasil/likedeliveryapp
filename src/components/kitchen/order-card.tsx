@@ -30,7 +30,8 @@ interface KitchenOrderCardProps {
   /** Rótulo do botão principal; `null` em Concluídos e Cancelados, que não têm ação. */
   actionLabel: string | null;
   onAdvance: (order: KitchenOrder) => void;
-  onCancel: (order: KitchenOrder) => void;
+  /** `undefined` esconde o botão — usado quando o papel logado não pode cancelar (ex.: owner). */
+  onCancel?: (order: KitchenOrder) => void;
   onPrint: (order: KitchenOrder) => void;
   onViewDetails: (order: KitchenOrder) => void;
   isAdvancing?: boolean;
@@ -182,14 +183,16 @@ export function KitchenOrderCard({
             <Printer className="h-6 w-6" />
           </Button>
 
-          <Button
-            variant="outline"
-            className="h-14 w-14 shrink-0 cursor-pointer rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={() => onCancel(order)}
-            aria-label={`Cancelar pedido ${getOrderLabel(order)}`}
-          >
-            <X className="h-6 w-6" />
-          </Button>
+          {onCancel && (
+            <Button
+              variant="outline"
+              className="h-14 w-14 shrink-0 cursor-pointer rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={() => onCancel(order)}
+              aria-label={`Cancelar pedido ${getOrderLabel(order)}`}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          )}
         </footer>
       )}
     </article>
