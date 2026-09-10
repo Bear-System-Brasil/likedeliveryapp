@@ -4,9 +4,9 @@ import { AdminPageLayout } from "@/components/admin-page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiService, toPaginated, type User } from "@/services/api";
+import { apiService, toPaginated, type CompanyCustomer } from "@/services/api";
 import { useAuthStore } from "@/stores";
-import { formatPhone, formatPhoneRegex } from "@/utils";
+import { formatPhone, formatPhoneDisplay } from "@/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Users } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -17,24 +17,65 @@ function getInitial(name?: string) {
   return name?.trim().charAt(0).toUpperCase() || "?";
 }
 
+// `phone` vem cru do backend ("86236074543"). `formatPhone` tira o +55 e o
+// que não for dígito; `formatPhoneDisplay` é a máscara (00) 00000-0000 que o
+// projeto já aplica em order-status, company-profile e restaurant-register.
 function formatCustomerPhone(phone?: string) {
   if (!phone) return null;
-  return formatPhoneRegex(formatPhone(phone)) || phone;
+  return formatPhoneDisplay(formatPhone(phone)) || null;
 }
 
-function formatCustomerSince(customer: User) {
-  // O contrato de /user não é consistente entre createdAt e created_at -
-  // lê os dois em vez de assumir um só.
-  const raw =
-    customer.createdAt || (customer as { created_at?: string }).created_at;
-  if (!raw) return "—";
-  const date = new Date(raw);
+// A rota manda `created_at`, em snake_case - não o `createdAt` do /user.
+function formatCustomerSince(customer: CompanyCustomer) {
+  if (!customer.created_at) return "—";
+  const date = new Date(customer.created_at);
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
+}
+
+/**
+ * Foto do cliente com recuo para a inicial do nome.
+ *
+ * O recuo cobre dois casos: `photoUrl` vazio e URL que existe mas não
+ * carrega (host fora do ar, objeto removido). Sem o `onError` o segundo
+ * caso deixaria o ícone de imagem quebrada na tabela.
+ *
+ * É `<img>` e não `next/image` de propósito: o host das fotos não está
+ * todo no remotePatterns do next.config, e ali um host não listado derruba
+ * a página em runtime. É o mesmo que o main-header faz com a foto do
+ * usuário logado.
+ */
+function CustomerAvatar({
+  customer,
+  className,
+}: {
+  customer: CompanyCustomer;
+  className: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const showPhoto = !!customer.photoUrl && !failed;
+
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 font-bold text-orange-700 dark:bg-orange-900 dark:text-orange-400 ${className}`}
+    >
+      {showPhoto ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={customer.photoUrl}
+          alt={customer.name || "Cliente"}
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        getInitial(customer.name)
+      )}
+    </span>
+  );
 }
 
 export default function CustomersPage() {
@@ -59,7 +100,7 @@ export default function CustomersPage() {
       if (!response.success || !response.data) {
         throw new Error(response.message || "Falha ao carregar clientes");
       }
-      return toPaginated<User>(response.data, params);
+      return toPaginated<CompanyCustomer>(response.data, params);
     },
     enabled: !!isAuthenticated,
     staleTime: 60_000,
@@ -171,9 +212,7 @@ export default function CustomersPage() {
                 {filtered.map((customer) => (
                   <div key={customer.id} className="p-3.5" title={customer.id}>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900 text-sm font-bold text-orange-700 dark:text-orange-400">
-                        {getInitial(customer.name)}
-                      </span>
+                      <CustomerAvatar customer={customer} className="h-9 w-9 text-sm" />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-foreground">
                           {customer.name || "Cliente"}
@@ -223,9 +262,7 @@ export default function CustomersPage() {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900 text-xs font-bold text-orange-700 dark:text-orange-400">
-                              {getInitial(customer.name)}
-                            </span>
+                            <CustomerAvatar customer={customer} className="h-8 w-8 text-xs" />
                             <span className="font-medium text-foreground">
                               {customer.name || "Cliente"}
                             </span>

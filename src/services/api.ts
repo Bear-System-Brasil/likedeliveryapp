@@ -261,6 +261,24 @@ export interface CustomerRef {
 }
 
 /**
+ * Cliente vinculado à empresa autenticada (GET /company/customers).
+ *
+ * São exatamente os sete campos que a rota devolve - não é o `User` geral da
+ * API. Tipar como `User` fazia a tela enxergar `cpf`, `birthDate`, `role` e
+ * `updatedAt`, que essa rota não manda, e prometer um `createdAt` camelCase
+ * que também não vem: aqui a data é `created_at`.
+ */
+export interface CompanyCustomer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  photoUrl: string;
+  status: string;
+  created_at: string;
+}
+
+/**
  * Recorte da empresa que o backend devolve embutido na relação de Order
  * (ver order.md), simétrico ao `CustomerRef` acima.
  */
@@ -1115,11 +1133,12 @@ export const apiService = {
   verifyOtp: (otpData: VerifyOtpRequest) =>
     apiRequest<string>("POST", "/user/complet", otpData),
 
-  // Clientes vinculados à empresa autenticada (ver pagination.md)
+  // Clientes vinculados à empresa autenticada (ver pagination.md).
+  // A rota saiu de /user/company/customers para /company/customers.
   getCompanyCustomers: (params?: PaginationParams) =>
-    apiRequest<PaginatedResponse<User>>(
+    apiRequest<PaginatedResponse<CompanyCustomer>>(
       "GET",
-      withPagination("/user/company/customers", params),
+      withPagination("/company/customers", params),
       undefined,
       true,
     ),
