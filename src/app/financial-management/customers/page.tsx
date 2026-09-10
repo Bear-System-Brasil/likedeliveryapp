@@ -1,12 +1,19 @@
 "use client";
 
 import { AdminPageLayout } from "@/components/admin-page-layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiService, toPaginated, type User } from "@/services/api";
+import {
+  apiService,
+  toPaginated,
+  type CompanyCustomer,
+  type CompanyCustomerStatus,
+  type CompanyCustomersParams,
+} from "@/services/api";
 import { useAuthStore } from "@/stores";
-import { formatPhone, formatPhoneRegex } from "@/utils";
+import { formatPhone, formatPhoneDisplay } from "@/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Users } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -17,18 +24,18 @@ function getInitial(name?: string) {
   return name?.trim().charAt(0).toUpperCase() || "?";
 }
 
+// `phone` vem cru do backend ("86236074543"). `formatPhone` tira o +55 e o
+// que não for dígito; `formatPhoneDisplay` é a máscara (00) 00000-0000 que o
+// projeto já aplica em order-status, company-profile e restaurant-register.
 function formatCustomerPhone(phone?: string) {
   if (!phone) return null;
-  return formatPhoneRegex(formatPhone(phone)) || phone;
+  return formatPhoneDisplay(formatPhone(phone)) || null;
 }
 
-function formatCustomerSince(customer: User) {
-  // O contrato de /user não é consistente entre createdAt e created_at -
-  // lê os dois em vez de assumir um só.
-  const raw =
-    customer.createdAt || (customer as { created_at?: string }).created_at;
-  if (!raw) return "—";
-  const date = new Date(raw);
+// A rota manda `created_at`, em snake_case - não o `createdAt` do /user.
+function formatCustomerSince(customer: CompanyCustomer) {
+  if (!customer.created_at) return "—";
+  const date = new Date(customer.created_at);
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -37,10 +44,100 @@ function formatCustomerSince(customer: User) {
   });
 }
 
+/**
+ * Rótulo e cor de cada status.
+ *
+ * É um `Record` sobre a união e não um if/else: se a rota ganhar um status
+ * novo, o compilador cobra a entrada aqui em vez de a tela renderizar um
+ * badge em branco.
+ */
+const STATUS_BADGE: Record<
+  CompanyCustomerStatus,
+  { label: string; variant: "success" | "secondary" }
+> = {
+  active: { label: "Ativo", variant: "success" },
+  inactive: { label: "Inativo", variant: "secondary" },
+};
+
+type StatusFilter = "ALL" | CompanyCustomerStatus;
+
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "ALL", label: "Todos" },
+  { value: "active", label: "Ativos" },
+  { value: "inactive", label: "Inativos" },
+];
+
+/**
+ * TODO(backend): GET /company/customers aceita ?status= mas ainda ignora o
+ * filtro e devolve a lista inteira. Um filtro que parece funcionar e não
+ * funciona é pior que filtro nenhum, então o seletor fica desabilitado.
+ *
+ * Quando o backend subir, trocar para `false` habilita tudo - o estado, a
+ * queryKey e o param da requisição já estão ligados.
+ */
+const STATUS_FILTER_DISABLED: boolean = true;
+const STATUS_FILTER_PENDING_HINT =
+  "O filtro por status ainda não está disponível: a rota aceita o parâmetro, mas o backend ainda não aplica.";
+
+function CustomerStatusBadge({ status }: { status: CompanyCustomerStatus }) {
+  const badge = STATUS_BADGE[status];
+  // O tipo diz que sempre acha, mas quem responde é o backend: valor fora do
+  // contrato não vira badge vazio nem rótulo inventado, simplesmente não sai.
+  if (!badge) return null;
+
+  return (
+    <Badge variant={badge.variant} className="text-xs">
+      {badge.label}
+    </Badge>
+  );
+}
+
+/**
+ * Foto do cliente com recuo para a inicial do nome.
+ *
+ * O recuo cobre dois casos: `photoUrl` vazio e URL que existe mas não
+ * carrega (host fora do ar, objeto removido). Sem o `onError` o segundo
+ * caso deixaria o ícone de imagem quebrada na tabela.
+ *
+ * É `<img>` e não `next/image` de propósito: o host das fotos não está
+ * todo no remotePatterns do next.config, e ali um host não listado derruba
+ * a página em runtime. É o mesmo que o main-header faz com a foto do
+ * usuário logado.
+ */
+function CustomerAvatar({
+  customer,
+  className,
+}: {
+  customer: CompanyCustomer;
+  className: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const showPhoto = !!customer.photoUrl && !failed;
+
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 font-bold text-orange-700 dark:bg-orange-900 dark:text-orange-400 ${className}`}
+    >
+      {showPhoto ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={customer.photoUrl}
+          alt={customer.name || "Cliente"}
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        getInitial(customer.name)
+      )}
+    </span>
+  );
+}
+
 export default function CustomersPage() {
   const { isAuthenticated } = useAuthStore();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
   // Rota dedicada à tela financeira de clientes (ver pagination.md): já vem
   // paginada e ordenada por nome, sem usuários excluídos. Antes essa tela
@@ -52,14 +149,20 @@ export default function CustomersPage() {
   // `response.data` como array é o que deixa a tela vazia - `toPaginated`
   // resolve os dois formatos.
   const { data, isLoading, isFetching, isError } = useQuery({
-    queryKey: ["financial", "customers", page],
+    queryKey: ["financial", "customers", page, statusFilter],
     queryFn: async () => {
-      const params = { page, limit: PAGE_SIZE };
+      // "Todos" é a ausência do param, não um valor - a rota devolve ativos
+      // e inativos juntos quando `status` não vai.
+      const params: CompanyCustomersParams = {
+        page,
+        limit: PAGE_SIZE,
+        status: statusFilter === "ALL" ? undefined : statusFilter,
+      };
       const response = await apiService.getCompanyCustomers(params);
       if (!response.success || !response.data) {
         throw new Error(response.message || "Falha ao carregar clientes");
       }
-      return toPaginated<User>(response.data, params);
+      return toPaginated<CompanyCustomer>(response.data, params);
     },
     enabled: !!isAuthenticated,
     staleTime: 60_000,
@@ -82,6 +185,14 @@ export default function CustomersPage() {
       ),
     );
   }, [customers, search]);
+
+  // Filtro novo sempre volta pra página 1: a página 3 do recorte anterior
+  // pode nem existir no novo.
+  const changeStatusFilter = (value: StatusFilter) => {
+    setStatusFilter(value);
+    setPage(1);
+    setSearch("");
+  };
 
   const goToPage = (target: number) => {
     setPage(Math.min(Math.max(target, 1), totalPages));
@@ -122,22 +233,51 @@ export default function CustomersPage() {
           )}
         </div>
 
-        {/* Search */}
-        <div className="w-full sm:w-72">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Nome, e-mail ou telefone"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 rounded-xl"
-            />
+        {/* Busca e filtro */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="w-full sm:w-72">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Nome, e-mail ou telefone"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 rounded-xl"
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {search.trim()
+                ? `${filtered.length} de ${customers.length} nesta página`
+                : "Filtra os clientes da página atual"}
+            </p>
           </div>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {search.trim()
-              ? `${filtered.length} de ${customers.length} nesta página`
-              : "Filtra os clientes da página atual"}
-          </p>
+
+          {/* O title vai no wrapper, não no <select>: elemento de formulário
+              desabilitado não recebe evento de mouse na maioria dos
+              navegadores, e a dica presa nele nunca apareceria. */}
+          <div
+            className="w-full sm:w-44"
+            title={STATUS_FILTER_DISABLED ? STATUS_FILTER_PENDING_HINT : undefined}
+          >
+            <select
+              aria-label="Filtrar por status"
+              value={statusFilter}
+              onChange={(e) => changeStatusFilter(e.target.value as StatusFilter)}
+              disabled={STATUS_FILTER_DISABLED}
+              className="h-9 w-full rounded-xl border border-input bg-transparent px-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {STATUS_FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {STATUS_FILTER_DISABLED
+                ? "Aguardando o backend aplicar o filtro"
+                : "Filtra a consulta no servidor"}
+            </p>
+          </div>
         </div>
 
         {/* Table */}
@@ -171,13 +311,14 @@ export default function CustomersPage() {
                 {filtered.map((customer) => (
                   <div key={customer.id} className="p-3.5" title={customer.id}>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900 text-sm font-bold text-orange-700 dark:text-orange-400">
-                        {getInitial(customer.name)}
-                      </span>
+                      <CustomerAvatar customer={customer} className="h-9 w-9 text-sm" />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {customer.name || "Cliente"}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {customer.name || "Cliente"}
+                          </p>
+                          <CustomerStatusBadge status={customer.status} />
+                        </div>
                         <p className="truncate text-xs text-muted-foreground">
                           {customer.email || "—"}
                         </p>
@@ -210,6 +351,9 @@ export default function CustomersPage() {
                         Telefone
                       </th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Status
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Cliente Desde
                       </th>
                     </tr>
@@ -223,9 +367,7 @@ export default function CustomersPage() {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900 text-xs font-bold text-orange-700 dark:text-orange-400">
-                              {getInitial(customer.name)}
-                            </span>
+                            <CustomerAvatar customer={customer} className="h-8 w-8 text-xs" />
                             <span className="font-medium text-foreground">
                               {customer.name || "Cliente"}
                             </span>
@@ -236,6 +378,9 @@ export default function CustomersPage() {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {formatCustomerPhone(customer.phone) ?? "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <CustomerStatusBadge status={customer.status} />
                         </td>
                         <td className="px-4 py-3 text-muted-foreground text-xs">
                           {formatCustomerSince(customer)}
