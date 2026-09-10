@@ -113,11 +113,13 @@ function KitchenPrintArea({ order }: { order: KitchenOrder | null }) {
             {item.addOns?.map((addon) => (
               <p key={addon.id} className="pl-2">
                 + {addon.productAddOns?.description ?? "Adicional"}
+                {addon.observations ? ` (${addon.observations})` : ""}
               </p>
             ))}
             {item.variations?.map((variation) => (
               <p key={variation.id} className="pl-2">
                 {variation.productVariation?.description ?? "Variação"}
+                {variation.observations ? ` (${variation.observations})` : ""}
               </p>
             ))}
           </div>

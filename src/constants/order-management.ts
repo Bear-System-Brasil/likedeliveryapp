@@ -14,6 +14,8 @@ export interface CompanyOrderItem extends OrderItem {
     id: string
     quantity: number
     priceSnapshot: number
+    /** Observação específica deste adicional (ex.: "bem crocante"). */
+    observations?: string | null
     productAddOn?: { name?: string; description?: string }
     productAddOns?: { name?: string; description?: string }
     addOn?: { name?: string; description?: string }
@@ -23,6 +25,8 @@ export interface CompanyOrderItem extends OrderItem {
   variations?: Array<{
     id: string
     priceSnapshot: number
+    /** Observação específica desta variação (ex.: "sem pimenta"). */
+    observations?: string | null
     variation?: { name?: string; description?: string }
     productVariation?: { name?: string; description?: string }
     name?: string
