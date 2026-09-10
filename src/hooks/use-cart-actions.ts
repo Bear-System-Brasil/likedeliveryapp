@@ -91,8 +91,13 @@ const buildCartItemKey = (
     .map((v) => v.productVariationId)
     .sort()
     .join(",");
+  // A quantidade entra na chave: com o stepper de complementos, "2x queijo"
+  // e "3x queijo" são combinações diferentes. Sem isso as duas caíam na
+  // mesma linha e o merge só somava a quantidade do item, mantendo o preço
+  // da primeira - o mesmo problema que o comentário acima descreve pros
+  // tamanhos.
   const addOnPart = (addOns || [])
-    .map((a) => a.productAddOnsId)
+    .map((a) => `${a.productAddOnsId}x${a.quantity}`)
     .sort()
     .join(",");
   return `${productId}::${variationPart}::${addOnPart}`;

@@ -27,7 +27,8 @@ interface KitchenColumnProps {
   highlightedIds: string[];
   advancingOrderId?: string;
   onAdvance: (order: KitchenOrder) => void;
-  onCancel: (order: KitchenOrder) => void;
+  /** `undefined` esconde o botão de cancelar — papel logado sem essa permissão (ex.: owner). */
+  onCancel?: (order: KitchenOrder) => void;
   onPrint: (order: KitchenOrder) => void;
   onViewDetails: (order: KitchenOrder) => void;
   /** Cabeçalho de coluna aparece só no quadro; nas abas o título já está na aba. */

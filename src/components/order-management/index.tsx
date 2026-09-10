@@ -16,6 +16,7 @@ import {
   getVariationLabel,
 } from "@/constants/order-management";
 import { useOrderManagement } from "@/hooks";
+import { useAuthStore } from "@/stores";
 import {
   Bell,
   BellOff,
@@ -190,11 +191,13 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
             {item.addOns?.map((addon, i) => (
               <p key={i} className="pl-2">
                 + {getAddOnLabel(addon)}
+                {addon.observations ? ` (${addon.observations})` : ""}
               </p>
             ))}
             {item.variations?.map((v, i) => (
               <p key={i} className="pl-2">
                 {getVariationLabel(v)}
+                {v.observations ? ` (${v.observations})` : ""}
               </p>
             ))}
           </div>
@@ -249,6 +252,12 @@ export default function OrderManagement() {
     isUpdating,
     isCanceling,
   } = useOrderManagement();
+
+  // `owner` não tem permissão pra cancelar pedido (order.md) - o backend
+  // rejeita com 403. Sem esconder o botão, a pessoa só descobre isso depois
+  // de tentar e ver o erro.
+  const userRole = useAuthStore((state) => state.user?.role);
+  const canCancelOrder = userRole !== "owner";
 
   const [printOrder, setPrintOrder] = useState<CompanyOrder | null>(null);
   const printRef = useRef(false);
@@ -317,7 +326,7 @@ export default function OrderManagement() {
             order={order}
             columnId={columnId}
             onAction={setActionTarget}
-            onCancel={setCancelTarget}
+            onCancel={canCancelOrder ? setCancelTarget : undefined}
             onViewDetails={handleViewDetails}
             onPrint={handlePrint}
             isUpdating={isUpdating}
@@ -563,7 +572,7 @@ export default function OrderManagement() {
           selectedOrder ? (COLUMN_ACTIONS[getColumnIdForOrder(selectedOrder)]?.label ?? null) : null
         }
         onAction={setActionTarget}
-        onCancel={setCancelTarget}
+        onCancel={canCancelOrder ? setCancelTarget : undefined}
         onPrint={handlePrint}
         isUpdating={isUpdating}
       />

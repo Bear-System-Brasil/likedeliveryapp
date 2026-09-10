@@ -129,15 +129,29 @@ export function OrderCard({
               </p>
 
               {item.addOns?.map((addon, i) => (
-                <p key={i} className="pl-5 text-xs text-muted-foreground">
-                  + {getAddOnLabel(addon)}
-                </p>
+                <div key={i} className="pl-5">
+                  <p className="text-xs text-muted-foreground">
+                    + {getAddOnLabel(addon)}
+                  </p>
+                  {addon.observations && (
+                    <p className="pl-2 text-xs italic text-muted-foreground/80">
+                      {`"${addon.observations}"`}
+                    </p>
+                  )}
+                </div>
               ))}
 
               {item.variations?.map((variation, i) => (
-                <p key={i} className="pl-5 text-xs text-muted-foreground">
-                  {getVariationLabel(variation)}
-                </p>
+                <div key={i} className="pl-5">
+                  <p className="text-xs text-muted-foreground">
+                    {getVariationLabel(variation)}
+                  </p>
+                  {variation.observations && (
+                    <p className="pl-2 text-xs italic text-muted-foreground/80">
+                      {`"${variation.observations}"`}
+                    </p>
+                  )}
+                </div>
               ))}
             </div>
           ))}
@@ -212,14 +226,16 @@ export function OrderCard({
               <Printer className="h-4 w-4" />
             </Button>
 
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={() => onCancel?.(order)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {onCancel && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => onCancel(order)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
 
             {action && (
               <Button
