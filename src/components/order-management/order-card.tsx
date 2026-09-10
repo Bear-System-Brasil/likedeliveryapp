@@ -127,6 +127,11 @@ export function OrderCard({
                 <span className="font-bold">{item.quantity}x</span>{" "}
                 {getOrderItemDisplayName(item)}
               </p>
+              {item.observations && (
+                <p className="pl-5 text-xs italic text-muted-foreground/80">
+                  {`"${item.observations}"`}
+                </p>
+              )}
 
               {item.addOns?.map((addon, i) => (
                 <div key={i} className="pl-5">

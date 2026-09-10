@@ -166,6 +166,8 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
   const items = order.orderedItems || [];
   const orderNumber = order.orderNumber || order.id.slice(0, 6);
   const customerName = order.customer?.name || "Cliente";
+  const observations = order.observations?.trim();
+  const deliveryObservations = order.delivery?.observations?.trim();
 
   return (
     <div className="print-area hidden print:block print:w-[80mm] print:mx-auto print:text-xs print:font-mono print:bg-card print:text-black">
@@ -188,6 +190,7 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
             <p className="font-bold">
               {item.quantity}x {getOrderItemDisplayName(item)}
             </p>
+            {item.observations && <p className="pl-2">Obs: {item.observations}</p>}
             {item.addOns?.map((addon, i) => (
               <p key={i} className="pl-2">
                 + {getAddOnLabel(addon)}
@@ -214,6 +217,16 @@ function PrintArea({ order }: { order: CompanyOrder | null }) {
           </span>
         </div>
       </div>
+
+      {(observations || deliveryObservations) && (
+        <>
+          <p>───────────────────────</p>
+          {observations && <p className="font-bold">OBS: {observations}</p>}
+          {deliveryObservations && (
+            <p className="font-bold">ENTREGA: {deliveryObservations}</p>
+          )}
+        </>
+      )}
 
       <p className="text-center mt-2">───────────────────────</p>
       <p className="text-center text-[10px]">
