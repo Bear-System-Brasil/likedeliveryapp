@@ -92,6 +92,8 @@ export interface KitchenOrderItem {
   product?: { id: string; name: string; salePrice?: number } | null;
   addOns?: KitchenAddOn[] | null;
   variations?: KitchenVariation[] | null;
+  /** Observação do prato em si (ex.: "sem cebola, bem passado") — distinta da de cada adicional/variação. */
+  observations?: string | null;
 }
 
 export interface KitchenCustomer {
@@ -111,6 +113,8 @@ export interface KitchenDelivery {
   id: string;
   status: KitchenDeliveryStatus | string;
   deliveryPerson?: { id: string; name: string; phone?: string } | null;
+  /** Observação da entrega, preenchida no checkout (ex.: "entregar na portaria"). */
+  observations?: string | null;
 }
 
 export interface KitchenOrder {

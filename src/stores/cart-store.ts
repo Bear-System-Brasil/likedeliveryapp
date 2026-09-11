@@ -43,6 +43,8 @@ export interface CartItem {
   restaurantId: string;
   restaurantName: string;
   customizations?: Record<string, unknown>;
+  /** Observação do prato (ex.: "sem cebola, bem passado"). */
+  specialInstructions?: string;
   variationLabel?: string;
   addOnLabels?: string[];
   variations?: { productVariationId: string }[];

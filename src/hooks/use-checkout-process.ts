@@ -295,7 +295,7 @@ export const useCheckoutProcess = () => {
       paymentMethod === "card_machine" ||
       paymentMethod === "pix_on_delivery";
 
-    // Se e cartao online, validar dados do cartao
+    // Se e cartão online, validar dados do cartão
     const cardValid =
       (paymentMethod !== "credit" && paymentMethod !== "debit") ||
       Boolean(
@@ -483,12 +483,12 @@ export const useCheckoutProcess = () => {
 
           const paymentResponse = await apiService.payments.create(paymentData);
 
-          // `apiRequest` não lanca excecao em 4xx - sem checar `success` a falha
+          // `apiRequest` não lança exceção em 4xx - sem checar `success` a falha
           // de pagamento passava batida e o cliente via "pedido realizado".
           if (!paymentResponse.success) {
             toast.error(
               paymentResponse.message ||
-                "Pedido criado, mas falhou ao registrar o pagamento.",
+              "Pedido criado, mas falhou ao registrar o pagamento.",
             );
           }
 
@@ -522,7 +522,7 @@ export const useCheckoutProcess = () => {
           if (!deliveryResponse.success) {
             toast.error(
               deliveryResponse.message ||
-                "Pedido criado, mas falhou ao registrar a entrega.",
+              "Pedido criado, mas falhou ao registrar a entrega.",
             );
           }
         } catch (error) {

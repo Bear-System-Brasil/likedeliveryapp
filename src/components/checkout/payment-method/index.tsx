@@ -52,7 +52,7 @@ const momentOptions = [
   {
     value: "now" as const,
     label: "Pagar agora",
-    description: "Online, na confirmacao",
+    description: "Online, na confirmação",
   },
   {
     value: "delivery" as const,
@@ -65,26 +65,20 @@ const nowOptions: PaymentOption[] = [
   {
     value: "pix",
     label: "Pix",
-    description: "Instantaneo",
+    description: "Instantâneo",
     icon: Smartphone,
   },
   {
     value: "credit",
-    label: "Cartao de credito",
+    label: "Cartão de crédito",
     description: "Online seguro",
     icon: CreditCard,
   },
   {
     value: "debit",
-    label: "Cartao de debito",
+    label: "Cartão de débito",
     description: "Online seguro",
     icon: CreditCard,
-  },
-  {
-    value: "bank_transfer",
-    label: "Transferencia",
-    description: "Bancaria",
-    icon: Building2,
   },
 ];
 
@@ -97,8 +91,8 @@ const deliveryOptions: PaymentOption[] = [
   },
   {
     value: "card_machine",
-    label: "Cartao na maquininha",
-    description: "Credito ou debito",
+    label: "Cartão na maquininha",
+    description: "Crédito ou débito",
     icon: CreditCard,
   },
   {
@@ -170,7 +164,7 @@ export function PaymentMethod({
   const paymentNote =
     paymentMoment === "delivery"
       ? "Voce paga direto ao entregador no recebimento do pedido."
-      : "Pagamento processado com criptografia. Nao armazenamos dados do cartao.";
+      : "Pagamento processado com criptografia. Nao armazenamos dados do cartão.";
 
   return (
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
@@ -208,7 +202,7 @@ export function PaymentMethod({
         })}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-around gap-2">
         {currentOptions.map((option) => {
           const Icon = option.icon;
           const isActive = paymentMethod === option.value;
@@ -247,7 +241,7 @@ export function PaymentMethod({
                 htmlFor="cardNumber"
                 className="text-[11px] font-bold text-foreground"
               >
-                Numero do cartao
+                Número do cartão
               </Label>
               <Input
                 id="cardNumber"
@@ -301,11 +295,11 @@ export function PaymentMethod({
                 htmlFor="cardName"
                 className="text-[11px] font-bold text-foreground"
               >
-                Nome impresso no cartao
+                Nome impresso no cartão
               </Label>
               <Input
                 id="cardName"
-                placeholder="Como esta no cartao"
+                placeholder="está no cartão"
                 value={cardInfo.name}
                 onChange={(e) =>
                   handleCardInputChange("name", e.target.value)
@@ -325,7 +319,7 @@ export function PaymentMethod({
                 Pagamento via Pix
               </p>
               <p className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                O codigo Pix fica disponivel apos a confirmacao do pedido.
+                O código Pix fica disponível apos a confirmação do pedido.
               </p>
             </div>
           </div>
@@ -338,10 +332,10 @@ export function PaymentMethod({
             <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
             <div>
               <p className="text-sm font-bold text-indigo-900 dark:text-indigo-300">
-                Transferencia bancaria
+                Transferência bancaria
               </p>
               <p className="mt-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400">
-                Envie o comprovante para confirmacao do pagamento.
+                Envie o comprovante para confirmação do pagamento.
               </p>
             </div>
           </div>

@@ -60,7 +60,7 @@ export function Footer() {
                   href="/"
                   className="text-sm text-muted-foreground transition-colors hover:text-orange-400"
                 >
-                  Inicio
+                  Início
                 </Link>
               </li>
               <li>
