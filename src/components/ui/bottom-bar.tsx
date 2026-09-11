@@ -48,9 +48,9 @@ const managementRoutes = [
   "/financial-management",
 ];
 
-// Fluxos focados que ja possuem barra de acao fixa no rodape (checkout) ou
-// cabecalho proprio com as acoes do papel (entregador), e as telas
-// operacionais com menu lateral proprio - cozinha e area financeira -, que
+// Fluxos focados que ja possuem barra de ação fixa no rodapé (checkout) ou
+// cabeçalho próprio com as acoes do papel (entregador), e as telas
+// operacionais com menu lateral próprio - cozinha e area financeira -, que
 // nao tem espaço vertical de sobra. A nav do cliente (carrinho, pedidos de
 // cliente etc.) não faz sentido sobreposta ali.
 const hiddenRoutes = [
@@ -161,11 +161,11 @@ export function BottomBar({ activeTab }: BottomBarProps) {
     .map((tab) =>
       tab.id === "profile"
         ? {
-            id: "login" as const,
-            label: "Entrar",
-            icon: LogIn,
-            onSelect: () => showAuthModal("login"),
-          }
+          id: "login" as const,
+          label: "Entrar",
+          icon: LogIn,
+          onSelect: () => showAuthModal("login"),
+        }
         : tab,
     );
 
@@ -198,9 +198,8 @@ export function BottomBar({ activeTab }: BottomBarProps) {
               key={tab.id}
               type="button"
               onClick={() => handleNavigate(tab)}
-              className={`relative flex flex-col items-center justify-center gap-1 transition-all ${
-                isActive ? "text-orange-500" : "text-muted-foreground"
-              }`}
+              className={`relative flex flex-col items-center justify-center gap-1 transition-all ${isActive ? "text-orange-500" : "text-muted-foreground"
+                }`}
               aria-label={tab.label}
               aria-current={isActive ? "page" : undefined}
             >
@@ -211,15 +210,13 @@ export function BottomBar({ activeTab }: BottomBarProps) {
               )}
 
               <Icon
-                className={`h-5 w-5 transition-transform ${
-                  isActive ? "scale-110" : ""
-                }`}
+                className={`h-5 w-5 transition-transform ${isActive ? "scale-110" : ""
+                  }`}
               />
 
               <span
-                className={`text-[10px] ${
-                  isActive ? "font-semibold" : "font-medium"
-                }`}
+                className={`text-[10px] ${isActive ? "font-semibold" : "font-medium"
+                  }`}
               >
                 {tab.label}
               </span>
