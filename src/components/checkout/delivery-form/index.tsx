@@ -511,7 +511,7 @@ export function DeliveryForm({
                 {restaurant?.name || "Restaurante"}
               </p>
               <p className="mt-0.5 text-xs font-semibold text-orange-700 dark:text-orange-400">
-                {restaurant?.address || "Endereço disponivel apos confirmacao"}
+                {restaurant?.address || "Endereço disponível apos confirmação"}
               </p>
               <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400">
                 <Clock className="h-3.5 w-3.5" />

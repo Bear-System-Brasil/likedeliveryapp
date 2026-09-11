@@ -27,7 +27,7 @@ export function DeliveringMap({ order, lat, lng }: Props) {
   if (!googleMapsApiKey) {
     return (
       <div className="rounded-[10px] border border-border bg-card p-3 text-[11.5px] font-medium text-muted-foreground">
-        Mapa indisponivel no momento. Configuracao do Google Maps ausente.
+        Mapa indisponível no momento. Configuração do Google Maps ausente.
       </div>
     );
   }

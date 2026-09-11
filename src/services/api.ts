@@ -571,7 +571,7 @@ async function apiRequest<T>(
         process.env.NODE_ENV !== "production"
       ) {
         // `serverMessage` e o corpo bruto do erro: sem eles o log so diz "400"
-        // e a validacao que falhou fica invisivel.
+        // e a validação que falhou fica invisível.
         console.error("API Error:", {
           status: response.status,
           endpoint,
@@ -847,14 +847,14 @@ export interface Order {
   totalShipping: number;
   totalValue: number;
   status:
-    | "CART"
-    | "ORDERED"
-    | "AWAITING_PAYMENT"
-    | "IN_PRODUCTION"
-    | "READY_FOR_PICKUP"
-    | "COMPLETED"
-    | "CANCELED"
-    | "ABANDONED";
+  | "CART"
+  | "ORDERED"
+  | "AWAITING_PAYMENT"
+  | "IN_PRODUCTION"
+  | "READY_FOR_PICKUP"
+  | "COMPLETED"
+  | "CANCELED"
+  | "ABANDONED";
   orderedItems?: OrderItem[];
   created_at: string;
   updated_at: string;
@@ -864,6 +864,8 @@ export interface Order {
   fulfillmentType: "DELIVERY" | "PICKUP";
   cancelReason?: string | null;
   companyId: string;
+  /** Observação geral do pedido, enviada em POST /order (ver order.md). */
+  observations?: string | null;
 }
 
 export interface OrderItem {
@@ -884,12 +886,12 @@ export interface CreateOrderRequest {
   totalShipping: number;
   totalValue: number;
   status:
-    | "CART"
-    | "ORDERED"
-    | "AWAITING_PAYMENT"
-    | "IN_PRODUCTION"
-    | "READY_FOR_PICKUP"
-    | "COMPLETED";
+  | "CART"
+  | "ORDERED"
+  | "AWAITING_PAYMENT"
+  | "IN_PRODUCTION"
+  | "READY_FOR_PICKUP"
+  | "COMPLETED";
   observations?: string;
   payment?: string;
   orderedItems?: {
@@ -1128,13 +1130,13 @@ export interface Delivery {
   orderId: string;
   driverId?: string;
   status:
-    | "PENDING"
-    | "ACCEPTED"
-    | "PICKED_UP"
-    | "DELIVERED"
-    | "RECEIVED"
-    | "COMPLETED"
-    | "CANCELED";
+  | "PENDING"
+  | "ACCEPTED"
+  | "PICKED_UP"
+  | "DELIVERED"
+  | "RECEIVED"
+  | "COMPLETED"
+  | "CANCELED";
   pickupTime?: string;
   deliveryTime?: string;
   cancellationReason?: string;
@@ -1985,7 +1987,7 @@ export const apiService = {
         true,
       ),
 
-    // Atencao: `/order/abandoned` exige role admin/owner/manager.
+    // Atenção: `/order/abandoned` exige role admin/owner/manager.
     // Nao use para listar pedidos de um cliente - ele recebe 403.
     listAbandonedOrders: (customerId?: string) =>
       apiRequest<Order[]>(
@@ -2053,6 +2055,8 @@ export const apiService = {
       extras?: {
         addOns?: { productAddOnsId: string; quantity: number }[];
         variations?: { productVariationId: string }[];
+        /** Observação do prato (ex.: "sem cebola, bem passado"). */
+        observations?: string;
       },
       signal?: AbortSignal,
     ) =>
@@ -2066,6 +2070,9 @@ export const apiService = {
           ...(extras?.addOns?.length ? { addOns: extras.addOns } : {}),
           ...(extras?.variations?.length
             ? { variations: extras.variations }
+            : {}),
+          ...(extras?.observations?.trim()
+            ? { observations: extras.observations.trim() }
             : {}),
         },
         true,
@@ -2332,11 +2339,11 @@ export const apiService = {
     getSummary: (params?: ReportsParams) => {
       const query = params
         ? "?" +
-          new URLSearchParams(
-            Object.fromEntries(
-              Object.entries(params).filter(([, v]) => v !== undefined),
-            ) as Record<string, string>,
-          ).toString()
+        new URLSearchParams(
+          Object.fromEntries(
+            Object.entries(params).filter(([, v]) => v !== undefined),
+          ) as Record<string, string>,
+        ).toString()
         : "";
       return apiRequest<ReportsSummary>(
         "GET",

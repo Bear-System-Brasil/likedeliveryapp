@@ -10,6 +10,8 @@ export interface CompanyOrderItem extends OrderItem {
     name: string
     salePrice: number
   }
+  /** Observação do prato em si (ex.: "sem cebola, bem passado") — distinta da de cada adicional/variação. */
+  observations?: string | null
   addOns?: Array<{
     id: string
     quantity: number
@@ -49,6 +51,8 @@ export interface CompanyOrder extends Omit<Order, 'orderedItems'> {
       name: string
       phone?: string
     }
+    /** Observação da entrega, preenchida no checkout (ex.: "entregar na portaria"). */
+    observations?: string | null
   } | null
 }
 

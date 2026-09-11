@@ -87,6 +87,7 @@ function KitchenPrintArea({ order }: { order: KitchenOrder | null }) {
 
   const items = order.orderedItems ?? [];
   const observations = order.observations?.trim();
+  const deliveryObservations = order.delivery?.observations?.trim();
 
   return (
     <div className="print-area hidden print:mx-auto print:block print:w-[80mm] print:bg-card print:font-mono print:text-xs print:text-black">
@@ -110,6 +111,7 @@ function KitchenPrintArea({ order }: { order: KitchenOrder | null }) {
             <p className="font-bold">
               {item.quantity}x {getItemName(item)}
             </p>
+            {item.observations && <p className="pl-2">Obs: {item.observations}</p>}
             {item.addOns?.map((addon) => (
               <p key={addon.id} className="pl-2">
                 + {addon.productAddOns?.description ?? "Adicional"}
@@ -126,10 +128,13 @@ function KitchenPrintArea({ order }: { order: KitchenOrder | null }) {
         ))}
       </div>
 
-      {observations && (
+      {(observations || deliveryObservations) && (
         <>
           <p>───────────────────────</p>
-          <p className="font-bold">OBS: {observations}</p>
+          {observations && <p className="font-bold">OBS: {observations}</p>}
+          {deliveryObservations && (
+            <p className="font-bold">ENTREGA: {deliveryObservations}</p>
+          )}
         </>
       )}
 

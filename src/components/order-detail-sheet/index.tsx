@@ -24,6 +24,7 @@ import {
   Clock,
   CreditCard,
   MapPin,
+  MessageSquareWarning,
   Package,
   Phone,
   Printer,
@@ -50,6 +51,8 @@ export interface DetailableOrder {
     unitPrice?: number;
     productId: string;
     product?: { name: string } | null;
+    /** Observação do prato em si (ex.: "sem cebola, bem passado") — distinta da de cada adicional/variação. */
+    observations?: string | null;
     addOns?: Array<{
       productAddOn?: { name?: string; description?: string } | null;
       productAddOns?: { name?: string; description?: string } | null;
@@ -77,6 +80,8 @@ export interface DetailableOrder {
   payments?: Array<{ paymentMethod: string }> | null;
   delivery?: {
     deliveryPerson?: { name: string; phone?: string } | null;
+    /** Observação da entrega, preenchida no checkout (ex.: "entregar na portaria"). */
+    observations?: string | null;
   } | null;
 }
 
@@ -131,6 +136,8 @@ export function OrderDetailSheet<TOrder extends DetailableOrder>({
     order.delivery as { deliveryAddress?: Record<string, unknown> } | null | undefined
   )?.deliveryAddress;
   const deliveryPerson = order.delivery?.deliveryPerson;
+  const orderObservations = order.observations?.trim();
+  const deliveryObservations = order.delivery?.observations?.trim();
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -179,6 +186,11 @@ export function OrderDetailSheet<TOrder extends DetailableOrder>({
                     <p className="text-sm font-medium">
                       {item.quantity}x {getOrderItemDisplayName(item)}
                     </p>
+                    {item.observations && (
+                      <p className="text-xs italic text-muted-foreground/80 pl-4">
+                        {`"${item.observations}"`}
+                      </p>
+                    )}
                     {item.addOns?.map((addon, i) => (
                       <div key={i} className="pl-4">
                         <p className="text-xs text-muted-foreground">
@@ -216,6 +228,19 @@ export function OrderDetailSheet<TOrder extends DetailableOrder>({
             </div>
           </section>
 
+          {/* Observação geral do pedido (preenchida no checkout) */}
+          {orderObservations && (
+            <>
+              <Separator />
+              <section>
+                <div className="flex gap-2 rounded-md border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3">
+                  <MessageSquareWarning className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400 mt-0.5" />
+                  <p className="text-sm text-amber-900 dark:text-amber-300">{orderObservations}</p>
+                </div>
+              </section>
+            </>
+          )}
+
           {/* Cancelamento */}
           {isCanceled && order.cancelReason && (
             <>
@@ -251,6 +276,29 @@ export function OrderDetailSheet<TOrder extends DetailableOrder>({
                   {deliveryAddress.reference ? (
                     <p className="text-xs">Ref: {String(deliveryAddress.reference)}</p>
                   ) : null}
+                </div>
+                {deliveryObservations && (
+                  <div className="mt-2 flex gap-2 rounded-md border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3">
+                    <MessageSquareWarning className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400 mt-0.5" />
+                    <p className="text-sm text-amber-900 dark:text-amber-300">{deliveryObservations}</p>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+
+          {/* Observação da entrega sem endereço carregado (ex.: retirada com nota) */}
+          {!deliveryAddress && deliveryObservations && (
+            <>
+              <Separator />
+              <section>
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <Truck className="h-4 w-4" />
+                  Observação da Entrega
+                </h3>
+                <div className="flex gap-2 rounded-md border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3">
+                  <MessageSquareWarning className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400 mt-0.5" />
+                  <p className="text-sm text-amber-900 dark:text-amber-300">{deliveryObservations}</p>
                 </div>
               </section>
             </>
